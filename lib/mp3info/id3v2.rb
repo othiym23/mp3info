@@ -1,4 +1,5 @@
 require "mp3info/extension_modules"
+require "mp3info/id3v2_frames"
 
 # This class is not intended to be used directly
 class ID3v2 < DelegateClass(Hash) 
@@ -63,6 +64,7 @@ class ID3v2 < DelegateClass(Hash)
     "TRSN" => "Internet radio station name",
     "TRSO" => "Internet radio station owner",
     "TSIZ" => "Size",
+    "TSOP" => "Performer sort order",
     "TSRC" => "ISRC (international standard recording code)",
     "TSSE" => "Software/Hardware and settings used for encoding",
     "TYER" => "Year",
@@ -151,10 +153,9 @@ class ID3v2 < DelegateClass(Hash)
     @hash.each do |k, v|
       next unless v
       next if v.respond_to?("empty?") and v.empty?
-      data = encode_tag(k, v.to_s)
-      #data << "\x00"*2 #End of tag
+      data = encode_tag(k, v)
 
-      tag << k[0,4]   #4 characte max for a tag's key
+      tag << k[0,4]   #4 character max for a tag's key
       #tag << to_syncsafe(data.size) #+1 because of the language encoding byte
       tag << [data.size].pack("N") #+1 because of the language encoding byte
       tag << "\x00"*2 #flags
@@ -162,6 +163,7 @@ class ID3v2 < DelegateClass(Hash)
     end
 
     tag_str = ""
+
     #version_maj, version_min, unsync, ext_header, experimental, footer 
     tag_str << [ VERSION_MAJ, 0, "0000" ].pack("CCB4")
     tag_str << to_syncsafe(tag.size)
@@ -172,45 +174,14 @@ class ID3v2 < DelegateClass(Hash)
 
   private
 
-
   def encode_tag(name, value)
     puts "encode_tag(#{name.inspect}, #{value.inspect})" if $DEBUG
-    case name
-      when "COMM"
-	[ @options[:encoding] == :iso ? 0 : 1, @options[:lang], 0, value ].pack("ca3ca*")
-      else
-        if @options[:encoding] == :iso
-	  "\x00"+value
-	else
-	  "\x01"+value #Iconv.iconv("UNICODE", "ISO-8859-1", value)[0]
-	end
-      #data << "\x00"   
-    end
+    value.to_s
   end
 
-  ### Read a tag from file and perform UNICODE translation if needed
+  # create an ID3v2 frame from a raw binary string
   def decode_tag(name, value)
-    case name
-      when "COMM"
-        #FIXME improve this
-	encoding, lang, str = value.unpack("ca3a*")
-	out = value.split(0.chr).last
-      else
-	encoding = value[0]     # language encoding bit 0 for iso_8859_1, 1 for unicode
-	out = value[1..-1] 
-    end
-
-    if encoding == 1 #and name[0] == ?T
-      require "iconv"
-      
-      #strip byte-order bytes at the beginning of the unicode string if they exists
-      out[0..3] =~ /^[\xff\xfe]+$/ and out = out[2..-1]
-      begin
-	out = Iconv.iconv("ISO-8859-1", "UNICODE", out)[0] 
-      rescue Iconv::IllegalSequence, Iconv::InvalidCharacter
-      end
-    end
-    out
+    ID3v2Frame.create_frame_from_string(name, value)
   end
 
   ### reads id3 ver 2.3.x/2.4.x frames and adds the contents to @tag2 hash
@@ -221,7 +192,7 @@ class ID3v2 < DelegateClass(Hash)
       name = @io.read(4)
       if name[0] == 0 or name == "MP3e" #bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
         @io.seek(-4, IO::SEEK_CUR)    # 1. find a padding zero,
-	seek_to_v2_end
+        seek_to_v2_end
         break
       else
         #size = @file.get_syncsafe #this seems to be a bug
@@ -232,23 +203,23 @@ class ID3v2 < DelegateClass(Hash)
 #        case name
 #          when /^T/
 #            puts "tag is text. reading" if $DEBUG
-##	    data = read_id3_string(size-1)
-##	    add_value_to_tag2(name, data)
+##          data = read_id3_string(size-1)
+##          add_value_to_tag2(name, data)
 #          else
-#	    decode_tag(
+#           decode_tag(
 #            #@file.seek(size-1, IO::SEEK_CUR)  
 #            puts "tag is binary, skipping" if $DEBUG
 #            @io.seek(size, IO::SEEK_CUR)  
 #        end
 
-#	case name
-#	  #FIXME DRY
-#	  when "COMM"
+#       case name
+#         #FIXME DRY
+#         when "COMM"
 #            data = read_id3v2_frame(size)
-#	    lang = data[0,3]
-#	    data = data[3,-1]
-#	  else
-#	end
+#           lang = data[0,3]
+#           data = data[3,-1]
+#         else
+#       end
       end
       break if @io.pos >= tag2_len # 2. reach length from header
     end
@@ -262,11 +233,11 @@ class ID3v2 < DelegateClass(Hash)
       name = @io.read(3)
       if name[0] == 0
         @io.seek(-3, IO::SEEK_CUR)
-	seek_to_v2_end
+        seek_to_v2_end
         break
       else
         size = (@io.getc << 16) + (@io.getc << 8) + @io.getc
-	add_value_to_tag2(name, size)
+        add_value_to_tag2(name, size)
         break if @io.pos >= tag2_len
       end
     end
@@ -280,7 +251,7 @@ class ID3v2 < DelegateClass(Hash)
     data = decode_tag(name, @io.read(size))
     if self.keys.include?(name)
       unless self[name].is_a?(Array)
-        self[name] = self[name].to_a
+        self[name] = [self[name]]
       end
       self[name] << data
     else

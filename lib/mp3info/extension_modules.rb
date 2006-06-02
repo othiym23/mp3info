@@ -6,7 +6,15 @@ class Mp3Info
     def method_missing(meth,*args)
       m = meth.id2name
       if /=$/ =~ m
-        self[m.chop] = (args.length<2 ? args[0] : args)
+        if args.length < 2
+          if args[0].is_a? ID3v2Frame
+            self[m.chop] = args[0]
+          else
+            self[m.chop] = ID3v2Frame.create_frame(m.chop, args[0].to_s)
+          end
+        else
+          self[m.chop] = args
+        end
       else
         self[m]
       end

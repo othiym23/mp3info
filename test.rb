@@ -9,15 +9,15 @@ require "fileutils"
 
 class Mp3InfoTest < Test::Unit::TestCase
 
-  TEMP_FILE = File.join(File.dirname($0), "test_mp3info.mp3")
+  TEMP_FILE = "test_mp3info.mp3"
   BASIC_TAG2 = {
-    "COMM" => "comments",
-    #"TCON" => "genre_s" 
-    "TIT2" => "title",
-    "TPE1" => "artist",
-    "TALB" => "album",
-    "TYER" => "year",
-    "TRCK" => "tracknum"
+    "COMM" => ID3v2Frame.create_frame("COMM", "comments"),
+    "TCON" => ID3v2Frame.create_frame("TCON", "genre_s"), 
+    "TIT2" => ID3v2Frame.create_frame("TIT2", "title"),
+    "TPE1" => ID3v2Frame.create_frame("TPE1", "artist"),
+    "TALB" => ID3v2Frame.create_frame("TALB", "album"),
+    "TYER" => ID3v2Frame.create_frame("TYER", "year"),
+    "TRCK" => ID3v2Frame.create_frame("TRCK", "tracknum")
   }
   
   # aliasing to allow testing with old versions of Test::Unit
@@ -181,7 +181,7 @@ EOF
   end
 
   def test_removetag2
-    w = write_temp_file({"TIT2" => "sdfqdsf"})
+    w = write_temp_file({"TIT2" => ID3v2Frame.create_frame('TIT2', "sdfqdsf")})
 
     assert( Mp3Info.hastag2?(TEMP_FILE) )
     Mp3Info.removetag2(TEMP_FILE)
@@ -192,7 +192,7 @@ EOF
     2.times do 
       tag = {"title" => "title"}
       Mp3Info.open(TEMP_FILE) do |mp3|
-	tag.each { |k,v| mp3.tag[k] = v }
+        tag.each { |k,v| mp3.tag[k] = v }
       end
       w = Mp3Info.open(TEMP_FILE) { |m| m.tag }
       assert_equal(tag, w)
@@ -210,7 +210,7 @@ EOF
     w.delete("genre")
     w.delete("genre_s")
     assert_equal(tag, w)
-#    id3v2_prog_test(tag, w)
+    # id3v2_prog_test(tag, w)
   end
 
   def test_id3v2_version
@@ -219,7 +219,10 @@ EOF
   end
 
   def test_id3v2_methods
-    tag = { "TIT2" => "tit2", "TPE1" => "tpe1" }
+    tag = {
+      "TIT2" => ID3v2Frame.create_frame("TIT2", "tit2"),
+      "TPE1" => ID3v2Frame.create_frame("TPE1", "tpe1")
+      }
     Mp3Info.open(TEMP_FILE) do |mp3|
       tag.each do |k, v|
         mp3.tag2.send("#{k}=".to_sym, v)
@@ -234,37 +237,49 @@ EOF
     id3v2_prog_test(BASIC_TAG2, w)
   end
 
-  def test_id3v2_trash
-  end
-
   def test_id3v2_complex
     tag = {}
     #ID3v2::TAGS.keys.each do |k|
     ["PRIV", "APIC"].each do |k|
-      tag[k] = random_string(50)
+      tag[k] = ID3v2Frame.create_frame(k, random_string(50))
     end
+
+    Mp3Info.open(TEMP_FILE) do |mp3|
+      mp3.tag2.update(tag)
+      before_save_tag = mp3.tag2
+    end
+    after_save_tag = Mp3Info.open(TEMP_FILE) { |m| m.tag2 }
+
     assert_equal(tag, write_temp_file(tag))
   end
 
   def test_id3v2_bigtag
-    tag = {"APIC" => random_string(1024) }
+    tag = {"APIC" => ID3v2Frame.create_frame("APIC", random_string(1024)) }
     assert_equal(tag, write_temp_file(tag))
   end
+  
+  def test_read_tag_from_truncated_file
+    assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/230-unicode.tag') }
+  end
+  
+  def test_read_tag_from_file_with_mpeg_header
+    assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3') }
+  end
 
-    #test the tag with php getid3
-#    prog = %{
-#    <?php
-#      require("/var/www/root/netjuke/lib/getid3/getid3.php");
-#      $mp3info = GetAllFileInfo('#{TEMP_FILE}');
-#      echo $mp3info;
-#    ?>
-#    }
-#
-#    open("|php", "r+") do |io|
-#      io.puts(prog)
-#      io.close_write
-#      p io.read
-#    end
+  #test the tag with php getid3
+  # prog = %{
+  # <?php
+  #   require("/var/www/root/netjuke/lib/getid3/getid3.php");
+  #   $mp3info = GetAllFileInfo('#{TEMP_FILE}');
+  #   echo $mp3info;
+  # ?>
+  # }
+  # 
+  # open("|php", "r+") do |io|
+  #   io.puts(prog)
+  #   io.close_write
+  #   p io.read
+  # end
 
   #test the tag with the "id3v2" program
   def id3v2_prog_test(tag, written_tag)
@@ -275,19 +290,24 @@ EOF
     `id3v2 -l #{TEMP_FILE}`.each do |line|
       if line =~ /^id3v2 tag info/
         start = true 
-	next    
+        next    
       end
       next unless start
       k, v = /^(.{4}) \(.+\): (.+)$/.match(line)[1,2]
       case k
-	#COMM (Comments): ()[spa]: fmg
+        #COMM (Comments): ()[spa]: fmg
         when "COMM"
-	  v.sub!(/\(\)\[.{3}\]: (.+)/, '\1')
+          v.sub!(/\(\)\[.{3}\]: (.+)/, '\1')
       end
       id3v2_output[k] = v
     end
+    
+    prettified_tag = {}
+    written_tag.each do |key,value|
+      prettified_tag[key] = value.to_s_pretty
+    end
 
-    assert_equal( id3v2_output, written_tag, "id3v2 program output doesn't match")
+    assert_equal( id3v2_output, prettified_tag, "id3v2 program output doesn't match")
   end
 
   def write_temp_file(tag)
