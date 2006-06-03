@@ -5,38 +5,20 @@ class ID3v2Frame
   attr_accessor :value
   
   def ID3v2Frame.create_frame(type, value)
-    case type
-    when 'APIC'
-      APICFrame.new(ID3v2TextFrame::DEFAULT_ENCODING, "image/jpeg", "\x00", "cover image", value)
-    when 'COMM'
-      COMMFrame.new(ID3v2TextFrame::DEFAULT_ENCODING, 'ENG', 'Mp3Info Comment', value)
-    when 'PRIV'
-      PRIVFrame.new('mailto:ogd@aoaioxxysz.net', value)
-    when 'TCON'
-      TCONFrame.new(ID3v2TextFrame::DEFAULT_ENCODING, value)
-    when 'TXXX'
-      TXXXFrame.new('Mp3Info Comment', value)
-    when 'UFID'
-      UFIDFrame.new('Mp3Info', value)
+    klass = ID3V2_4_FRAME_REGISTRY[type]
+    
+    if klass
+      klass.default(value)
     else
-      ID3v2TextFrame.new(type, ID3v2TextFrame::DEFAULT_ENCODING, value.to_s)
+      ID3v2TextFrame.default(value.to_s, type)
     end
   end
   
   def ID3v2Frame.create_frame_from_string(type, value)
-    case type
-    when 'APIC'
-      APICFrame.from_s(value)
-    when 'COMM'
-      COMMFrame.from_s(value)
-    when 'PRIV'       
-      PRIVFrame.from_s(value)
-    when 'TCON'
-      TCONFrame.from_s(value)
-    when 'TXXX'
-      TXXXFrame.from_s(value)
-    when 'UFID'       
-      UFIDFrame.from_s(value)
+    klass = ID3V2_4_FRAME_REGISTRY[type]
+    
+    if klass
+      klass.from_s(value)
     else
       ID3v2TextFrame.from_s(value, type)
     end
@@ -47,7 +29,7 @@ class ID3v2Frame
     @value = value
   end
   
-  def ID3v2Frame.from_s(value)
+  def ID3v2Frame.from_s(value, type = 'XXXX')
     ID3v2Frame.new(type, value)
   end
   
@@ -75,13 +57,17 @@ class ID3v2TextFrame < ID3v2Frame
     @encoding = encoding
   end
   
+  def ID3v2TextFrame.default(value, type = 'XXXX')
+    ID3v2TextFrame.new(type, DEFAULT_ENCODING, value.to_s)
+  end
+
   def ID3v2TextFrame.from_s(value, type = 'XXXX')
     encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
     ID3v2TextFrame.new(type, encoding, ID3v2TextFrame.decode_value(encoding, string))
   end
   
   def to_s
-    [@encoding, encode_value(@encoding, @value)].pack("ca*")
+    "#{@encoding.chr}#{encode_value(@encoding, @value)}"
   end
   
   def to_s_pretty
@@ -136,6 +122,10 @@ class TXXXFrame < ID3v2TextFrame
     @description = description
   end
   
+  def TXXXFrame.default(value)
+    TXXXFrame.new('Mp3Info Comment', value)
+  end
+
   def TXXXFrame.from_s(value)
     encoding, str = value.unpack("ca*")
     descr, entry = split_descr(encoding, str)
@@ -217,6 +207,10 @@ class APICFrame < TXXXFrame
     @type = 'APIC'
   end
   
+  def APICFrame.default(value)
+    APICFrame.new(DEFAULT_ENCODING, "image/jpeg", "\x00", "cover image", value)
+  end
+
   def APICFrame.from_s(value)
     encoding, str = value.unpack("ca*")
     mime_type, picture_type, descr, entry = split_picture_components(encoding, str)
@@ -275,6 +269,10 @@ class COMMFrame < TXXXFrame
     @type = 'COMM'
     @language = language
   end
+  
+  def COMMFrame.default(value)
+    COMMFrame.new(DEFAULT_ENCODING, 'ENG', 'Mp3Info Comment', value)
+  end
 
   def COMMFrame.from_s(value)
     encoding, lang, str = value.unpack("ca3a*")
@@ -283,12 +281,9 @@ class COMMFrame < TXXXFrame
   end
 
   def to_s
-    descr = @description
-    descr = '' if descr.nil?
-
     delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-    str = [encode_value(@encoding, descr), encode_value(@encoding, @value)].join(delimiter)
-    [@encoding, @language, str].pack("ca3a*")
+    str = "#{encode_value(@encoding, @description || '')}#{delimiter}#{encode_value(@encoding, @value)}"
+    "#{@encoding.chr}#{@language || 'XXX'}#{str}"
   end
 
   def to_s_pretty
@@ -315,6 +310,10 @@ class PRIVFrame < ID3v2Frame
     @owner = owner
   end
   
+  def PRIVFrame.default(value)
+    PRIVFrame.new('mailto:ogd@aoaioxxysz.net', value)
+  end
+
   def PRIVFrame.from_s(string)
     matches = string.match(/^([^\000]*)\000(.*)/m)
     owner = matches[1] if matches
@@ -342,6 +341,10 @@ class TCONFrame < ID3v2TextFrame
     super('TCON', encoding, value)
   end
   
+  def TCONFrame.default(value)
+    TCONFrame.new(DEFAULT_ENCODING, value)
+  end
+
   def TCONFrame.from_s(value)
     encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
     TCONFrame.new(encoding, ID3v2TextFrame.decode_value(encoding, string))
@@ -366,6 +369,10 @@ class UFIDFrame < ID3v2Frame
     @namespace = namespace
   end
   
+  def UFIDFrame.default(value)
+    UFIDFrame.new('http://www.id3.org/dummy/ufid.html', value)
+  end
+
   def UFIDFrame.from_s(value)
     namespace, unique_id = value.split(0.chr)
     UFIDFrame.new(namespace, unique_id)
@@ -379,3 +386,13 @@ class UFIDFrame < ID3v2Frame
     "#{@namespace}: #{@value.inspect}"
   end
 end
+
+ID3V2_4_FRAME_REGISTRY =
+{
+   'APIC' => APICFrame,
+   'COMM' => COMMFrame,
+   'PRIV' => PRIVFrame,
+   'TCON' => TCONFrame,
+   'TXXX' => TXXXFrame,
+   'UFID' => UFIDFrame
+}
