@@ -352,6 +352,24 @@ EOF
                  saved_tag.PRIV.to_s_pretty
   end
   
+  def test_tag_default_tcmp_true
+    tag = { "TCMP" => ID3v2Frame.create_frame("TCMP", true) }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal TCMPFrame, saved_tag.TCMP.class
+    assert_equal true, saved_tag.TCMP.value
+    assert_equal "This track is part of a compilation.", saved_tag.TCMP.to_s_pretty
+  end
+  
+  def test_tag_default_tcmp_false
+    tag = { "TCMP" => ID3v2Frame.create_frame("TCMP", false) }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal TCMPFrame, saved_tag.TCMP.class
+    assert_equal false, saved_tag.TCMP.value
+    assert_equal "This track is not part of a compilation.", saved_tag.TCMP.to_s_pretty
+  end
+  
   def test_tag_default_tcon
     tag = { "TCON" => ID3v2Frame.create_frame("TCON", 'Jungle') }
     saved_tag = write_temp_file(tag)
@@ -382,6 +400,26 @@ EOF
     assert_equal "http://www.id3.org/dummy/ufid.html", saved_tag.UFID.namespace
     assert_equal "2451-4235-af32a3-1312", saved_tag.UFID.value
     assert_equal 'http://www.id3.org/dummy/ufid.html: "2451-4235-af32a3-1312"', saved_tag.UFID.to_s_pretty
+  end
+  
+  def test_tag_default_xdor
+    xdor = ID3v2Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
+    assert_equal "\0031993-03-08", xdor.to_s
+    tag = { "XDOR" => xdor }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal XDORFrame, saved_tag.XDOR.class
+    assert_equal Time.gm(1993, 3, 8), saved_tag.XDOR.value
+    assert_equal "Release date: Mon Mar 08 00:00:00 UTC 1993", saved_tag.XDOR.to_s_pretty
+  end
+  
+  def test_tag_default_xsop
+    tag = { "XSOP" => ID3v2Frame.create_frame("XSOP", "Clash, The") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal XSOPFrame, saved_tag.XSOP.class
+    assert_equal "Clash, The", saved_tag.XSOP.value
+    assert_equal "Clash, The", saved_tag.XSOP.to_s_pretty
   end
   
   def test_tag_comm_with_unicode

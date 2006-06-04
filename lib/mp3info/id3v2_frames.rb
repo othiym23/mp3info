@@ -61,7 +61,7 @@ class ID3v2Frame
   end
   
   def to_s_pretty
-    @value
+    @value.inspect
   end
   
   def ==(object)
@@ -394,6 +394,29 @@ class PRIVFrame < ID3v2Frame
   end
 end
 
+class TCMPFrame < ID3v2TextFrame
+  def initialize(encoding, value)
+    super('TCMP', encoding, value)
+  end
+  
+  def TCMPFrame.default(value)
+    TCMPFrame.new(DEFAULT_ENCODING, value)
+  end
+
+  def TCMPFrame.from_s(value)
+    encoding, string = value.unpack("ca*")
+    TCMPFrame.new(encoding, string == "1" ? true : false)
+  end
+  
+  def to_s
+    "#{encoding.chr}#{@value ? "1" : "0"}"
+  end
+
+  def to_s_pretty
+    "This track is #{value ? "" : "not "}part of a compilation."
+  end
+end
+
 class TCONFrame < ID3v2TextFrame
   def initialize(encoding, value)
     super('TCON', encoding, value)
@@ -404,7 +427,13 @@ class TCONFrame < ID3v2TextFrame
   end
 
   def TCONFrame.from_s(value)
-    encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
+    encoding, string = value.unpack("ca*")
+
+    hidden_genre = string.match(/\((\d+)\)/)
+    if hidden_genre
+      string = Mp3Info::GENRES[hidden_genre[1].to_i]
+    end
+
     TCONFrame.new(encoding, ID3v2TextFrame.decode_value(encoding, string))
   end
   
@@ -450,12 +479,60 @@ class UFIDFrame < ID3v2Frame
   end
 end
 
+class XDORFrame < ID3v2TextFrame
+  def initialize(encoding, value)
+    super('XDOR', encoding, value)
+  end
+  
+  def XDORFrame.default(value)
+    XDORFrame.new(DEFAULT_ENCODING, value)
+  end
+
+  def XDORFrame.from_s(value)
+    encoding, string = value.unpack("ca*")
+    string = ID3v2TextFrame.decode_value(encoding, string)
+
+    date_elems = string.match(/(\d{4})(-(\d{2})-(\d{2}))?/)
+    if date_elems
+      date = Time.gm(date_elems[1], date_elems[3], date_elems[4])
+    end
+
+    XDORFrame.new(encoding, date)
+  end
+  
+  def to_s
+    "#{@encoding.chr}#{@value.strftime("%Y-%m-%d")}" if @value
+  end
+  
+  def to_s_pretty
+    "Release date: #{@value.to_s}"
+  end
+end
+
+class XSOPFrame < ID3v2TextFrame
+  def initialize(encoding, value)
+    super('XSOP', encoding, value)
+  end
+  
+  def XSOPFrame.default(value)
+    XSOPFrame.new(DEFAULT_ENCODING, value)
+  end
+
+  def XSOPFrame.from_s(value)
+    encoding, string = value.unpack("ca*")
+    XSOPFrame.new(encoding, ID3v2TextFrame.decode_value(encoding, string))
+  end
+end
+
 ID3V2_4_FRAME_REGISTRY =
 {
    'APIC' => APICFrame,
    'COMM' => COMMFrame,
    'PRIV' => PRIVFrame,
+   'TCMP' => TCMPFrame,
    'TCON' => TCONFrame,
    'TXXX' => TXXXFrame,
-   'UFID' => UFIDFrame
+   'UFID' => UFIDFrame,
+   'XDOR' => XDORFrame,
+   'XSOP' => XSOPFrame
 }

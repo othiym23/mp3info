@@ -427,6 +427,15 @@ TBPM:
     main part of the audio. The BPM is an integer and represented as a
     numerical string.
 
+TCMP:
+  status: COMPLETE
+  terse: compilation flag (NONSTANDARD)
+  long: >-
+    Whether the track is from a compilation release, with '1' being true
+    and '0' being false. WARNING: This frame is a non-standard extension
+    created by Apple for use in its iTunes software. No other software is
+    guaranteed to recognize it or preserve it.
+
 TCOM:
   status: DEFAULT
   terse: composer
@@ -982,3 +991,4 @@ WXXX:
     followed by the actual URL. The URL is always encoded with ISO-8859-1
     [ISO-8859-1]. There may be more than one "WXXX" frame in each tag,
     but only one with the same description.
+

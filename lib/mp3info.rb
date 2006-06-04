@@ -179,7 +179,7 @@ class Mp3Info
 
       if hastag2?
         @tag = {}
-      #creation of a sort of "universal" tag, regardless of the tag version
+        #creation of a sort of "universal" tag, regardless of the tag version
         V1_V2_TAG_MAPPING.each do |key1, key2| 
           t2 = @tag2[key2]
           next unless t2
@@ -312,6 +312,13 @@ class Mp3Info
   def hastag2?
     @tag2.valid?
   end
+  
+  # Print the ID3v2 frames found in a file to standard output
+  def dumptag2
+    @tag2.values.each { |value| [ value ].flatten.each { |elem| puts "#{elem.type}: #{elem.to_s_pretty}" } }
+    
+    @tag2
+  end
 
   # write to another filename at close()
   def rename(new_filename)
@@ -398,7 +405,7 @@ class Mp3Info
   def to_s
     s = "MPEG #{@mpeg_version} Layer #{@layer} #{@vbr ? "VBR" : "CBR"} #{@bitrate} Kbps #{@channel_mode} #{@samplerate} Hz length #{@length} sec. error protection #{@error_protection} "
     s << "tag1: "+@tag1.inspect+"\n" if @hastag1
-    s << "tag2: "+@tag2.inspect+"\n" if @tag2.valid?
+    s << "tag2 (v#{@tag2.version}): "+@tag2.inspect+"\n" if @tag2.valid?
     s
   end
 
