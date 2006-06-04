@@ -4,92 +4,10 @@ require "mp3info/id3v2_frames"
 # This class is not intended to be used directly
 class ID3v2 < DelegateClass(Hash) 
   VERSION_MAJ = 3
-  
-  TAGS = {
-    "AENC" => "Audio encryption",
-    "APIC" => "Attached picture",
-    "COMM" => "Comments",
-    "COMR" => "Commercial frame",
-    "ENCR" => "Encryption method registration",
-    "EQUA" => "Equalization",
-    "ETCO" => "Event timing codes",
-    "GEOB" => "General encapsulated object",
-    "GRID" => "Group identification registration",
-    "IPLS" => "Involved people list",
-    "LINK" => "Linked information",
-    "MCDI" => "Music CD identifier",
-    "MLLT" => "MPEG location lookup table",
-    "OWNE" => "Ownership frame",
-    "PRIV" => "Private frame",
-    "PCNT" => "Play counter",
-    "POPM" => "Popularimeter",
-    "POSS" => "Position synchronisation frame",
-    "RBUF" => "Recommended buffer size",
-    "RVAD" => "Relative volume adjustment",
-    "RVRB" => "Reverb",
-    "SYLT" => "Synchronized lyric/text",
-    "SYTC" => "Synchronized tempo codes",
-    "TALB" => "Album/Movie/Show title",
-    "TBPM" => "BPM (beats per minute)",
-    "TCOM" => "Composer",
-    "TCON" => "Content type",
-    "TCOP" => "Copyright message",
-    "TDAT" => "Date",
-    "TDLY" => "Playlist delay",
-    "TENC" => "Encoded by",
-    "TEXT" => "Lyricist/Text writer",
-    "TFLT" => "File type",
-    "TIME" => "Time",
-    "TIT1" => "Content group description",
-    "TIT2" => "Title/songname/content description",
-    "TIT3" => "Subtitle/Description refinement",
-    "TKEY" => "Initial key",
-    "TLAN" => "Language(s)",
-    "TLEN" => "Length",
-    "TMED" => "Media type",
-    "TOAL" => "Original album/movie/show title",
-    "TOFN" => "Original filename",
-    "TOLY" => "Original lyricist(s)/text writer(s)",
-    "TOPE" => "Original artist(s)/performer(s)",
-    "TORY" => "Original release year",
-    "TOWN" => "File owner/licensee",
-    "TPE1" => "Lead performer(s)/Soloist(s)",
-    "TPE2" => "Band/orchestra/accompaniment",
-    "TPE3" => "Conductor/performer refinement",
-    "TPE4" => "Interpreted, remixed, or otherwise modified by",
-    "TPOS" => "Part of a set",
-    "TPUB" => "Publisher",
-    "TRCK" => "Track number/Position in set",
-    "TRDA" => "Recording dates",
-    "TRSN" => "Internet radio station name",
-    "TRSO" => "Internet radio station owner",
-    "TSIZ" => "Size",
-    "TSOP" => "Performer sort order",
-    "TSRC" => "ISRC (international standard recording code)",
-    "TSSE" => "Software/Hardware and settings used for encoding",
-    "TYER" => "Year",
-    "TXXX" => "User defined text information frame",
-    "UFID" => "Unique file identifier",
-    "USER" => "Terms of use",
-    "USLT" => "Unsychronized lyric/text transcription",
-    "WCOM" => "Commercial information",
-    "WCOP" => "Copyright/Legal information",
-    "WOAF" => "Official audio file webpage",
-    "WOAR" => "Official artist/performer webpage",
-    "WOAS" => "Official audio source webpage",
-    "WORS" => "Official internet radio station homepage",
-    "WPAY" => "Payment",
-    "WPUB" => "Publishers official webpage",
-    "WXXX" => "User defined URL link frame"
-  }
 
   include Mp3Info::HashKeys
   
   attr_reader :io_position
-
-  # possibles keys:
-  # :+lang+ for writing comments
-  # :+encoding+: :+iso+ or :+unicode+ 
   attr_reader :options
   
   def initialize(options = {})
@@ -100,7 +18,7 @@ class ID3v2 < DelegateClass(Hash)
     @options.update(options)
     
     @hash = {}
-    #TAGS.keys.each { |k| @hash[k] = nil }
+
     @hash_orig = {}
     super(@hash)
     @valid = false
@@ -200,26 +118,7 @@ class ID3v2 < DelegateClass(Hash)
         puts "name '#{name}' size #{size} " if $DEBUG
         @io.seek(2, IO::SEEK_CUR)     # skip flags
         add_value_to_tag2(name, size)
-#        case name
-#          when /^T/
-#            puts "tag is text. reading" if $DEBUG
-##          data = read_id3_string(size-1)
-##          add_value_to_tag2(name, data)
-#          else
-#           decode_tag(
-#            #@file.seek(size-1, IO::SEEK_CUR)  
-#            puts "tag is binary, skipping" if $DEBUG
-#            @io.seek(size, IO::SEEK_CUR)  
-#        end
 
-#       case name
-#         #FIXME DRY
-#         when "COMM"
-#            data = read_id3v2_frame(size)
-#           lang = data[0,3]
-#           data = data[3,-1]
-#         else
-#       end
       end
       break if @io.pos >= tag2_len # 2. reach length from header
     end
@@ -272,11 +171,5 @@ class ID3v2 < DelegateClass(Hash)
     n = ( (num<<3) & 0x7f000000 )  + ( (num<<2) & 0x7f0000 ) + ( (num<<1) & 0x7f00 ) + ( num & 0x7f )
     [n].pack("N")
   end
-
-#  def method_missing(meth, *args)
-#    m = meth.id2name
-#    return nil if TAGS.has_key?(m) and self[m].nil?
-#    super
-#  end
 end
 

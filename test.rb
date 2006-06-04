@@ -231,6 +231,16 @@ EOF
     end
   end
 
+  def test_id3v2_frame_creation
+    # getting the defaults right is most important
+    assert_equal ID3v2Frame,     ID3v2Frame.create_frame('XXXX', 0).class
+    assert_equal ID3v2TextFrame, ID3v2Frame.create_frame('TPOS', '1/14').class
+    assert_equal ID3v2LinkFrame, ID3v2Frame.create_frame('WOAR', 'http://www.dresdendolls.com/').class
+    
+    # simple example of a customized frame
+    assert_equal TCONFrame,      ID3v2Frame.create_frame('TCON', 'Experimetal').class
+  end
+  
   def test_id3v2_basic
     w = write_temp_file(BASIC_TAG2)
     assert_equal(BASIC_TAG2, w)
@@ -239,7 +249,6 @@ EOF
 
   def test_id3v2_complex
     tag = {}
-    #ID3v2::TAGS.keys.each do |k|
     ["PRIV", "APIC"].each do |k|
       tag[k] = ID3v2Frame.create_frame(k, random_string(50))
     end
@@ -258,6 +267,146 @@ EOF
     assert_equal(tag, write_temp_file(tag))
   end
   
+  def test_frame_encoding_iso_8859_1
+    tit2 = ID3v2Frame.create_frame("TIT2", "Junior Citizen (lé Freak!)")
+    tit2.encoding = ID3v2TextFrame::ENCODING[:iso]
+    tag = { "TIT2" => tit2 }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal 0, saved_tag.TIT2.encoding
+    assert_equal "Junior Citizen (lé Freak!)", saved_tag.TIT2.value
+  end
+  
+  def test_frame_encoding_utf_16_with_byte_order_mark 
+    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
+    tit2.encoding = ID3v2TextFrame::ENCODING[:utf16]
+    tag = { "TIT2" => tit2 }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal 1, saved_tag.TIT2.encoding
+    assert_equal "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈", saved_tag.TIT2.value
+  end
+  
+  def test_frame_encoding_utf_16_big_endian 
+    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
+    tit2.encoding = ID3v2TextFrame::ENCODING[:utf16be]
+    tag = { "TIT2" => tit2 }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal 2, saved_tag.TIT2.encoding
+    assert_equal "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈", saved_tag.TIT2.value
+  end
+  
+  def test_frame_encoding_utf_8 
+    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
+    tit2.encoding = ID3v2TextFrame::ENCODING[:utf8]
+    tag = { "TIT2" => tit2 }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal 3, saved_tag.TIT2.encoding
+    assert_equal "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈", saved_tag.TIT2.value
+  end
+  
+  def test_frame_encoding_iso_8859_1_encoding_error 
+    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
+    tit2.encoding = ID3v2TextFrame::ENCODING[:iso]
+    tag = { "TIT2" => tit2 }
+    assert_raises(Iconv::IllegalSequence) { write_temp_file(tag) }
+  end
+  
+  def test_tag_default_apic
+    random_data = random_string(128)
+    tag = { "APIC" => ID3v2Frame.create_frame("APIC", random_data) }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal APICFrame, saved_tag.APIC.class
+    assert_equal 3, saved_tag.APIC.encoding
+    assert_equal 'image/jpeg', saved_tag.APIC.mime_type
+    assert_equal "\x00", saved_tag.APIC.picture_type
+    assert_equal random_data, saved_tag.APIC.value
+    assert_equal "Attached Picture (cover image) of image type image/jpeg and class Other",
+                 saved_tag.APIC.to_s_pretty
+  end
+  
+  def test_tag_default_comm
+    tag = { "COMM" => ID3v2Frame.create_frame("COMM", "This is a sample comment.") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal COMMFrame, saved_tag.COMM.class
+    assert_equal 3, saved_tag.COMM.encoding
+    assert_equal 'Mp3Info Comment', saved_tag.COMM.description
+    assert_equal "This is a sample comment.", saved_tag.COMM.value
+    assert_equal "(Mp3Info Comment)[ENG]: This is a sample comment.",
+                 saved_tag.COMM.to_s_pretty
+  end
+  
+  def test_tag_default_priv
+    random_data = random_string(128)
+    tag = { "PRIV" => ID3v2Frame.create_frame("PRIV", random_data) }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal PRIVFrame, saved_tag.PRIV.class
+    assert_equal 'mailto:ogd@aoaioxxysz.net', saved_tag.PRIV.owner
+    assert_equal random_data, saved_tag.PRIV.value
+    assert_equal "PRIVATE DATA (from mailto:ogd@aoaioxxysz.net) [#{random_data.inspect}]",
+                 saved_tag.PRIV.to_s_pretty
+  end
+  
+  def test_tag_default_tcon
+    tag = { "TCON" => ID3v2Frame.create_frame("TCON", 'Jungle') }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal TCONFrame, saved_tag.TCON.class
+    assert_equal "Jungle", saved_tag.TCON.value
+    assert_equal 63, saved_tag.TCON.genre_code
+    assert_equal "Jungle (63)", saved_tag.TCON.to_s_pretty
+  end
+  
+  def test_tag_default_txxx
+    tag = { "TXXX" => ID3v2Frame.create_frame("TXXX", "Here is some random user-defined text.") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal TXXXFrame, saved_tag.TXXX.class
+    assert_equal 3, saved_tag.TXXX.encoding
+    assert_equal 'Mp3Info Comment', saved_tag.TXXX.description
+    assert_equal "Here is some random user-defined text.", saved_tag.TXXX.value
+    assert_equal "(Mp3Info Comment) : Here is some random user-defined text.",
+                 saved_tag.TXXX.to_s_pretty
+  end
+  
+  def test_tag_default_ufid
+    tag = { "UFID" => ID3v2Frame.create_frame("UFID", "2451-4235-af32a3-1312") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal UFIDFrame, saved_tag.UFID.class
+    assert_equal "http://www.id3.org/dummy/ufid.html", saved_tag.UFID.namespace
+    assert_equal "2451-4235-af32a3-1312", saved_tag.UFID.value
+    assert_equal 'http://www.id3.org/dummy/ufid.html: "2451-4235-af32a3-1312"', saved_tag.UFID.to_s_pretty
+  end
+  
+  def test_tag_comm_with_unicode
+    comm = ID3v2Frame.create_frame("COMM", "Здравствуйте dïáçrìtícs!")
+    comm.language = 'rus'
+    tag = { "COMM" => comm }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal 'rus', saved_tag.COMM.language
+    assert_equal "Здравствуйте dïáçrìtícs!", saved_tag.COMM.value
+    assert_equal "(Mp3Info Comment)[rus]: Здравствуйте dïáçrìtícs!",
+                 saved_tag.COMM.to_s_pretty
+  end
+  
+  def test_tag_tcon_with_no_genre_code
+    tcon = ID3v2Frame.create_frame("TCON", 'Experimental')
+    tcon.encoding = 0
+    tag = { "TCON" => tcon }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal "Experimental", saved_tag.TCON.value
+    assert_equal 255, saved_tag.TCON.genre_code
+    assert_equal "Experimental (255)", saved_tag.TCON.to_s_pretty
+  end
+  
   def test_read_tag_from_truncated_file
     assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/230-unicode.tag') }
   end
@@ -265,21 +414,6 @@ EOF
   def test_read_tag_from_file_with_mpeg_header
     assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3') }
   end
-
-  #test the tag with php getid3
-  # prog = %{
-  # <?php
-  #   require("/var/www/root/netjuke/lib/getid3/getid3.php");
-  #   $mp3info = GetAllFileInfo('#{TEMP_FILE}');
-  #   echo $mp3info;
-  # ?>
-  # }
-  # 
-  # open("|php", "r+") do |io|
-  #   io.puts(prog)
-  #   io.close_write
-  #   p io.read
-  # end
 
   #test the tag with the "id3v2" program
   def id3v2_prog_test(tag, written_tag)

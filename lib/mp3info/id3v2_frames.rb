@@ -1,4 +1,5 @@
-require "iconv"
+require 'yaml'
+require 'iconv'
 
 class ID3v2Frame
   attr_reader :type
@@ -10,7 +11,16 @@ class ID3v2Frame
     if klass
       klass.default(value)
     else
-      ID3v2TextFrame.default(value.to_s, type)
+      # all the 'T###' frames contain encoded text, all the
+      # 'W###' frames contain URIs
+      case type[0,1]
+      when 'T'
+        ID3v2TextFrame.default(value.to_s, type)
+      when 'W'
+        ID3v2LinkFrame.default(value, type)
+      else
+        ID3v2Frame.default(value, type)
+      end
     end
   end
   
@@ -20,7 +30,16 @@ class ID3v2Frame
     if klass
       klass.from_s(value)
     else
-      ID3v2TextFrame.from_s(value, type)
+      # all the 'T###' frames contain encoded text, all the
+      # 'W###' frames contain URIs
+      case type[0,1]
+      when 'T'
+        ID3v2TextFrame.from_s(value, type)
+      when 'W'
+        ID3v2LinkFrame.from_s(value)
+      else
+        ID3v2Frame.from_s(value, type)
+      end
     end
   end
   
@@ -29,6 +48,10 @@ class ID3v2Frame
     @value = value
   end
   
+  def ID3v2Frame.default(value, type = 'XXXX')
+    ID3v2Frame.new(type, value)
+  end
+
   def ID3v2Frame.from_s(value, type = 'XXXX')
     ID3v2Frame.new(type, value)
   end
@@ -43,6 +66,19 @@ class ID3v2Frame
   
   def ==(object)
     object.respond_to?("value") && @value == object.value
+  end
+  
+  def frame_info
+    frame_ref = YAML::load_file(File.join(File.dirname(__FILE__), 'frame-ref-24.yml'))
+    if frame_ref[@type]
+      if frame_ref[@type]['long']
+        frame_ref[@type]['long']
+      else
+        frame_ref[@type]['terse']
+      end
+    else
+      "No description available for frame type '#{@type}'."
+    end
   end
 end
 
@@ -114,6 +150,28 @@ class ID3v2TextFrame < ID3v2Frame
   end
 end
 
+class ID3v2LinkFrame < ID3v2Frame
+  def initialize(type, value)
+    super(type, value)
+  end
+  
+  def ID3v2LinkFrame.default(value, type = 'XXXX')
+    ID3v2LinkFrame.new(type, value.to_s)
+  end
+
+  def ID3v2LinkFrame.from_s(value, type = 'XXXX')
+    ID3v2TextFrame.new(type, value)
+  end
+  
+  def to_s
+    @value
+  end
+  
+  def to_s_pretty
+    "URL: #{@value}"
+  end
+end
+
 class TXXXFrame < ID3v2TextFrame
   attr_accessor :description
   
@@ -123,7 +181,7 @@ class TXXXFrame < ID3v2TextFrame
   end
   
   def TXXXFrame.default(value)
-    TXXXFrame.new('Mp3Info Comment', value)
+    TXXXFrame.new(DEFAULT_ENCODING, 'Mp3Info Comment', value)
   end
 
   def TXXXFrame.from_s(value)
@@ -353,7 +411,7 @@ class TCONFrame < ID3v2TextFrame
   def genre_code
     reversed = {}
     Mp3Info::GENRES.each_index{ |index| reversed[Mp3Info::GENRES[index]] = index}
-    (reversed[@value] || 255).to_s
+    reversed[@value] || 255
   end
 
   def to_s_pretty
@@ -384,6 +442,11 @@ class UFIDFrame < ID3v2Frame
   
   def to_s_pretty
     "#{@namespace}: #{@value.inspect}"
+  end
+
+  def ==(object)
+    object.respond_to?("value") && @value == object.value &&
+    object.respond_to?("namespace") && @owner == object.namespace
   end
 end
 
