@@ -160,7 +160,7 @@ class ID3v2LinkFrame < ID3v2Frame
   end
 
   def ID3v2LinkFrame.from_s(value, type = 'XXXX')
-    ID3v2TextFrame.new(type, value)
+    ID3v2LinkFrame.new(type, value)
   end
   
   def to_s
