@@ -3,7 +3,7 @@ require "mp3info/id3v2_frames"
 
 # This class is not intended to be used directly
 class ID3v2 < DelegateClass(Hash) 
-  VERSION_MAJ = 3
+  VERSION_MAJ = 4
 
   include Mp3Info::HashKeys
   
@@ -82,7 +82,7 @@ class ID3v2 < DelegateClass(Hash)
 
     tag_str = ""
 
-    #version_maj, version_min, unsync, ext_header, experimental, footer 
+    #version_maj, version_min, unsync, ext_header, experimental, footer
     tag_str << [ VERSION_MAJ, 0, "0000" ].pack("CCB4")
     tag_str << to_syncsafe(tag.size)
     tag_str << tag
@@ -99,7 +99,7 @@ class ID3v2 < DelegateClass(Hash)
 
   # create an ID3v2 frame from a raw binary string
   def decode_tag(name, value)
-    ID3v2Frame.create_frame_from_string(name, value)
+    ID3V24::Frame.create_frame_from_string(name, value)
   end
 
   ### reads id3 ver 2.3.x/2.4.x frames and adds the contents to @tag2 hash
@@ -140,7 +140,7 @@ class ID3v2 < DelegateClass(Hash)
         break if @io.pos >= tag2_len
       end
     end
-  end    
+  end
   
   ### Add data to tag2["name"]
   ### read lang_encoding, decode data if unicode and
@@ -172,4 +172,3 @@ class ID3v2 < DelegateClass(Hash)
     [n].pack("N")
   end
 end
-

@@ -312,13 +312,6 @@ class Mp3Info
   def hastag2?
     @tag2.valid?
   end
-  
-  # Print the ID3v2 frames found in a file to standard output
-  def dumptag2
-    @tag2.values.each { |value| [ value ].flatten.each { |elem| puts "#{elem.type}: #{elem.to_s_pretty}" } }
-    
-    @tag2
-  end
 
   # write to another filename at close()
   def rename(new_filename)
@@ -335,7 +328,7 @@ class Mp3Info
       end
       
       V1_V2_TAG_MAPPING.each do |key1, key2|
-        @tag2[key2] = ID3v2Frame.create_frame(key2, @tag[key1]) if @tag[key1]
+        @tag2[key2] = ID3V24::Frame.create_frame(key2, @tag[key1]) if @tag[key1]
       end
     end
 

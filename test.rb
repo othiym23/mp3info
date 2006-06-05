@@ -11,13 +11,13 @@ class Mp3InfoTest < Test::Unit::TestCase
 
   TEMP_FILE = "test_mp3info.mp3"
   BASIC_TAG2 = {
-    "COMM" => ID3v2Frame.create_frame("COMM", "comments"),
-    "TCON" => ID3v2Frame.create_frame("TCON", "genre_s"), 
-    "TIT2" => ID3v2Frame.create_frame("TIT2", "title"),
-    "TPE1" => ID3v2Frame.create_frame("TPE1", "artist"),
-    "TALB" => ID3v2Frame.create_frame("TALB", "album"),
-    "TYER" => ID3v2Frame.create_frame("TYER", "year"),
-    "TRCK" => ID3v2Frame.create_frame("TRCK", "tracknum")
+    "COMM" => ID3V24::Frame.create_frame("COMM", "comments"),
+    "TCON" => ID3V24::Frame.create_frame("TCON", "genre_s"), 
+    "TIT2" => ID3V24::Frame.create_frame("TIT2", "title"),
+    "TPE1" => ID3V24::Frame.create_frame("TPE1", "artist"),
+    "TALB" => ID3V24::Frame.create_frame("TALB", "album"),
+    "TYER" => ID3V24::Frame.create_frame("TYER", "year"),
+    "TRCK" => ID3V24::Frame.create_frame("TRCK", "tracknum")
   }
   
   # aliasing to allow testing with old versions of Test::Unit
@@ -100,7 +100,7 @@ EOF
 
   def test_not_an_mp3
     File.open(TEMP_FILE, "w") do |f|
-      str = "0"*1024*1024
+      str = "0"*32*1024
       f.write(str)
     end
     assert_raises(Mp3InfoError) {
@@ -181,7 +181,7 @@ EOF
   end
 
   def test_removetag2
-    w = write_temp_file({"TIT2" => ID3v2Frame.create_frame('TIT2', "sdfqdsf")})
+    w = write_temp_file({"TIT2" => ID3V24::Frame.create_frame('TIT2', "sdfqdsf")})
 
     assert( Mp3Info.hastag2?(TEMP_FILE) )
     Mp3Info.removetag2(TEMP_FILE)
@@ -215,13 +215,13 @@ EOF
 
   def test_id3v2_version
     written_tag = write_temp_file(BASIC_TAG2)
-    assert_equal( "2.3.0", written_tag.version )
+    assert_equal( "2.4.0", written_tag.version )
   end
 
   def test_id3v2_methods
     tag = {
-      "TIT2" => ID3v2Frame.create_frame("TIT2", "tit2"),
-      "TPE1" => ID3v2Frame.create_frame("TPE1", "tpe1")
+      "TIT2" => ID3V24::Frame.create_frame("TIT2", "tit2"),
+      "TPE1" => ID3V24::Frame.create_frame("TPE1", "tpe1")
       }
     Mp3Info.open(TEMP_FILE) do |mp3|
       tag.each do |k, v|
@@ -233,12 +233,12 @@ EOF
 
   def test_id3v2_frame_creation
     # getting the defaults right is most important
-    assert_equal ID3v2Frame,     ID3v2Frame.create_frame('XXXX', 0).class
-    assert_equal ID3v2TextFrame, ID3v2Frame.create_frame('TPOS', '1/14').class
-    assert_equal ID3v2LinkFrame, ID3v2Frame.create_frame('WOAR', 'http://www.dresdendolls.com/').class
+    assert_equal ID3V24::Frame,     ID3V24::Frame.create_frame('XXXX', 0).class
+    assert_equal ID3V24::TextFrame, ID3V24::Frame.create_frame('TPOS', '1/14').class
+    assert_equal ID3V24::LinkFrame, ID3V24::Frame.create_frame('WOAR', 'http://www.dresdendolls.com/').class
     
     # simple example of a customized frame
-    assert_equal TCONFrame,      ID3v2Frame.create_frame('TCON', 'Experimetal').class
+    assert_equal ID3V24::TCONFrame,      ID3V24::Frame.create_frame('TCON', 'Experimetal').class
   end
   
   def test_id3v2_basic
@@ -250,7 +250,7 @@ EOF
   def test_id3v2_complex
     tag = {}
     ["PRIV", "APIC"].each do |k|
-      tag[k] = ID3v2Frame.create_frame(k, random_string(50))
+      tag[k] = ID3V24::Frame.create_frame(k, random_string(50))
     end
 
     Mp3Info.open(TEMP_FILE) do |mp3|
@@ -261,15 +261,62 @@ EOF
 
     assert_equal(tag, write_temp_file(tag))
   end
+  
+  def test_casual_use
+    Mp3Info.open(TEMP_FILE) do |mp3|
+      mp3.tag2.WCOM = "http://www.riaa.org/"
+      mp3.tag2.TXXX=("A sample comment")
+    end
+    
+    mp3 = Mp3Info.new(TEMP_FILE)
+    tag2 = mp3.tag2
+    
+    assert_equal "http://www.riaa.org/", tag2.WCOM.value
+    assert_equal "A sample comment", tag2.TXXX.value
+  end
 
   def test_id3v2_bigtag
-    tag = {"APIC" => ID3v2Frame.create_frame("APIC", random_string(1024)) }
+    tag = {"APIC" => ID3V24::Frame.create_frame("APIC", random_string(1024)) }
     assert_equal(tag, write_temp_file(tag))
   end
   
+  def test_nonexistent_frame_type
+    crud = random_string(64)
+    tag = { "XNXT" => ID3V24::Frame.create_frame("XNXT", crud) }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal ID3V24::Frame, saved_tag.XNXT.class
+    assert_equal crud, saved_tag.XNXT.value
+    assert_equal crud.inspect, saved_tag.XNXT.to_s_pretty
+    assert_equal "No description available for frame type 'XNXT'.",
+                 saved_tag.XNXT.frame_info
+  end
+  
+  def test_generic_text_frame_with_frame_info
+    tag = { "TPE3" => ID3V24::Frame.create_frame("TPE3", "Leopold Stokowski") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal ID3V24::TextFrame, saved_tag.TPE3.class
+    assert_equal "Leopold Stokowski", saved_tag.TPE3.value
+    assert_equal "Leopold Stokowski", saved_tag.TPE3.to_s_pretty
+    assert_equal "The 'Conductor' frame is used for the name of the conductor.",
+                 saved_tag.TPE3.frame_info
+  end
+  
+  def test_generic_link_frame_with_frame_info
+    tag = { "WOAF" => ID3V24::Frame.create_frame("WOAF", "http://example.com/audio.html") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal ID3V24::LinkFrame, saved_tag.WOAF.class
+    assert_equal "http://example.com/audio.html", saved_tag.WOAF.value
+    assert_equal "URL: http://example.com/audio.html", saved_tag.WOAF.to_s_pretty
+    assert_equal "The 'Official audio file webpage' frame is a URL pointing at a file specific webpage.",
+                 saved_tag.WOAF.frame_info
+  end
+  
   def test_frame_encoding_iso_8859_1
-    tit2 = ID3v2Frame.create_frame("TIT2", "Junior Citizen (lé Freak!)")
-    tit2.encoding = ID3v2TextFrame::ENCODING[:iso]
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Junior Citizen (lé Freak!)")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:iso]
     tag = { "TIT2" => tit2 }
     saved_tag = write_temp_file(tag)
     
@@ -278,48 +325,48 @@ EOF
   end
   
   def test_frame_encoding_utf_16_with_byte_order_mark 
-    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
-    tit2.encoding = ID3v2TextFrame::ENCODING[:utf16]
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:utf16]
     tag = { "TIT2" => tit2 }
     saved_tag = write_temp_file(tag)
     
     assert_equal 1, saved_tag.TIT2.encoding
-    assert_equal "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈", saved_tag.TIT2.value
+    assert_equal "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈", saved_tag.TIT2.value
   end
   
   def test_frame_encoding_utf_16_big_endian 
-    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
-    tit2.encoding = ID3v2TextFrame::ENCODING[:utf16be]
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:utf16be]
     tag = { "TIT2" => tit2 }
     saved_tag = write_temp_file(tag)
     
     assert_equal 2, saved_tag.TIT2.encoding
-    assert_equal "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈", saved_tag.TIT2.value
+    assert_equal "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈", saved_tag.TIT2.value
   end
   
   def test_frame_encoding_utf_8 
-    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
-    tit2.encoding = ID3v2TextFrame::ENCODING[:utf8]
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:utf8]
     tag = { "TIT2" => tit2 }
     saved_tag = write_temp_file(tag)
     
     assert_equal 3, saved_tag.TIT2.encoding
-    assert_equal "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈", saved_tag.TIT2.value
+    assert_equal "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈", saved_tag.TIT2.value
   end
   
   def test_frame_encoding_iso_8859_1_encoding_error 
-    tit2 = ID3v2Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Рихтэр Kana:  香奈")
-    tit2.encoding = ID3v2TextFrame::ENCODING[:iso]
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:iso]
     tag = { "TIT2" => tit2 }
     assert_raises(Iconv::IllegalSequence) { write_temp_file(tag) }
   end
   
   def test_tag_default_apic
     random_data = random_string(128)
-    tag = { "APIC" => ID3v2Frame.create_frame("APIC", random_data) }
+    tag = { "APIC" => ID3V24::Frame.create_frame("APIC", random_data) }
     saved_tag = write_temp_file(tag)
     
-    assert_equal APICFrame, saved_tag.APIC.class
+    assert_equal ID3V24::APICFrame, saved_tag.APIC.class
     assert_equal 3, saved_tag.APIC.encoding
     assert_equal 'image/jpeg', saved_tag.APIC.mime_type
     assert_equal "\x00", saved_tag.APIC.picture_type
@@ -329,10 +376,10 @@ EOF
   end
   
   def test_tag_default_comm
-    tag = { "COMM" => ID3v2Frame.create_frame("COMM", "This is a sample comment.") }
+    tag = { "COMM" => ID3V24::Frame.create_frame("COMM", "This is a sample comment.") }
     saved_tag = write_temp_file(tag)
     
-    assert_equal COMMFrame, saved_tag.COMM.class
+    assert_equal ID3V24::COMMFrame, saved_tag.COMM.class
     assert_equal 3, saved_tag.COMM.encoding
     assert_equal 'Mp3Info Comment', saved_tag.COMM.description
     assert_equal "This is a sample comment.", saved_tag.COMM.value
@@ -342,10 +389,10 @@ EOF
   
   def test_tag_default_priv
     random_data = random_string(128)
-    tag = { "PRIV" => ID3v2Frame.create_frame("PRIV", random_data) }
+    tag = { "PRIV" => ID3V24::Frame.create_frame("PRIV", random_data) }
     saved_tag = write_temp_file(tag)
     
-    assert_equal PRIVFrame, saved_tag.PRIV.class
+    assert_equal ID3V24::PRIVFrame, saved_tag.PRIV.class
     assert_equal 'mailto:ogd@aoaioxxysz.net', saved_tag.PRIV.owner
     assert_equal random_data, saved_tag.PRIV.value
     assert_equal "PRIVATE DATA (from mailto:ogd@aoaioxxysz.net) [#{random_data.inspect}]",
@@ -353,38 +400,38 @@ EOF
   end
   
   def test_tag_default_tcmp_true
-    tag = { "TCMP" => ID3v2Frame.create_frame("TCMP", true) }
+    tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", true) }
     saved_tag = write_temp_file(tag)
     
-    assert_equal TCMPFrame, saved_tag.TCMP.class
+    assert_equal ID3V24::TCMPFrame, saved_tag.TCMP.class
     assert_equal true, saved_tag.TCMP.value
     assert_equal "This track is part of a compilation.", saved_tag.TCMP.to_s_pretty
   end
   
   def test_tag_default_tcmp_false
-    tag = { "TCMP" => ID3v2Frame.create_frame("TCMP", false) }
+    tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", false) }
     saved_tag = write_temp_file(tag)
     
-    assert_equal TCMPFrame, saved_tag.TCMP.class
+    assert_equal ID3V24::TCMPFrame, saved_tag.TCMP.class
     assert_equal false, saved_tag.TCMP.value
     assert_equal "This track is not part of a compilation.", saved_tag.TCMP.to_s_pretty
   end
   
   def test_tag_default_tcon
-    tag = { "TCON" => ID3v2Frame.create_frame("TCON", 'Jungle') }
+    tag = { "TCON" => ID3V24::Frame.create_frame("TCON", 'Jungle') }
     saved_tag = write_temp_file(tag)
     
-    assert_equal TCONFrame, saved_tag.TCON.class
+    assert_equal ID3V24::TCONFrame, saved_tag.TCON.class
     assert_equal "Jungle", saved_tag.TCON.value
     assert_equal 63, saved_tag.TCON.genre_code
     assert_equal "Jungle (63)", saved_tag.TCON.to_s_pretty
   end
   
   def test_tag_default_txxx
-    tag = { "TXXX" => ID3v2Frame.create_frame("TXXX", "Here is some random user-defined text.") }
+    tag = { "TXXX" => ID3V24::Frame.create_frame("TXXX", "Here is some random user-defined text.") }
     saved_tag = write_temp_file(tag)
     
-    assert_equal TXXXFrame, saved_tag.TXXX.class
+    assert_equal ID3V24::TXXXFrame, saved_tag.TXXX.class
     assert_equal 3, saved_tag.TXXX.encoding
     assert_equal 'Mp3Info Comment', saved_tag.TXXX.description
     assert_equal "Here is some random user-defined text.", saved_tag.TXXX.value
@@ -393,37 +440,37 @@ EOF
   end
   
   def test_tag_default_ufid
-    tag = { "UFID" => ID3v2Frame.create_frame("UFID", "2451-4235-af32a3-1312") }
+    tag = { "UFID" => ID3V24::Frame.create_frame("UFID", "2451-4235-af32a3-1312") }
     saved_tag = write_temp_file(tag)
     
-    assert_equal UFIDFrame, saved_tag.UFID.class
+    assert_equal ID3V24::UFIDFrame, saved_tag.UFID.class
     assert_equal "http://www.id3.org/dummy/ufid.html", saved_tag.UFID.namespace
     assert_equal "2451-4235-af32a3-1312", saved_tag.UFID.value
     assert_equal 'http://www.id3.org/dummy/ufid.html: "2451-4235-af32a3-1312"', saved_tag.UFID.to_s_pretty
   end
   
   def test_tag_default_xdor
-    xdor = ID3v2Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
+    xdor = ID3V24::Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
     assert_equal "\0031993-03-08", xdor.to_s
     tag = { "XDOR" => xdor }
     saved_tag = write_temp_file(tag)
     
-    assert_equal XDORFrame, saved_tag.XDOR.class
+    assert_equal ID3V24::XDORFrame, saved_tag.XDOR.class
     assert_equal Time.gm(1993, 3, 8), saved_tag.XDOR.value
     assert_equal "Release date: Mon Mar 08 00:00:00 UTC 1993", saved_tag.XDOR.to_s_pretty
   end
   
   def test_tag_default_xsop
-    tag = { "XSOP" => ID3v2Frame.create_frame("XSOP", "Clash, The") }
+    tag = { "XSOP" => ID3V24::Frame.create_frame("XSOP", "Clash, The") }
     saved_tag = write_temp_file(tag)
     
-    assert_equal XSOPFrame, saved_tag.XSOP.class
+    assert_equal ID3V24::XSOPFrame, saved_tag.XSOP.class
     assert_equal "Clash, The", saved_tag.XSOP.value
     assert_equal "Clash, The", saved_tag.XSOP.to_s_pretty
   end
   
   def test_tag_comm_with_unicode
-    comm = ID3v2Frame.create_frame("COMM", "Здравствуйте dïáçrìtícs!")
+    comm = ID3V24::Frame.create_frame("COMM", "Здравствуйте dïáçrìtícs!")
     comm.language = 'rus'
     tag = { "COMM" => comm }
     saved_tag = write_temp_file(tag)
@@ -435,7 +482,7 @@ EOF
   end
   
   def test_tag_tcon_with_no_genre_code
-    tcon = ID3v2Frame.create_frame("TCON", 'Experimental')
+    tcon = ID3V24::Frame.create_frame("TCON", 'Experimental')
     tcon.encoding = 0
     tag = { "TCON" => tcon }
     saved_tag = write_temp_file(tag)
@@ -445,6 +492,63 @@ EOF
     assert_equal "Experimental (255)", saved_tag.TCON.to_s_pretty
   end
   
+  def test_reading_id3v2_2_tags
+    mp3 = Mp3Info.new('sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3')
+    tag2 = mp3.tag2
+    
+    assert_equal 'Keith Fullerton Whitman', tag2.TP1.value
+    assert_equal 'Keith Fullerton Whitman', tag2.TCM.value
+    assert_equal 'Multiples', tag2.TAL.value
+    assert_equal '(26)', tag2.TCO.value
+    assert_equal '2005', tag2.TYE.value
+    assert_equal '1/8', tag2.TRK.value
+  end
+  
+  def test_reading_tag_with_repeated_frames
+    mp3 = Mp3Info.new("sample-metadata/Master Fool/Skilligans Island/Master Fool - Skilligan's Island - 14 - I Still Live With My Moms.mp3")
+    tag2 = mp3.tag2
+    
+    # COMM (Comments): ()[XXX]: RIPT with GRIP
+    # COMM (Comments): ()[]: Created by Grip
+    # COMM (Comments): (ID3v1 Comment)[XXX]: RIPT with GRIP
+    # TALB (Album/Movie/Show title): Skilligan's Island
+    # TALB (Album/Movie/Show title): Skilligan's Island
+    # TCON (Content type): Indie Rap (255)
+    # TIT2 (Title/songname/content description): I Still Live With My Moms
+    # TIT2 (Title/songname/content description): I Still Live With My Moms
+    # TPE1 (Lead performer(s)/Soloist(s)): Master Fool
+    # TPE1 (Lead performer(s)/Soloist(s)): Master Fool
+    # TRCK (Track number/Position in set): 14
+    # TRCK (Track number/Position in set): 14
+    # TYER (Year): 2002
+    # TYER (Year): 2002
+    
+    assert_equal 3, tag2.COMM.size
+    assert_equal 2, tag2.TALB.size
+    assert_equal 2, tag2.TIT2.size
+    assert_equal 2, tag2.TPE1.size
+    assert_equal 2, tag2.TRCK.size
+    assert_equal 2, tag2.TYER.size
+    
+    assert tag2.COMM.detect { |frame|
+      'XXX' == frame.language && 
+      '' == frame.description &&
+      'RIPT with GRIP' == frame.value
+    }
+    
+    assert tag2.COMM.detect { |frame|
+      "\000\000\000" == frame.language && 
+      '' == frame.description &&
+      'Created by Grip' == frame.value
+    }
+    
+    assert tag2.COMM.detect { |frame|
+      'XXX' == frame.language && 
+      'ID3v1 Comment' == frame.description &&
+      'RIPT with GRIP' == frame.value
+    }
+  end
+  
   def test_read_tag_from_truncated_file
     assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/230-unicode.tag') }
   end
@@ -452,8 +556,12 @@ EOF
   def test_read_tag_from_file_with_mpeg_header
     assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3') }
   end
-
-  #test the tag with the "id3v2" program
+  
+  private # helper methods
+  
+  # test the tag with the "id3v2" program -- you'll need a version of id3lib
+  # that's been patched to work with ID3v2 2.4.0 tags, which probably means
+  # a version of id3lib above 3.8.3
   def id3v2_prog_test(tag, written_tag)
     return if PLATFORM =~ /win32/
     return if `which id3v2`.empty?
