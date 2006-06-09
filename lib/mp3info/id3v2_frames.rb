@@ -235,8 +235,62 @@ module ID3V24
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
-      descr = TextFrame.decode_value(encoding, matches[2]) if matches
-      entry = TextFrame.decode_value(encoding, matches[3]) if matches
+      descr = decode_value(encoding, matches[2]) if matches
+      entry = decode_value(encoding, matches[3]) if matches
+  
+      descr = '' if descr.nil?
+      [descr, entry]
+    end
+  end
+  
+  class WXXXFrame < TextFrame
+    attr_accessor :description
+    
+    def initialize(encoding, description, value)
+      super('WXXX', encoding, value)
+      @description = description
+    end
+    
+    def WXXXFrame.default(value)
+      WXXXFrame.new(DEFAULT_ENCODING, 'Mp3Info User Link Frame', value)
+    end
+  
+    def WXXXFrame.from_s(value)
+      encoding, str = value.unpack("ca*")
+      descr, entry = split_descr(encoding, str)
+      WXXXFrame.new(encoding, descr, entry)
+    end
+    
+    def to_s
+      delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
+      "#{@encoding.chr}#{encode_value(@encoding, @description || '')}#{delimiter}#{@value}"
+    end
+    
+    def ==(object)
+      object.respond_to?("value") && @value == object.value &&
+      object.respond_to?("encoding") && @encoding == object.encoding &&
+      object.respond_to?("description") && @description == object.description
+    end
+    
+    protected
+    
+    def WXXXFrame.split_descr(encoding, string)
+      # TODO: Factor out the common behavior into TXXXFrame and only override as necessary
+      # here
+      case encoding
+      when ENCODING[:iso]
+        matches = string.match(/^(([^\000]*)\000)?([^\000]*\000?)/m)
+      when ENCODING[:utf16]
+        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?([\376\377]{2}.*\000\000)/m)
+      when ENCODING[:utf16be]
+        matches = string.match(/^((.*?)\000\000)?(.*\000\000)/m)
+      when ENCODING[:utf8]
+        matches = string.match(/^(([^\000]*\000)\000\000)?([^\000]*\000)/m)
+      else
+        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
+      end
+      descr = decode_value(encoding, matches[2]) if matches
+      entry = matches[3] if matches
   
       descr = '' if descr.nil?
       [descr, entry]
