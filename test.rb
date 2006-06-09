@@ -439,6 +439,18 @@ EOF
                  saved_tag.TXXX.to_s_pretty
   end
   
+  def test_tag_default_wxxx
+    tag = { "WXXX" => ID3V24::Frame.create_frame("WXXX", "http://www.yourmom.gov") }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal ID3V24::WXXXFrame, saved_tag.WXXX.class
+    assert_equal 3, saved_tag.WXXX.encoding
+    assert_equal 'Mp3Info User Link Frame', saved_tag.WXXX.description
+    assert_equal "http://www.yourmom.gov", saved_tag.WXXX.value
+    assert_equal "(Mp3Info User Link Frame) : http://www.yourmom.gov",
+                 saved_tag.WXXX.to_s_pretty
+  end
+  
   def test_tag_default_ufid
     tag = { "UFID" => ID3V24::Frame.create_frame("UFID", "2451-4235-af32a3-1312") }
     saved_tag = write_temp_file(tag)

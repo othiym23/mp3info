@@ -6,7 +6,7 @@ module ID3V24
     attr_reader :type
     attr_accessor :value
     
-    def Frame.create_frame(type, value)
+    def self.create_frame(type, value)
       klass = find_class(type)
 
       if klass
@@ -25,7 +25,7 @@ module ID3V24
       end
     end
     
-    def Frame.create_frame_from_string(type, value)
+    def self.create_frame_from_string(type, value)
       klass = find_class(type)
 
       if klass
@@ -103,17 +103,17 @@ module ID3V24
       @encoding = encoding
     end
     
-    def TextFrame.default(value, type = 'XXXX')
+    def self.default(value, type = 'XXXX')
       TextFrame.new(type, DEFAULT_ENCODING, value.to_s)
     end
   
-    def TextFrame.from_s(value, type = 'XXXX')
+    def self.from_s(value, type = 'XXXX')
       encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
       TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string))
     end
     
     def to_s
-      "#{@encoding.chr}#{encode_value(@encoding, @value)}"
+      @encoding.chr << encode_value(@encoding, @value)
     end
     
     def to_s_pretty
@@ -127,7 +127,7 @@ module ID3V24
     
     protected
     
-    def TextFrame.decode_value(encoding, value)
+    def self.decode_value(encoding, value)
       case encoding
       when ENCODING[:iso]
         Iconv.iconv("UTF-8", "ISO-8859-1", value)[0].chomp(0.chr)
@@ -165,11 +165,11 @@ module ID3V24
       super(type, value)
     end
     
-    def LinkFrame.default(value, type = 'XXXX')
+    def self.default(value, type = 'XXXX')
       LinkFrame.new(type, value.to_s)
     end
   
-    def LinkFrame.from_s(value, type = 'XXXX')
+    def self.from_s(value, type = 'XXXX')
       LinkFrame.new(type, value)
     end
     
@@ -178,7 +178,7 @@ module ID3V24
     end
     
     def to_s_pretty
-      "URL: #{@value}"
+      "URL: " << @value
     end
   end
   
@@ -190,11 +190,11 @@ module ID3V24
       @description = description
     end
     
-    def TXXXFrame.default(value)
+    def self.default(value)
       TXXXFrame.new(DEFAULT_ENCODING, 'Mp3Info Comment', value)
     end
   
-    def TXXXFrame.from_s(value)
+    def self.from_s(value)
       encoding, str = value.unpack("ca*")
       descr, entry = split_descr(encoding, str)
       TXXXFrame.new(encoding, descr, entry)
@@ -202,13 +202,12 @@ module ID3V24
     
     def to_s
       delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      "#{@encoding.chr}#{encode_value(@encoding, @description || '')}#{delimiter}#{encode_value(@encoding, @value)}"
+      @encoding.chr << encode_value(@encoding, @description || '') << delimiter << encode_value(@encoding, @value)
     end
     
     def to_s_pretty
       prefix = @description && @description != '' ? "(#{@description}) " : nil
-      
-      (prefix && prefix != '' ? "#{prefix}: " : '') + @value
+      (prefix && prefix != '' ? "#{prefix}: " : '') << @value
     end
   
     def ==(object)
@@ -219,7 +218,7 @@ module ID3V24
     
     protected
     
-    def TXXXFrame.split_descr(encoding, string)
+    def self.split_descr(encoding, string)
       # The ID3v2 spec makes life difficult by using nulls as delimiters in a
       # string itself containing two Unicode strings, so code has to match on
       # the byte-order marks to find the delimiter.
@@ -251,11 +250,11 @@ module ID3V24
       @description = description
     end
     
-    def WXXXFrame.default(value)
+    def self.default(value)
       WXXXFrame.new(DEFAULT_ENCODING, 'Mp3Info User Link Frame', value)
     end
   
-    def WXXXFrame.from_s(value)
+    def self.from_s(value)
       encoding, str = value.unpack("ca*")
       descr, entry = split_descr(encoding, str)
       WXXXFrame.new(encoding, descr, entry)
@@ -263,9 +262,14 @@ module ID3V24
     
     def to_s
       delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      "#{@encoding.chr}#{encode_value(@encoding, @description || '')}#{delimiter}#{@value}"
+      @encoding.chr << encode_value(@encoding, @description || '') << delimiter << @value
     end
     
+    def to_s_pretty
+      prefix = @description && @description != '' ? "(#{@description}) " : nil
+      (prefix && prefix != '' ? "#{prefix}: " : '') << @value
+    end
+  
     def ==(object)
       object.respond_to?("value") && @value == object.value &&
       object.respond_to?("encoding") && @encoding == object.encoding &&
@@ -274,18 +278,18 @@ module ID3V24
     
     protected
     
-    def WXXXFrame.split_descr(encoding, string)
-      # TODO: Factor out the common behavior into TXXXFrame and only override as necessary
+    def self.split_descr(encoding, string)
+      # TODO: Factor out the common behavior into TextFrame and only override as necessary
       # here
       case encoding
       when ENCODING[:iso]
-        matches = string.match(/^(([^\000]*)\000)?([^\000]*\000?)/m)
+        matches = string.match(/^(([^\000]*)\000)?([^\000]*)/m)
       when ENCODING[:utf16]
-        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?([\376\377]{2}.*\000\000)/m)
+        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?([\376\377]{2}.*)/m)
       when ENCODING[:utf16be]
-        matches = string.match(/^((.*?)\000\000)?(.*\000\000)/m)
+        matches = string.match(/^((.*?)\000\000)?(.*)/m)
       when ENCODING[:utf8]
-        matches = string.match(/^(([^\000]*\000)\000\000)?([^\000]*\000)/m)
+        matches = string.match(/^(([^\000]*\000)\000\000)?([^\000]*)/m)
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
@@ -329,11 +333,11 @@ module ID3V24
       @type = 'APIC'
     end
     
-    def APICFrame.default(value)
+    def self.default(value)
       APICFrame.new(DEFAULT_ENCODING, "image/jpeg", "\x00", "cover image", value)
     end
   
-    def APICFrame.from_s(value)
+    def self.from_s(value)
       encoding, str = value.unpack("ca*")
       mime_type, picture_type, descr, entry = split_picture_components(encoding, str)
       APICFrame.new(encoding, mime_type, picture_type, descr, entry)
@@ -341,11 +345,13 @@ module ID3V24
     
     def to_s
       delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      "#{@encoding.chr}#{@mime_type}\000#{@picture_type}#{encode_value(@encoding, @description || '')}#{delimiter}#{@value}"
+      @encoding.chr << @mime_type << 0.chr << @picture_type << \
+        encode_value(@encoding, @description || '') << delimiter << @value
     end
   
     def to_s_pretty
-      "Attached Picture (#{@description}) of image type #{@mime_type} and class #{PICTURE_TYPE[@picture_type]}"
+      'Attached Picture (' << @description << ') of image type ' << @mime_type << \
+        ' and class ' <<  PICTURE_TYPE[@picture_type]
     end
     
     def ==(object)
@@ -358,7 +364,7 @@ module ID3V24
     
     private
     
-    def APICFrame.split_picture_components(encoding, string)
+    def self.split_picture_components(encoding, string)
       matches = string.match(/^([^\000]*)\000([\x00-\x14])(.+)/m)
       mime_type = matches[1] if matches
       picture_type = matches[2] if matches
@@ -392,11 +398,11 @@ module ID3V24
       @language = language
     end
     
-    def COMMFrame.default(value)
+    def self.default(value)
       COMMFrame.new(DEFAULT_ENCODING, 'ENG', 'Mp3Info Comment', value)
     end
   
-    def COMMFrame.from_s(value)
+    def self.from_s(value)
       encoding, lang, str = value.unpack("ca3a*")
       descr, entry = split_descr(encoding, str)
       COMMFrame.new(encoding, lang, descr, entry)
@@ -404,8 +410,8 @@ module ID3V24
   
     def to_s
       delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      str = "#{encode_value(@encoding, @description || '')}#{delimiter}#{encode_value(@encoding, @value)}"
-      "#{@encoding.chr}#{@language || 'XXX'}#{str}"
+      @encoding.chr << (@language || 'XXX') << encode_value(@encoding, @description || '') << \
+        delimiter << encode_value(@encoding, @value)
     end
   
     def to_s_pretty
@@ -413,7 +419,7 @@ module ID3V24
         (@description && @description != '' ? "(#{@description})" : '') +
         (@language && @language != '' ? "[#{@language}]" : '')
       
-      (prefix && prefix != '' ? "#{prefix}: " : '') + "#{@value}"
+      (prefix && prefix != '' ? "#{prefix}: " : '') << "#{@value}"
     end
   
     def ==(object)
@@ -432,11 +438,11 @@ module ID3V24
       @owner = owner
     end
     
-    def PRIVFrame.default(value)
+    def self.default(value)
       PRIVFrame.new('mailto:ogd@aoaioxxysz.net', value)
     end
   
-    def PRIVFrame.from_s(string)
+    def self.from_s(string)
       matches = string.match(/^([^\000]*)\000(.*)/m)
       owner = matches[1] if matches
       value = matches[2] if matches
@@ -445,7 +451,7 @@ module ID3V24
     end
     
     def to_s
-      "#{@owner}\000#{@value}"
+      '' << @owner << 0.chr << @value
     end
   
     def to_s_pretty
@@ -463,17 +469,17 @@ module ID3V24
       super('TCMP', encoding, value)
     end
     
-    def TCMPFrame.default(value)
+    def self.default(value)
       TCMPFrame.new(DEFAULT_ENCODING, value)
     end
   
-    def TCMPFrame.from_s(value)
+    def self.from_s(value)
       encoding, string = value.unpack("ca*")
       TCMPFrame.new(encoding, string == "1" ? true : false)
     end
     
     def to_s
-      "#{encoding.chr}#{@value ? "1" : "0"}"
+      @encoding.chr << (@value ? "1" : "0")
     end
   
     def to_s_pretty
@@ -486,11 +492,11 @@ module ID3V24
       super('TCON', encoding, value)
     end
     
-    def TCONFrame.default(value)
+    def self.default(value)
       TCONFrame.new(DEFAULT_ENCODING, value)
     end
   
-    def TCONFrame.from_s(value)
+    def self.from_s(value)
       encoding, string = value.unpack("ca*")
   
       hidden_genre = string.match(/\((\d+)\)/)
@@ -520,17 +526,17 @@ module ID3V24
       @namespace = namespace
     end
     
-    def UFIDFrame.default(value)
+    def self.default(value)
       UFIDFrame.new('http://www.id3.org/dummy/ufid.html', value)
     end
   
-    def UFIDFrame.from_s(value)
+    def self.from_s(value)
       namespace, unique_id = value.split(0.chr)
       UFIDFrame.new(namespace, unique_id)
     end
     
     def to_s
-      "#{@namespace}\000#{@value}"
+      '' << @namespace << 0.chr << @value
     end
     
     def to_s_pretty
@@ -548,11 +554,11 @@ module ID3V24
       super('XDOR', encoding, value)
     end
     
-    def XDORFrame.default(value)
+    def self.default(value)
       XDORFrame.new(DEFAULT_ENCODING, value)
     end
   
-    def XDORFrame.from_s(value)
+    def self.from_s(value)
       encoding, string = value.unpack("ca*")
       string = TextFrame.decode_value(encoding, string)
   
@@ -565,7 +571,7 @@ module ID3V24
     end
     
     def to_s
-      "#{@encoding.chr}#{@value.strftime("%Y-%m-%d")}" if @value
+      (@encoding.chr << @value.strftime("%Y-%m-%d")) if @value
     end
     
     def to_s_pretty
@@ -578,11 +584,11 @@ module ID3V24
       super('XSOP', encoding, value)
     end
     
-    def XSOPFrame.default(value)
+    def self.default(value)
       XSOPFrame.new(DEFAULT_ENCODING, value)
     end
   
-    def XSOPFrame.from_s(value)
+    def self.from_s(value)
       encoding, string = value.unpack("ca*")
       XSOPFrame.new(encoding, TextFrame.decode_value(encoding, string))
     end
