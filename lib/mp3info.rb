@@ -402,8 +402,7 @@ class Mp3Info
     s
   end
 
-
-private
+ private
   
   ### parses the id3 tags of the currently open @file
   def parse_tags

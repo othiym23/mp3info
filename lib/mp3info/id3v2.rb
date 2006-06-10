@@ -22,7 +22,8 @@ class ID3v2 < DelegateClass(Hash)
     @hash_orig = {}
     super(@hash)
     @valid = false
-    @version_maj = @version_min = nil
+    @version_maj = VERSION_MAJ
+    @version_min = 0
   end
 
   def valid?

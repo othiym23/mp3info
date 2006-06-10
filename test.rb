@@ -134,6 +134,13 @@ EOF
     assert(! Mp3Info.hastag1?(TEMP_FILE))
   end
 
+  def test_removetag1_inside_block
+    Mp3Info.open(TEMP_FILE) { |info| info.tag1 = @tag }
+    assert(Mp3Info.hastag1?(TEMP_FILE))
+    Mp3Info.open(TEMP_FILE) { |mp3info| Mp3Info.removetag1(TEMP_FILE) }
+    assert(! Mp3Info.hastag1?(TEMP_FILE))
+  end
+
   def test_writetag1
     Mp3Info.open(TEMP_FILE) { |info| info.tag1 = @tag }
     Mp3Info.open(TEMP_FILE) { |info| assert(info.tag1 == @tag) }
