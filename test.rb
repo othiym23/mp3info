@@ -217,7 +217,6 @@ EOF
     w.delete("genre")
     w.delete("genre_s")
     assert_equal(tag, w)
-    # id3v2_prog_test(tag, w)
   end
 
   def test_id3v2_version
@@ -251,7 +250,7 @@ EOF
   def test_id3v2_basic
     w = write_temp_file(BASIC_TAG2)
     assert_equal(BASIC_TAG2, w)
-    id3v2_prog_test(BASIC_TAG2, w)
+    id3v2_prog_test(w)
   end
 
   def test_id3v2_complex
@@ -374,7 +373,7 @@ EOF
     saved_tag = write_temp_file(tag)
     
     assert_equal ID3V24::APICFrame, saved_tag.APIC.class
-    assert_equal 3, saved_tag.APIC.encoding
+    assert_equal 1, saved_tag.APIC.encoding
     assert_equal 'image/jpeg', saved_tag.APIC.mime_type
     assert_equal "\x00", saved_tag.APIC.picture_type
     assert_equal random_data, saved_tag.APIC.value
@@ -387,11 +386,30 @@ EOF
     saved_tag = write_temp_file(tag)
     
     assert_equal ID3V24::COMMFrame, saved_tag.COMM.class
-    assert_equal 3, saved_tag.COMM.encoding
+    assert_equal 1, saved_tag.COMM.encoding
     assert_equal 'Mp3Info Comment', saved_tag.COMM.description
+    assert_equal 'eng', saved_tag.COMM.language
     assert_equal "This is a sample comment.", saved_tag.COMM.value
-    assert_equal "(Mp3Info Comment)[ENG]: This is a sample comment.",
+    assert_equal "(Mp3Info Comment)[eng]: This is a sample comment.",
                  saved_tag.COMM.to_s_pretty
+    id3v2_prog_test(saved_tag)
+  end
+  
+  def test_tag_default_comm_with_aaxz
+    comm = ID3V24::Frame.create_frame("COMM", "Track 5")
+    comm.description = '::AOAIOXXYSZ:: Info'
+    tag = { "COMM" => comm }
+    saved_tag = write_temp_file(tag)
+    
+    assert_equal ID3V24::COMMFrame, saved_tag.COMM.class
+    assert_equal 1, saved_tag.COMM.encoding
+    assert_equal '::AOAIOXXYSZ:: Info', saved_tag.COMM.description
+    assert_equal 'eng', saved_tag.COMM.language
+    assert_equal "Track 5", saved_tag.COMM.value
+    assert_equal "(::AOAIOXXYSZ:: Info)[eng]: Track 5",
+                 saved_tag.COMM.to_s_pretty
+    
+    id3v2_prog_test(saved_tag)
   end
   
   def test_tag_default_priv
@@ -439,7 +457,7 @@ EOF
     saved_tag = write_temp_file(tag)
     
     assert_equal ID3V24::TXXXFrame, saved_tag.TXXX.class
-    assert_equal 3, saved_tag.TXXX.encoding
+    assert_equal 1, saved_tag.TXXX.encoding
     assert_equal 'Mp3Info Comment', saved_tag.TXXX.description
     assert_equal "Here is some random user-defined text.", saved_tag.TXXX.value
     assert_equal "(Mp3Info Comment) : Here is some random user-defined text.",
@@ -451,7 +469,7 @@ EOF
     saved_tag = write_temp_file(tag)
     
     assert_equal ID3V24::WXXXFrame, saved_tag.WXXX.class
-    assert_equal 3, saved_tag.WXXX.encoding
+    assert_equal 1, saved_tag.WXXX.encoding
     assert_equal 'Mp3Info User Link Frame', saved_tag.WXXX.description
     assert_equal "http://www.yourmom.gov", saved_tag.WXXX.value
     assert_equal "(Mp3Info User Link Frame) : http://www.yourmom.gov",
@@ -470,7 +488,7 @@ EOF
   
   def test_tag_default_xdor
     xdor = ID3V24::Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
-    assert_equal "\0031993-03-08", xdor.to_s
+    assert_equal "\001\376\377\0001\0009\0009\0003\000-\0000\0003\000-\0000\0008\000\000", xdor.to_s
     tag = { "XDOR" => xdor }
     saved_tag = write_temp_file(tag)
     
@@ -509,6 +527,7 @@ EOF
     assert_equal "Experimental", saved_tag.TCON.value
     assert_equal 255, saved_tag.TCON.genre_code
     assert_equal "Experimental (255)", saved_tag.TCON.to_s_pretty
+    id3v2_prog_test(saved_tag)
   end
   
   def test_reading_id3v2_2_tags
@@ -581,7 +600,7 @@ EOF
   # test the tag with the "id3v2" program -- you'll need a version of id3lib
   # that's been patched to work with ID3v2 2.4.0 tags, which probably means
   # a version of id3lib above 3.8.3
-  def id3v2_prog_test(tag, written_tag)
+  def id3v2_prog_test(written_tag)
     return if PLATFORM =~ /win32/
     return if `which id3v2`.empty?
     start = false
@@ -605,7 +624,7 @@ EOF
     written_tag.each do |key,value|
       prettified_tag[key] = value.to_s_pretty
     end
-
+    
     assert_equal( id3v2_output, prettified_tag, "id3v2 program output doesn't match")
   end
 

@@ -96,7 +96,7 @@ module ID3V24
     attr_accessor :encoding
     
     ENCODING = { :iso => 0, :utf16 => 1, :utf16be => 2, :utf8 => 3 }
-    DEFAULT_ENCODING = ENCODING[:utf8]
+    DEFAULT_ENCODING = ENCODING[:utf16]
   
     def initialize(type, encoding, value)
       super(type, value)
@@ -285,7 +285,7 @@ module ID3V24
       when ENCODING[:iso]
         matches = string.match(/^(([^\000]*)\000)?([^\000]*)/m)
       when ENCODING[:utf16]
-        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?([\376\377]{2}.*)/m)
+        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?(.*)/m)
       when ENCODING[:utf16be]
         matches = string.match(/^((.*?)\000\000)?(.*)/m)
       when ENCODING[:utf8]
@@ -399,7 +399,7 @@ module ID3V24
     end
     
     def self.default(value)
-      COMMFrame.new(DEFAULT_ENCODING, 'ENG', 'Mp3Info Comment', value)
+      COMMFrame.new(DEFAULT_ENCODING, 'eng', 'Mp3Info Comment', value)
     end
   
     def self.from_s(value)
@@ -560,8 +560,8 @@ module ID3V24
   
     def self.from_s(value)
       encoding, string = value.unpack("ca*")
-      string = TextFrame.decode_value(encoding, string)
-  
+      string = decode_value(encoding, string)
+      
       date_elems = string.match(/(\d{4})(-(\d{2})-(\d{2}))?/)
       if date_elems
         date = Time.gm(date_elems[1], date_elems[3], date_elems[4])
@@ -571,7 +571,7 @@ module ID3V24
     end
     
     def to_s
-      (@encoding.chr << @value.strftime("%Y-%m-%d")) if @value
+      (@encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d"))) if @value
     end
     
     def to_s_pretty
