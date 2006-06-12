@@ -72,13 +72,25 @@ class ID3v2 < DelegateClass(Hash)
     @hash.each do |k, v|
       next unless v
       next if v.respond_to?("empty?") and v.empty?
-      data = encode_tag(k, v)
+      if v.is_a?(Array)
+        v.each do |frame|
+          data = encode_tag(k, frame)
 
-      tag << k[0,4]   #4 character max for a tag's key
-      #tag << to_syncsafe(data.size) #+1 because of the language encoding byte
-      tag << [data.size].pack("N") #+1 because of the language encoding byte
-      tag << "\x00"*2 #flags
-      tag << data
+          tag << k[0,4]   #4 character max for a tag's key
+          #tag << to_syncsafe(data.size) #+1 because of the language encoding byte
+          tag << [data.size].pack("N") #+1 because of the language encoding byte
+          tag << "\x00"*2 #flags
+          tag << data
+        end
+      else
+        data = encode_tag(k, v)
+        
+        tag << k[0,4]   #4 character max for a tag's key
+        #tag << to_syncsafe(data.size) #+1 because of the language encoding byte
+        tag << [data.size].pack("N") #+1 because of the language encoding byte
+        tag << "\x00"*2 #flags
+        tag << data
+      end
     end
 
     tag_str = ""

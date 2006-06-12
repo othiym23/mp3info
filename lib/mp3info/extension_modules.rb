@@ -9,6 +9,16 @@ class Mp3Info
         if args.length < 2
           if args[0].is_a? ID3V24::Frame
             self[m.chop] = args[0]
+          elsif args[0].is_a? Array
+            list = []
+            args[0].each do |thing|
+              if thing.is_a? ID3V24::Frame
+                list << thing
+              else
+                list << ID3V24::Frame.create_frame(m.chop, thing.to_s)
+              end
+            end
+            self[m.chop] = list
           else
             self[m.chop] = ID3V24::Frame.create_frame(m.chop, args[0].to_s)
           end
