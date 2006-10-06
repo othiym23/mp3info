@@ -224,7 +224,7 @@ class Mp3Info
         
         
         seek = @mpeg_version == 1 ? 
-          (@channel_num == 3 ? 17 : 32) :       
+          (@channel_num == 3 ? 17 : 32) :
           (@channel_num == 3 ?  9 : 17)
         
         @file.seek(seek, IO::SEEK_CUR)
@@ -248,16 +248,16 @@ class Mp3Info
           # for cbr, calculate duration with the given bitrate
           @streamsize = @file.stat.size - (@hastag1 ? TAGSIZE : 0) - (@tag2.valid? ? @tag2.io_position : 0)
           @length = ((@streamsize << 3)/1000.0)/@bitrate
-          if @tag2["TLEN"]
+          if @tag2.TLEN
             # but if another duration is given and it isn't close (within 5%)
             #  assume the mp3 is vbr and go with the given duration
-            tlen = (@tag2["TLEN"].is_a?(Array) ? @tag2["TLEN"].last : @tag2["TLEN"]).value.to_i/1000
+            tlen = (@tag2.TLEN.is_a?(Array) ? @tag2.TLEN.last : @tag2.TLEN).value.to_i / 1000
             percent_diff = ((@length.to_i-tlen)/tlen.to_f)
             if percent_diff.abs > 0.05
               # without the xing header, this is the best guess without reading
               #  every single frame
               @vbr = true
-              @length = @tag2["TLEN"].value.to_i/1000
+              @length = tlen
               @bitrate = (@streamsize / @bitrate) >> 10
             end
           end

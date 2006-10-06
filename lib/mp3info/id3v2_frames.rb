@@ -86,7 +86,7 @@ module ID3V24
     
     def self.find_class(type)
       begin
-        ID3V24.const_get(("#{type}Frame").intern)
+        ID3V24.const_get(("#{type.tr("\000",'')}Frame").intern)
       rescue NameError # don't care, cuz we have defaults
       end
     end
@@ -109,7 +109,7 @@ module ID3V24
   
     def self.from_s(value, type = 'XXXX')
       encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
-      TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string))
+      TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string).tr("\000",''))
     end
     
     def to_s
@@ -234,9 +234,9 @@ module ID3V24
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
-      descr = decode_value(encoding, matches[2]) if matches
-      entry = decode_value(encoding, matches[3]) if matches
-  
+      descr = decode_value(encoding, matches[2]).tr("\000",'') if matches && matches[2]
+      entry = decode_value(encoding, matches[3]).tr("\000",'') if matches && matches[3]
+      
       descr = '' if descr.nil?
       [descr, entry]
     end
@@ -343,10 +343,26 @@ module ID3V24
       APICFrame.new(encoding, mime_type, picture_type, descr, entry)
     end
     
+    def APICFrame.picture_type_to_name(type)
+      PICTURE_TYPE[type]
+    end
+    
+    def APICFrame.name_to_picture_type(name)
+      PICTURE_TYPE.invert[name]
+    end
+    
     def to_s
       delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
       @encoding.chr << @mime_type << 0.chr << @picture_type << \
         encode_value(@encoding, @description || '') << delimiter << @value
+    end
+    
+    def picture_type_name
+      APICFrame.picture_type_to_name(@picture_type)
+    end
+  
+    def picture_type_name=(name)
+      @picture_type = APICFrame.name_to_picture_type(name)
     end
   
     def to_s_pretty
@@ -428,6 +444,9 @@ module ID3V24
       object.respond_to?("language") && @language == object.language &&
       object.respond_to?("description") && @description == object.description
     end
+  end
+  
+  class COMFrame < COMMFrame
   end
   
   class PRIVFrame < Frame

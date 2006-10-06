@@ -531,7 +531,7 @@ EOF
   end
   
   def test_reading_id3v2_2_tags
-    mp3 = Mp3Info.new('sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3')
+    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
     tag2 = mp3.tag2
     
     assert_equal 'Keith Fullerton Whitman', tag2.TP1.value
@@ -543,7 +543,7 @@ EOF
   end
   
   def test_reading_tag_with_repeated_frames
-    mp3 = Mp3Info.new("sample-metadata/Master Fool/Skilligans Island/Master Fool - Skilligan's Island - 14 - I Still Live With My Moms.mp3")
+    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),"sample-metadata/Master Fool/Skilligans Island/Master Fool - Skilligan's Island - 14 - I Still Live With My Moms.mp3"))
     tag2 = mp3.tag2
     
     # COMM (Comments): ()[XXX]: RIPT with GRIP
@@ -588,11 +588,11 @@ EOF
   end
   
   def test_read_tag_from_truncated_file
-    assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/230-unicode.tag') }
+    assert_nothing_raised { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'./sample-metadata/230-unicode.tag')) }
   end
   
   def test_read_tag_from_file_with_mpeg_header
-    assert_nothing_raised { mp3 = Mp3Info.new('./sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3') }
+    assert_nothing_raised { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'./sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3')) }
   end
   
   private # helper methods
