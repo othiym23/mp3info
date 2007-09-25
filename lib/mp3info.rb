@@ -155,7 +155,7 @@ class Mp3Info
   # Instantiate a new Mp3Info object with name +filename+
   def initialize(filename)
     $stderr.puts("#{self.class}::new() does not take block; use #{self.class}::open() instead") if block_given?
-    raise(Mp3InfoError, "empty file") unless File.stat(filename).size? #FIXME
+
     @filename = filename
     @hastag1 = false
     
@@ -167,6 +167,8 @@ class Mp3Info
     @file = File.new(filename, "rb")
     @file.extend(Mp3FileMethods)
     
+    return unless File.stat(filename).size? #FIXME
+
     begin
       tag_size = parse_tags
       @tag1_orig = @tag1.dup
@@ -199,7 +201,7 @@ class Mp3Info
       ### extracts MPEG info from MPEG header and stores it in the hash @mpeg
       ###  head (fixnum) = valid 4 byte MPEG header
 
-      if @file.stat.size > tag_size
+      if @file && tag_size && @file.stat.size > tag_size
         found = false
         
         5.times do
