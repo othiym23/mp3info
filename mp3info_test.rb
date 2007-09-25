@@ -377,7 +377,7 @@ EOF
     assert_equal 'image/jpeg', saved_tag.APIC.mime_type
     assert_equal "\x00", saved_tag.APIC.picture_type
     assert_equal random_data, saved_tag.APIC.value
-    assert_equal "Attached Picture (cover image) of image type image/jpeg and class Other",
+    assert_equal "Attached Picture (cover image) of image type image/jpeg and class Other of size 128",
                  saved_tag.APIC.to_s_pretty
   end
   

@@ -366,8 +366,13 @@ module ID3V24
     end
   
     def to_s_pretty
-      'Attached Picture (' << @description << ') of image type ' << @mime_type << \
-        ' and class ' <<  PICTURE_TYPE[@picture_type]
+      about = 'Attached Picture'
+      about << ' (' << @description << ')' if @description && '' != @description
+      about << ' of image type ' << @mime_type
+      about << ' and class ' <<  PICTURE_TYPE[@picture_type]
+      about << ' of size ' << @value.size.to_s
+      
+      about
     end
     
     def ==(object)
@@ -378,7 +383,7 @@ module ID3V24
       object.respond_to?("description") && @description == object.description
     end
     
-    private
+    protected
     
     def self.split_picture_components(encoding, string)
       matches = string.match(/^([^\000]*)\000([\x00-\x14])(.+)/m)
@@ -402,6 +407,47 @@ module ID3V24
       entry = cooked_matches[3] if cooked_matches
   
       [mime_type, picture_type, descr, entry]
+    end
+  end
+  
+  class PICFrame < APICFrame
+    protected
+    
+    def self.split_picture_components(encoding, string)
+      matches = string.match(/^(.{3})(.)(.*)/m)
+      mime_type = mimify(matches[1]) if matches
+      picture_type = matches[2] if matches
+      raw_content = matches[3] if matches
+  
+      case encoding
+      when ENCODING[:iso]
+        cooked_matches = raw_content.match(/^(([^\000]*)\000)(.*)/m)
+      when ENCODING[:utf16]
+        cooked_matches = raw_content.match(/^(([\376\377]{2}.*?)\000\000)(.*)/m)
+      when ENCODING[:utf16be]
+        cooked_matches = raw_content.match(/^((.*?)\000\000)(.*)/m)
+      when ENCODING[:utf8]
+        cooked_matches = raw_content.match(/^(([^\000]*\000)\000\000)(.*)/m)
+      else
+        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
+      end
+      descr = TextFrame.decode_value(encoding, cooked_matches[2]) if cooked_matches
+      entry = cooked_matches[3] if cooked_matches
+  
+      [mime_type, picture_type, descr, entry]
+    end
+    
+    def self.mimify(image_type)
+      case image_type
+      when 'GIF'
+        'image/gif'
+      when 'PNG'
+        'image/png'
+      when 'JPG'
+        'image/jpeg'
+      else
+        'application/binary'
+      end
     end
   end
   
@@ -489,7 +535,7 @@ module ID3V24
     end
     
     def self.default(value)
-      TCMPFrame.new(DEFAULT_ENCODING, value)
+      TCMPFrame.new(ENCODING[:iso], value)
     end
   
     def self.from_s(value)
