@@ -77,8 +77,8 @@ class ID3v2 < DelegateClass(Hash)
           data = encode_tag(k, frame)
 
           tag << k[0,4]   #4 character max for a tag's key
-          #tag << to_syncsafe(data.size) #+1 because of the language encoding byte
-          tag << [data.size].pack("N") #+1 because of the language encoding byte
+          tag << to_syncsafe(data.size) #+1 because of the language encoding byte
+          #tag << [data.size].pack("N") #+1 because of the language encoding byte
           tag << "\x00"*2 #flags
           tag << data
         end
@@ -86,8 +86,8 @@ class ID3v2 < DelegateClass(Hash)
         data = encode_tag(k, v)
         
         tag << k[0,4]   #4 character max for a tag's key
-        #tag << to_syncsafe(data.size) #+1 because of the language encoding byte
-        tag << [data.size].pack("N") #+1 because of the language encoding byte
+        tag << to_syncsafe(data.size) #+1 because of the language encoding byte
+        #tag << [data.size].pack("N") #+1 because of the language encoding byte
         tag << "\x00"*2 #flags
         tag << data
       end
@@ -117,7 +117,7 @@ class ID3v2 < DelegateClass(Hash)
 
   ### reads id3 ver 2.3.x/2.4.x frames and adds the contents to @tag2 hash
   ###  tag2_len (fixnum) = length of entire id3v2 data, as reported in header
-  ### NOTE: the id3v2 header does not take padding zero's into consideration
+  ### NOTE: the id3v2 header does not take padding zeroes into consideration
   def read_id3v2_3_frames(tag2_len)
     loop do # there are 2 ways to end the loop
       name = @io.read(4)
@@ -126,8 +126,8 @@ class ID3v2 < DelegateClass(Hash)
         seek_to_v2_end
         break
       else
-        #size = @file.get_syncsafe #this seems to be a bug
-        size = @io.get32bits
+        size = @io.get_syncsafe #this seems to be a bug
+        #size = @io.get32bits
         puts "name '#{name}' size #{size} " if $DEBUG
         @io.seek(2, IO::SEEK_CUR)     # skip flags
         add_value_to_tag2(name, size)
@@ -181,7 +181,16 @@ class ID3v2 < DelegateClass(Hash)
   
   ### convert an 32 integer to a syncsafe string
   def to_syncsafe(num)
-    n = ( (num<<3) & 0x7f000000 )  + ( (num<<2) & 0x7f0000 ) + ( (num<<1) & 0x7f00 ) + ( num & 0x7f )
-    [n].pack("N")
+    raise ArgumentError, "Only positive numbers can be translated" if self < 0
+    raise ArgumentError, "Synchsafe value must be less than 2^28 - 1" if self > 268435455
+    
+    binary_string = ''
+    
+    binary_string += ((num >> 21) & 0x7f).chr
+    binary_string += ((num >> 14) & 0x7f).chr
+    binary_string += ((num >>  7) & 0x7f).chr
+    binary_string += ((num >>  0) & 0x7f).chr
+    
+    binary_string
   end
 end

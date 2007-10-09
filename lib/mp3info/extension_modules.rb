@@ -50,5 +50,4 @@ class Mp3Info
       (getc << 21) + (getc << 14) + (getc << 7) + getc
     end
   end
-
 end
