@@ -9,6 +9,7 @@ class ID3v2 < DelegateClass(Hash)
   
   attr_reader :io_position
   attr_reader :options
+  attr_reader :tag2_len
   
   def initialize(options = {})
     @options = { 
@@ -46,7 +47,7 @@ class ID3v2 < DelegateClass(Hash)
     raise("can't find version_maj ('#{version_maj}')") unless [2, 3, 4].include?(version_maj)
     @version_maj, @version_min = version_maj, version_min
     @valid = true
-    tag2_len = @io.get_syncsafe
+    @tag2_len = @io.get_syncsafe
     case @version_maj
       when 2
         read_id3v2_2_frames(tag2_len)
@@ -74,22 +75,10 @@ class ID3v2 < DelegateClass(Hash)
       next if v.respond_to?("empty?") and v.empty?
       if v.is_a?(Array)
         v.each do |frame|
-          data = encode_tag(k, frame)
-
-          tag << k[0,4]   #4 character max for a tag's key
-          tag << to_syncsafe(data.size) #+1 because of the language encoding byte
-          #tag << [data.size].pack("N") #+1 because of the language encoding byte
-          tag << "\x00"*2 #flags
-          tag << data
+          tag << encode_frame(k,frame)
         end
       else
-        data = encode_tag(k, v)
-        
-        tag << k[0,4]   #4 character max for a tag's key
-        tag << to_syncsafe(data.size) #+1 because of the language encoding byte
-        #tag << [data.size].pack("N") #+1 because of the language encoding byte
-        tag << "\x00"*2 #flags
-        tag << data
+        tag << encode_frame(k,v)
       end
     end
 
@@ -105,6 +94,25 @@ class ID3v2 < DelegateClass(Hash)
 
   private
 
+  def encode_frame(type, frame_value)
+    encoded_frame_data =  encode_tag(type, frame_value)
+
+    header = ''
+    header << type[0,4]   #4 character max for a tag's key
+
+    # ID3v2.4 has synch safe frame headers
+    if @version_maj == 4
+      header << to_syncsafe(encoded_frame_data.size)
+    else
+      header << [encoded_frame_data.size].pack("N")
+    end
+
+    header << "\x00"*2 #flags
+    header << encoded_frame_data
+    
+    header
+  end
+
   def encode_tag(name, value)
     puts "encode_tag(#{name.inspect}, #{value.inspect})" if $DEBUG
     value.to_s
@@ -112,6 +120,7 @@ class ID3v2 < DelegateClass(Hash)
 
   # create an ID3v2 frame from a raw binary string
   def decode_tag(name, value)
+    puts "decode_tag(#{name},...value...)" if $DEBUG
     ID3V24::Frame.create_frame_from_string(name, value)
   end
 
@@ -126,8 +135,13 @@ class ID3v2 < DelegateClass(Hash)
         seek_to_v2_end
         break
       else
-        size = @io.get_syncsafe #this seems to be a bug
-        #size = @io.get32bits
+        # ID3v2.4 has synch safe frame headers
+        if @version_maj == 4
+          size = @io.get_syncsafe #this seems to be a bug
+        else
+          size = @io.get32bits
+        end
+
         puts "name '#{name}' size #{size} " if $DEBUG
         @io.seek(2, IO::SEEK_CUR)     # skip flags
         add_value_to_tag2(name, size)
@@ -159,7 +173,7 @@ class ID3v2 < DelegateClass(Hash)
   ### read lang_encoding, decode data if unicode and
   ### create an array if the key already exists in the tag
   def add_value_to_tag2(name, size)
-    puts "add_value_to_tag2" if $DEBUG
+    puts "add_value_to_tag2 name #{name} size #{size}" if $DEBUG
     data = decode_tag(name, @io.read(size))
     if self.keys.include?(name)
       unless self[name].is_a?(Array)
