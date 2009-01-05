@@ -542,6 +542,34 @@ EOF
     assert_equal '1/8', tag2.TRK.value
   end
   
+  def test_reading_id3v2_3_img_tags
+    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'sample-metadata/RAC/Double Jointed/03 - RAC - Nine.mp3'))
+    tag2 = mp3.tag2
+
+    assert_equal 7302, mp3.tag2_len
+    assert_equal 5013, tag2.APIC.raw_size
+    assert_equal 5013, tag2.APIC.value.size
+  end
+  
+  def test_reading_invalid_id3v2_4_lengths
+    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
+    tag2 = mp3.tag2
+
+    assert_equal 35_092, mp3.tag2_len
+    assert_equal 34_685, tag2.APIC.raw_size
+    assert_equal 34_685, tag2.APIC.value.size
+    assert_equal 'eng', tag2.COMM.first.language
+    assert_equal '<<in Love With The Music>>', tag2.COMM.first.value
+    assert_equal 'http://www.kompakt-net.com', tag2.WXXX.value
+    assert_equal 'Jürgen Paape', tag2.TPE1.value
+    assert_equal 'Kompakt Extra 47', tag2.TIT1.value
+    assert_equal 'Fruity Loops 1', tag2.TIT2.value
+    assert_equal '2007', tag2.TDRC.value
+    assert_equal 'German', tag2.TLAN.value
+    assert_equal 'LAME 3.96', tag2.TENC.value
+    assert_equal 'Techno', tag2.TCON.value
+  end
+  
   def test_reading_tag_with_repeated_frames
     mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),"sample-metadata/Master Fool/Skilligans Island/Master Fool - Skilligan's Island - 14 - I Still Live With My Moms.mp3"))
     tag2 = mp3.tag2
