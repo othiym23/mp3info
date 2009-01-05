@@ -4,6 +4,7 @@ require 'iconv'
 module ID3V24
   class Frame
     attr_reader :type
+    attr_reader :raw_size
     attr_accessor :value
     
     def self.create_frame(type, value)
@@ -47,6 +48,7 @@ module ID3V24
     def initialize(type, value)
       @type = type
       @value = value
+      @raw_size = value.respond_to?(:size) ? value.size : 0
     end
     
     def Frame.default(value, type = 'XXXX')
@@ -128,6 +130,7 @@ module ID3V24
     protected
     
     def self.decode_value(encoding, value)
+      $stderr.puts("value is '#{value}' before conversion\n") if $DEBUG
       case encoding
       when ENCODING[:iso]
         Iconv.iconv("UTF-8", "ISO-8859-1", value)[0].chomp(0.chr)
@@ -136,7 +139,7 @@ module ID3V24
       when ENCODING[:utf16be]
         Iconv.iconv("UTF-8", "UTF-16BE", value)[0].chomp(0.chr).chomp(0.chr)
       when ENCODING[:utf8]
-        value.chomp(0.chr)
+        value.chomp(0.chr) if value
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{value}")
       end
@@ -230,7 +233,7 @@ module ID3V24
       when ENCODING[:utf16be]
         matches = string.match(/^((.*?)\000\000)?(.*\000\000)/m)
       when ENCODING[:utf8]
-        matches = string.match(/^(([^\000]*\000)\000\000)?([^\000]*\000)/m)
+        matches = string.match(/^(([^\000]*\000)?\000)?([^\000]*\000)/m)
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
@@ -255,7 +258,9 @@ module ID3V24
     end
   
     def self.from_s(value)
+      puts "raw value of WXXX frame is #{value.inspect}" if $DEBUG
       encoding, str = value.unpack("ca*")
+      puts "encoding #{encoding} str #{str.inspect}" if $DEBUG
       descr, entry = split_descr(encoding, str)
       WXXXFrame.new(encoding, descr, entry)
     end
@@ -289,10 +294,11 @@ module ID3V24
       when ENCODING[:utf16be]
         matches = string.match(/^((.*?)\000\000)?(.*)/m)
       when ENCODING[:utf8]
-        matches = string.match(/^(([^\000]*\000)\000\000)?([^\000]*)/m)
+        matches = string.match(/^(([^\000]*\000)?\000)([^\000]*)$/m)
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
+      puts "matches #{matches.inspect}" if $DEBUG
       descr = decode_value(encoding, matches[2]) if matches
       entry = matches[3] if matches
   
@@ -465,7 +471,9 @@ module ID3V24
     end
   
     def self.from_s(value)
+      puts "raw value of COMM frame is #{value.inspect}" if $DEBUG
       encoding, lang, str = value.unpack("ca3a*")
+      puts "encoding #{encoding} lang #{lang} str #{str.inspect}" if $DEBUG
       descr, entry = split_descr(encoding, str)
       COMMFrame.new(encoding, lang, descr, entry)
     end
@@ -611,6 +619,13 @@ module ID3V24
     def ==(object)
       object.respond_to?("value") && @value == object.value &&
       object.respond_to?("namespace") && @owner == object.namespace
+    end
+  end
+  
+  class UFIFrame < UFIDFrame
+    def initialize(namespace, value)
+      super(namespace, value)
+      @namespace = namespace
     end
   end
   
