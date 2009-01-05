@@ -80,46 +80,49 @@ class Mp3Info
 
 
   # mpeg version = 1 or 2
-  attr_reader(:mpeg_version)
+  attr_reader :mpeg_version
 
   # layer = 1, 2, or 3
-  attr_reader(:layer)
+  attr_reader :layer
 
   # bitrate in kbps
-  attr_reader(:bitrate)
+  attr_reader :bitrate
 
   # samplerate in Hz
-  attr_reader(:samplerate)
+  attr_reader :samplerate
 
   # channel mode => "Stereo", "JStereo", "Dual Channel" or "Single Channel"
-  attr_reader(:channel_mode)
+  attr_reader :channel_mode
 
   # variable bitrate => true or false
-  attr_reader(:vbr)
+  attr_reader :vbr
 
   # length in seconds as a Float
-  attr_reader(:length)
+  attr_reader :length
 
   # error protection => true or false
-  attr_reader(:error_protection)
+  attr_reader :error_protection
 
   #a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @tag1
   #this tag has priority over @tag1 and @tag2 when writing the tag with #close
-  attr_reader(:tag)
+  attr_reader :tag
 
   # id3v1 tag as a Hash. You can modify it, it will be written when calling
   # "close" method.
-  attr_accessor(:tag1)
+  attr_accessor :tag1
 
   # id3v2 tag attribute as an ID3v2 object. You can modify it, it will be written when calling
   # "close" method.
-  attr_accessor(:tag2)
+  attr_accessor :tag2
 
   # the original filename
-  attr_reader(:filename)
+  attr_reader :filename
 
   # Moved hastag1? and hastag2? to be booleans
-  attr_reader(:hastag1, :hastag2)
+  attr_reader :hastag1, :hastag2
+
+  # expose the raw size of the tag for quality-checking purposes
+  attr_reader :tag_size
   
   # Test the presence of an id3v1 tag in file +filename+
   def self.hastag1?(filename)
@@ -170,7 +173,7 @@ class Mp3Info
     return unless File.stat(filename).size? #FIXME
 
     begin
-      tag_size = parse_tags
+      @tag_size = parse_tags
       @tag1_orig = @tag1.dup
 
       @tag = {}
@@ -222,7 +225,7 @@ class Mp3Info
           break
         end
         
-        raise(Mp3InfoError, "Cannot find good frame") unless found
+        raise(Mp3InfoError, "Cannot find good frame in #{filename}") unless found
         
         
         seek = @mpeg_version == 1 ? 
@@ -315,6 +318,10 @@ class Mp3Info
     @tag2.valid?
   end
 
+  def tag2_len
+    @tag2.valid? ? @tag2.tag2_len : 0
+  end
+  
   # write to another filename at close()
   def rename(new_filename)
     @filename = new_filename
@@ -334,7 +341,7 @@ class Mp3Info
       end
     end
 
-    if @tag1 != @tag1_orig
+    if @tag1 != @tag1_orig && @tag1_orig
       puts "@tag1 has changed" if $DEBUG
       raise(Mp3InfoError, "file is not writable") unless File.writable?(@filename)
       @tag1_orig.update(@tag1)
@@ -476,7 +483,7 @@ class Mp3Info
     dummyproof.times do |i|
       if @file.getc == 0xff
         data = @file.read(3)
-        raise Mp3InfoError if @file.eof?
+        raise(Mp3InfoError, "invalid frame in #{@file.path}") if @file.eof?
         head = 0xff000000 + (data[0] << 16) + (data[1] << 8) + data[2]
         if check_head(head)
             return head
@@ -485,7 +492,7 @@ class Mp3Info
         end
       end
     end
-    raise Mp3InfoError, "cannot find a valid frame after reading #{dummyproof} bytes"
+    raise Mp3InfoError, "cannot find a valid frame after reading #{dummyproof} bytes from #{@file.path}"
   end
 
   ### checks the given header to see if it is valid
