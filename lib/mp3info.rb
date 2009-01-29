@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 1.5 2005/04/26 13:41:41 moumar Exp $
+# $Id: mp3info.rb,v 8304983d10ad 2009/01/29 22:20:51 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Website:: http://ruby-mp3info.rubyforge.org/
@@ -22,8 +22,7 @@ class Mp3InfoInternalError < StandardError #:nodoc:
 end
 
 class Mp3Info
-
-  VERSION = "0.5"
+  VERSION = "0.6"
 
   GENRES = [
     "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk",
@@ -392,14 +391,40 @@ class Mp3Info
 
   # inspect inside Mp3Info
   def to_s
-    s = "MPEG #{mpeg_version} Layer #{layer} #{@vbr ? "VBR" : "CBR"} #{bitrate} Kbps #{channel_mode} #{samplerate} Hz length #{@length} sec. error protection #{error_protection}"
-    s << " tag1: " + @tag1.inspect if @hastag1
-    s << " tag2 (v#{@tag2.version}): "+@tag2.inspect+"\n" if @tag2.valid?
-    s
+    time = "Time: #{time_string}"
+    type = "MPEG#{mpeg_version} Layer #{layer}"
+    properties = "[ #{@vbr ? "~" : ""}#{bitrate}kbps @ #{samplerate / 1000.0}kHz - #{channel_mode} ]#{error_protection ? " +error" : ""}"
+    
+    # try to always keep the string representation at 80 characters
+    "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"
   end
 
  private
 
+  def time_string
+    if @vbr
+      length = (26 / 1000.0) * @frames
+      seconds = length.floor % 60
+      minutes = length.floor / 60
+      leftover = @frames % (1000 / 26)
+      time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
+    else
+      length = ((@streamsize << 3) / 1000.0) / bitrate
+      if @tag2.TLEN
+        tlen = (@tag2.TLEN.is_a?(Array) ? @tag2.TLEN.last : @tag2.TLEN).value.to_i / 1000
+        percent_diff = ((length.to_i - tlen) / tlen.to_f)
+        if percent_diff.abs > 0.05
+          length = tlen
+        end
+      end
+      minutes = length.floor / 60
+      seconds = length.round % 60
+      time_string = "%d:%02d   " % [minutes, seconds]
+    end
+    
+    time_string
+  end
+  
   def parse_mpeg_header
     found = false
     header = nil
@@ -516,8 +541,10 @@ if $0 == __FILE__
   while filename = ARGV.shift
     begin
       info = Mp3Info.new(filename)
-      puts filename
+      puts "\n#{File.basename(filename)}     [ #{File.size(filename)} ]"
+      puts "-------------------------------------------------------------------------------- "
       puts info
+      puts "-------------------------------------------------------------------------------- "
     rescue Mp3InfoError => e
       puts "#{filename}\nERROR: #{e}"
     end

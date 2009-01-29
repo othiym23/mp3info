@@ -124,7 +124,7 @@ EOF
       assert_equal(44_100, info.samplerate, 44100)
       assert_equal(false, info.error_protection)
       assert_equal(0.1305625, info.length)
-      assert_equal("MPEG 1.0 Layer 3 CBR 128 Kbps Joint stereo 44100 Hz length 0.1305625 sec. error protection false", info.to_s)
+      assert_equal("Time: 0:00        MPEG1.0 Layer 3           [ 128kbps @ 44.1kHz - Joint stereo ]", info.to_s)
     end
   end
 
