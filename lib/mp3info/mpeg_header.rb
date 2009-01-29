@@ -143,21 +143,15 @@ class MPEGHeader
   # A bitrate of 0 means 'free', and bitrate for frame should be calculated by decoder.
   # Not used much in practice.
   def bitrate
-    raise InvalidMPEGHeader, "Bitrate code of 0x0f is invalid by the specification" if 0x0f == @bitrate_code
-    
-    bitrate = 0
+    raise InvalidMPEGHeader, "Bitrate code of 0x0f is invalid by MPEG specification." if 0x0f == @bitrate_code
     
     case version
     when 1.0
       case layer
-      when 1
-        bitrate =  @@bitrate_table[@bitrate_code][0]
-      when 2
-        bitrate = @@bitrate_table[@bitrate_code][1]
-      when 3
-        bitrate = @@bitrate_table[@bitrate_code][2]
+      when 1..3
+        bitrate =  @@bitrate_table[@bitrate_code][layer - 1]
       else
-        bitrate = InvalidMPEGHeader, "There is no such thing as MPEG 1, layer #{layer}"
+        raise InvalidMPEGHeader, "There is no such thing as MPEG 1, layer #{layer}."
       end
     when 2.0, 2.5
       case layer
@@ -166,18 +160,16 @@ class MPEGHeader
       when 2, 3
         bitrate = @@bitrate_table[@bitrate_code][4]
       else
-        raise InvalidMPEGHeader, "There is no such thing as MPEG 2, layer #{layer}"
+        raise InvalidMPEGHeader, "There is no such thing as MPEG 2, layer #{layer}."
       end
     else
-      raise InvalidMPEGHeader, "There is no such thing as MPEG #{version}, layer #{layer}"
+      raise InvalidMPEGHeader, "There is no such thing as MPEG #{version}, layer #{layer}."
     end
     
     bitrate
   end
   
   def sample_rate
-    sample_rate = 0
-    
     case version
     when 2.5
       sample_rate = @@sample_rate_table[@sample_rate_code][2]
@@ -186,10 +178,10 @@ class MPEGHeader
     when 1.0
       sample_rate = @@sample_rate_table[@sample_rate_code][0]
     else
-      raise InvalidMPEGHeader, "There is no such thing as MPEG #{version}"
+      raise InvalidMPEGHeader, "There is no such thing as MPEG #{version}."
     end
     
-    raise InvalidMPEGHeader, "Unable to find sample rate for sample rate code #{@sample_rate_code}, MPEG #{version}" unless sample_rate > 0
+    raise InvalidMPEGHeader, "Unable to find sample rate for sample rate code #{@sample_rate_code}, MPEG #{version}." unless sample_rate > 0
     
     sample_rate
   end
@@ -199,12 +191,10 @@ class MPEGHeader
   end
   
   def mode_extension
-    extension_flags = 0
-    
     if 1 == layer or 2 == layer
       extension_flags = @@mode_extension_list[@mode_extension]
     elsif 3 == layer
-      extension_flags |= MODE_EXTENSION_INTENSITY  if (@mode_extension & 0x1) != 0
+      extension_flags = (@mode_extension & 0x1) != 0 ? MODE_EXTENSION_INTENSITY : 0
       extension_flags |= MODE_EXTENSION_M_S_STEREO if (@mode_extension & 0x2) != 0
     else
       raise InvalidMPEGHeader, "Layer #{layer} is not supported by the MPEG specification"
