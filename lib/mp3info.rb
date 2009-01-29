@@ -6,6 +6,7 @@
 require "delegate"
 require "fileutils"
 require "mp3info/extension_modules"
+require "mp3info/mpeg_header"
 require "mp3info/id3v2"
 
 # ruby -d to display debugging infos
@@ -19,24 +20,6 @@ end
 class Mp3Info
 
   VERSION = "0.5"
-
-  LAYER = [ nil, 3, 2, 1]
-  BITRATE = [
-    [
-      [32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
-      [32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
-      [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320] ],
-    [
-      [32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
-      [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
-      [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160]
-    ]
-  ]
-  SAMPLERATE = [
-    [ 44100, 48000, 32000 ],
-    [ 22050, 24000, 16000 ]
-  ]
-  CHANNEL_MODE = [ "Stereo", "JStereo", "Dual Channel", "Single Channel"]
 
   GENRES = [
     "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk",
@@ -80,19 +63,36 @@ class Mp3Info
 
 
   # mpeg version = 1 or 2
-  attr_reader :mpeg_version
+  def mpeg_version
+    @mpeg_header.version
+  end
 
   # layer = 1, 2, or 3
-  attr_reader :layer
+  def layer
+    @mpeg_header.layer
+  end
 
   # bitrate in kbps
-  attr_reader :bitrate
+  def bitrate
+    @bitrate ||= false
+    if @bitrate
+      @bitrate
+    elsif vbr
+      (((@streamsize / @frames) * samplerate) / 144) >> 10
+    else
+      @mpeg_header.bitrate
+    end
+  end
 
   # samplerate in Hz
-  attr_reader :samplerate
+  def samplerate
+    @mpeg_header.sample_rate
+  end
 
   # channel mode => "Stereo", "JStereo", "Dual Channel" or "Single Channel"
-  attr_reader :channel_mode
+  def channel_mode
+    @mpeg_header.mode
+  end
 
   # variable bitrate => true or false
   attr_reader :vbr
@@ -101,7 +101,9 @@ class Mp3Info
   attr_reader :length
 
   # error protection => true or false
-  attr_reader :error_protection
+  def error_protection
+    @mpeg_header.error_protection
+  end
 
   #a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @tag1
   #this tag has priority over @tag1 and @tag2 when writing the tag with #close
@@ -200,39 +202,28 @@ class Mp3Info
       @tag.extend(HashKeys)
       @tag_orig = @tag.dup
 
-
       ### extracts MPEG info from MPEG header and stores it in the hash @mpeg
       ###  head (fixnum) = valid 4 byte MPEG header
-
       if @file && tag_size && @file.stat.size > tag_size
-        found = false
-        
-        5.times do
-          head = find_next_frame() 
-          head.extend(NumericBits)
-          @mpeg_version = [2, 1][head[19]]
-          @layer = LAYER[head.bits(18,17)]
-          next if @layer.nil?
-          @bitrate = BITRATE[@mpeg_version-1][@layer-1][head.bits(15,12)-1]
-          @error_protection = head[16] == 0 ? true : false
-          @samplerate = SAMPLERATE[@mpeg_version-1][head.bits(11,10)]
-          @padding = (head[9] == 1 ? true : false)
-          @channel_mode = CHANNEL_MODE[@channel_num = head.bits(7,6)]
-          @copyright = (head[3] == 1 ? true : false)
-          @original = (head[2] == 1 ? true : false)
-          @vbr = false
-          found = true
-          break
+        @mpeg_header = parse_mpeg_header
+
+        # the seek offsets below are highly magical and need more documentation
+        if 1 == mpeg_version
+          if @mpeg_header.mode_extension == (MPEGHeader::MODE_EXTENSION_BANDS_4_TO_31 | MPEGHeader::MODE_EXTENSION_BANDS_8_TO_31)
+            @file.seek(17, IO::SEEK_CUR)
+          else
+            @file.seek(32, IO::SEEK_CUR)
+          end
+        else
+          if @mpeg_header.mode_extension == (MPEGHeader::MODE_EXTENSION_BANDS_4_TO_31 | MPEGHeader::MODE_EXTENSION_BANDS_8_TO_31)
+            @file.seek(9, IO::SEEK_CUR)
+          else
+            @file.seek(17, IO::SEEK_CUR)
+          end
         end
         
-        raise(Mp3InfoError, "Cannot find good frame in #{filename}") unless found
-        
-        
-        seek = @mpeg_version == 1 ? 
-          (@channel_num == 3 ? 17 : 32) :
-          (@channel_num == 3 ?  9 : 17)
-        
-        @file.seek(seek, IO::SEEK_CUR)
+        # default to assuming the file is CBR unless the Xing tag indicates otherwise
+        @vbr = false
         
         vbr_head = @file.read(4)
         if vbr_head == "Xing"
@@ -247,12 +238,11 @@ class Mp3Info
           @file.seek(100, IO::SEEK_CUR) if flags[0] == 1
           @vbr_quality = @file.get32bits if flags[3] == 1
           @length = (26/1000.0)*@frames
-          @bitrate = (((@streamsize/@frames)*@samplerate)/144) >> 10
           @vbr = true
         else
           # for cbr, calculate duration with the given bitrate
           @streamsize = @file.stat.size - (@hastag1 ? TAGSIZE : 0) - (@tag2.valid? ? @tag2.io_position : 0)
-          @length = ((@streamsize << 3)/1000.0)/@bitrate
+          @length = ((@streamsize << 3)/1000.0)/bitrate
           if @tag2.TLEN
             # but if another duration is given and it isn't close (within 5%)
             #  assume the mp3 is vbr and go with the given duration
@@ -263,7 +253,7 @@ class Mp3Info
               #  every single frame
               @vbr = true
               @length = tlen
-              @bitrate = (@streamsize / @bitrate) >> 10
+              @bitrate = (@streamsize / bitrate) >> 10
             end
           end
         end
@@ -405,13 +395,30 @@ class Mp3Info
 
   # inspect inside Mp3Info
   def to_s
-    s = "MPEG #{@mpeg_version} Layer #{@layer} #{@vbr ? "VBR" : "CBR"} #{@bitrate} Kbps #{@channel_mode} #{@samplerate} Hz length #{@length} sec. error protection #{@error_protection} "
-    s << "tag1: "+@tag1.inspect+"\n" if @hastag1
+    s = "MPEG #{mpeg_version} Layer #{layer} #{@vbr ? "VBR" : "CBR"} #{bitrate} Kbps #{channel_mode} #{samplerate} Hz length #{@length} sec. error protection #{error_protection}"
+    s << " tag1: "+@tag1.inspect+"\n" if @hastag1
     s << "tag2 (v#{@tag2.version}): "+@tag2.inspect+"\n" if @tag2.valid?
     s
   end
 
  private
+
+  def parse_mpeg_header
+    found = false
+    header = nil
+    
+    5.times do
+      header = MPEGHeader.new(find_next_frame.to_binary_string)
+      next unless header.valid?
+      
+      found = true
+      break
+    end
+    
+    raise(Mp3InfoError, "Cannot find good frame in #{filename}") unless found
+    
+    header
+  end
   
   ### parses the id3 tags of the currently open @file
   def parse_tags
