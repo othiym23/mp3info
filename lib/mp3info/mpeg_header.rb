@@ -6,11 +6,12 @@ end
 
 # MPEG headers can be altered with this class, but mostly for testing purposes
 class MPEGHeader
-  EMPHASIS_NONE                 = "None"
+  EMPHASIS_NONE                 = "none"
   EMPHASIS_5015                 = "50/15 ms"
+  EMPHASIS_RESERVED             = "RESERVED"
   EMPHASIS_CCIT                 = "CCIT J.17"
   
-  @@emphasis_list = [ EMPHASIS_NONE, EMPHASIS_5015, EMPHASIS_CCIT ]
+  @@emphasis_list = [ EMPHASIS_NONE, EMPHASIS_5015, EMPHASIS_RESERVED, EMPHASIS_CCIT ]
 
   MODE_STEREO                   = 'Stereo'
   MODE_JOINT_STEREO             = 'Joint stereo'
@@ -191,9 +192,10 @@ class MPEGHeader
   end
   
   def mode_extension
-    if 1 == layer or 2 == layer
+    case layer
+    when 1..2
       extension_flags = @@mode_extension_list[@mode_extension]
-    elsif 3 == layer
+    when 3
       extension_flags = (@mode_extension & 0x1) != 0 ? MODE_EXTENSION_INTENSITY : 0
       extension_flags |= MODE_EXTENSION_M_S_STEREO if (@mode_extension & 0x2) != 0
     else
@@ -220,10 +222,10 @@ class MPEGHeader
     # see above, but all sync bits must be set to 1
     return false if @sync & 0xffe0 != 0xffe0
     
-    # version of 1 is reserved (probably to minimize possibility of confusing sync bitstreams)
+    # version type of 0x1 is reserved (probably to minimize possibility of confusing sync bitstreams)
     return false if 1 == @version
     
-    # layer of 1 is reserved
+    # layer type of 0x0 is reserved
     return false if 0 == @layer
     
     # bitrate code of 0 indicates a bitrate of 0, which makes no sense
@@ -245,6 +247,9 @@ class MPEGHeader
         return false
       end
     end
+    
+    # emphasis type of 0x2 is reserved
+    return false if 0x2 == @emphasis
     
     return true
   end

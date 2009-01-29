@@ -850,6 +850,26 @@ describe MPEGHeader, "parsing a variety of invalid MPEG headers" do
     MPEGHeader.new(invalid_header_array.to_binary_string).mode.should == MPEGHeader::MODE_MONO
     MPEGHeader.new(invalid_header_array.to_binary_string).valid?.should == false
   end
+  
+  it "should detect that an MPEG 1.0 Layer III file can't have an emphasis of type RESERVED" do
+    invalid_header_array =
+      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
+        1, 1,                             # version: 1.0
+        0, 1,                             # layer: 3
+        1,                                # protected: has no CRC
+        1, 0, 0, 1,                       # CBR bitrate: 128kbps
+        0, 0,                             # sample frequency: 44.1KHz
+        0,                                # padding: unpadded
+        0,                                # private: not set
+        0, 1,                             # channel mode: joint stereo
+        1, 0,                             # channel mode extension: intensity off, MS on
+        0,                                # copyrighted: no
+        1,                                # original: yes
+        1, 0                              # emphasis: reserved
+        ]
+    MPEGHeader.new(invalid_header_array.to_binary_string).emphasis.should == MPEGHeader::EMPHASIS_RESERVED
+    MPEGHeader.new(invalid_header_array.to_binary_string).valid?.should == false
+  end
 end
 
 describe MPEGHeader, "parsing a valid sample MPEG header" do
@@ -905,7 +925,7 @@ describe MPEGHeader, "parsing a valid sample MPEG header" do
   end
   
   it "should detect that sample header comes from a frame with no emphasis" do
-    @sample_header.emphasis.should == 'None'
+    @sample_header.emphasis.should == 'none'
   end
   
   it "should detect that sample header comes from a frame with a channel mode of 'Joint stereo'" do
@@ -933,7 +953,7 @@ describe MPEGHeader, "parsing a valid sample MPEG header" do
   end
 end
 
-describe MPEGHeader, "detecting valid but unusual conditions in headers" do
+describe MPEGHeader, "with valid but unusual headers" do
   it "should detect CBR without errors for MPEG 2.5, layer 3 files" do
     valid_header_array =
       [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
