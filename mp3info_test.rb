@@ -116,14 +116,15 @@ EOF
   
   def test_detected_info
     Mp3Info.open(TEMP_FILE) do |info|
-      assert_equal(info.mpeg_version, 1)
-      assert_equal(info.layer, 3)
-      assert_equal(info.vbr, false)
-      assert_equal(info.bitrate, 128)
-      assert_equal(info.channel_mode, "JStereo")
-      assert_equal(info.samplerate, 44100)
-      assert_equal(info.error_protection, false)
-      assert_equal(info.length, 0.1305625)
+      assert_equal(1, info.mpeg_version)
+      assert_equal(3, info.layer)
+      assert_equal(false, info.vbr)
+      assert_equal(128, info.bitrate)
+      assert_equal("Joint stereo", info.channel_mode)
+      assert_equal(44_100, info.samplerate, 44100)
+      assert_equal(false, info.error_protection)
+      assert_equal(0.1305625, info.length)
+      assert_equal("MPEG 1.0 Layer 3 CBR 128 Kbps Joint stereo 44100 Hz length 0.1305625 sec. error protection false", info.to_s)
     end
   end
 
