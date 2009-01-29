@@ -2,6 +2,10 @@
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Website:: http://ruby-mp3info.rubyforge.org/
+script_path = __FILE__
+script_path = File.readlink(script_path) if File.symlink?(script_path)
+
+$: << File.join(File.dirname(script_path), '../lib')
 
 require "delegate"
 require "fileutils"
@@ -335,7 +339,7 @@ class Mp3Info
       puts "@tag1 has changed" if $DEBUG
       raise(Mp3InfoError, "file is not writable") unless File.writable?(@filename)
       @tag1_orig.update(@tag1)
-      #puts "@tag1_orig: #{@tag1_orig.inspect}"
+      puts "@tag1_orig: #{@tag1_orig.inspect}" if $DEBUG
       File.open(@filename, 'rb+') do |file|
         file.seek(-TAGSIZE, File::SEEK_END)
         t = file.read(3)
@@ -368,13 +372,6 @@ class Mp3Info
         if @tag2.valid?
           file.seek(@tag2.io_position)
         end
-  #      if @file.read(3) == "ID3"
-  #        version_maj, version_min, flags = @file.read(3).unpack("CCB4")
-  #        unsync, ext_header, experimental, footer = (0..3).collect { |i| flags[i].chr == '1' }
-  #     tag2_len = @file.get_syncsafe
-  #        @file.seek(@file.get_syncsafe - 4, IO::SEEK_CUR) if ext_header
-  #     @file.seek(tag2_len, IO::SEEK_CUR)
-  #      end
         tempfile_name = @filename + ".tmp"
         File.open(tempfile_name, "wb") do |tempfile|
           unless @tag2.empty?
@@ -396,8 +393,8 @@ class Mp3Info
   # inspect inside Mp3Info
   def to_s
     s = "MPEG #{mpeg_version} Layer #{layer} #{@vbr ? "VBR" : "CBR"} #{bitrate} Kbps #{channel_mode} #{samplerate} Hz length #{@length} sec. error protection #{error_protection}"
-    s << " tag1: "+@tag1.inspect+"\n" if @hastag1
-    s << "tag2 (v#{@tag2.version}): "+@tag2.inspect+"\n" if @tag2.valid?
+    s << " tag1: " + @tag1.inspect if @hastag1
+    s << " tag2 (v#{@tag2.version}): "+@tag2.inspect+"\n" if @tag2.valid?
     s
   end
 
@@ -454,7 +451,6 @@ class Mp3Info
       s << c if c >= 32 and c < 254
     end
     return s.strip
-    #return (s[0..2] == "eng" ? s[3..-1] : s)
   end
   
   ### gets id3v1 tag information from @file
@@ -471,7 +467,6 @@ class Mp3Info
       @tag1["tracknum"] = comments[-1].to_i
       comments.chop! #remove the last char
     end
-    #@tag1["comments"] = comments.sub!(/\0.*$/, '')
     @tag1["comments"] = comments.strip
     @tag1["genre"] = @file.getc
     @tag1["genre_s"] = GENRES[@tag1["genre"]] || ""
@@ -522,8 +517,6 @@ if $0 == __FILE__
     begin
       info = Mp3Info.new(filename)
       puts filename
-      #puts "MPEG #{info.mpeg_version} Layer #{info.layer} #{info.vbr ? "VBR" : "CBR"} #{info.bitrate} Kbps \
-      #{info.channel_mode} #{info.samplerate} Hz length #{info.length} sec."
       puts info
     rescue Mp3InfoError => e
       puts "#{filename}\nERROR: #{e}"
