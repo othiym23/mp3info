@@ -1,6 +1,7 @@
-# $Id: mp3info.rb,v 8304983d10ad 2009/01/29 22:20:51 ogd $
+# $Id: mp3info.rb,v 5f4a7bfc3126 2009/02/01 02:07:13 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
+# Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Website:: http://ruby-mp3info.rubyforge.org/
 script_path = __FILE__
 script_path = File.readlink(script_path) if File.symlink?(script_path)
@@ -23,7 +24,10 @@ end
 
 class Mp3Info
   VERSION = "0.6"
-
+  
+  ID3_V_1_0 = "ID3v1.0"
+  ID3_V_1_1 = "ID3v1.1"
+  
   GENRES = [
     "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk",
     "Grunge", "Hip-Hop", "Jazz", "Metal", "New Age", "Oldies",
@@ -285,9 +289,11 @@ class Mp3Info
   # Remove id3v1 from mp3
   def removetag1
     if hastag1?
-      newsize = @file.stat.size(filename) - TAGSIZE
-      @file.truncate(newsize)
+      newsize = File.size(@filename) - TAGSIZE
+      File.truncate(@filename, newsize)
+      @hastag1 = false
       @tag1.clear
+      @tag1_orig.clear
     end
     self
   end
@@ -450,14 +456,14 @@ class Mp3Info
     gettag1 if f3 == "TAG"  # v1 tag at beginning
     @tag2.from_io(@file) if f3 == "ID3"  # v2 tag at beginning
       
-    unless @hastag1         # v1 tag at end
-        # this preserves the file pos if tag2 found, since gettag2 leaves
-        #  the file at the best guess as to the first MPEG frame
-        pos = (@tag2.valid? ? @file.pos : 0)
-        # seek to where id3v1 tag should be
-        @file.seek(-TAGSIZE, IO::SEEK_END) 
-        gettag1 if @file.read(3) == "TAG"
-        @file.seek(pos)
+    unless @hastag1 # v1 tag at end
+      # this preserves the file pos if tag2 found, since gettag2 leaves
+      #  the file at the best guess as to the first MPEG frame
+      pos = (@tag2.valid? ? @file.pos : 0)
+      # seek to where id3v1 tag should be
+      @file.seek(-TAGSIZE, IO::SEEK_END) 
+      gettag1 if @file.read(3) == "TAG"
+      @file.seek(pos)
     end
     
     pos
@@ -494,7 +500,7 @@ class Mp3Info
     end
     @tag1["comments"] = comments.strip
     @tag1["genre"] = @file.getc
-    @tag1["genre_s"] = GENRES[@tag1["genre"]] || ""
+    @tag1["genre_s"] = GENRES[@tag1["genre"]] || "Unknown" # as per spec
   end
 
   ### reads through @file from current pos until it finds a valid MPEG header
