@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 5f4a7bfc3126 2009/02/01 02:07:13 ogd $
+# $Id: mp3info.rb,v 2306745f384d 2009/02/01 02:27:04 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
@@ -494,10 +494,15 @@ class Mp3Info
     year_t = read_id3_string(4).to_i
     @tag1["year"] = year_t unless year_t == 0
     comments = @file.read(30)
+
     if comments[-2] == 0
+      @tag1['version'] = ID3_V_1_1
       @tag1["tracknum"] = comments[-1].to_i
       comments.chop! #remove the last char
+    else
+      @tag1['version'] = ID3_V_1_0
     end
+
     @tag1["comments"] = comments.strip
     @tag1["genre"] = @file.getc
     @tag1["genre_s"] = GENRES[@tag1["genre"]] || "Unknown" # as per spec
