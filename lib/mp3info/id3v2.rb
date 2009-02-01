@@ -120,7 +120,7 @@ class ID3v2 < DelegateClass(Hash)
 
   # create an ID3v2 frame from a raw binary string
   def decode_tag(name, value)
-    puts "decode_tag(#{name},...value...(size=#{value.size}))" if $DEBUG
+    puts "ID3v2.decode_tag(name='#{name}',value.size=#{value.size})" if $DEBUG
     ID3V24::Frame.create_frame_from_string(name, value)
   end
 

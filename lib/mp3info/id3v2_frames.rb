@@ -27,20 +27,24 @@ module ID3V24
     end
     
     def self.create_frame_from_string(type, value)
-      puts "ID3V24.create_frame_from_string(#{type},...value...(size=#{value.size}))" if $DEBUG
       klass = find_class(type)
-
+      puts "ID3V24.create_frame_from_string(type='#{type}',value.size=#{value.size}) =>..."
+      
       if klass
+        puts "...klass='#{klass}'" if $DEBUG
         klass.from_s(value)
       else
         # all the 'T###' frames contain encoded text, all the
         # 'W###' frames contain URIs
         case type[0,1]
         when 'T'
+          puts "...klass='ID3V24::TextFrame'" if $DEBUG
           TextFrame.from_s(value, type)
         when 'W'
+          puts "...klass='ID3V24::LinkFrame'" if $DEBUG
           LinkFrame.from_s(value, type)
         else
+          puts "...klass='ID3V24::Frame'" if $DEBUG
           Frame.from_s(value, type)
         end
       end
@@ -131,16 +135,15 @@ module ID3V24
     protected
     
     def self.decode_value(encoding, value)
-      $stderr.puts("value is '#{value}' before conversion\n") if $DEBUG
       case encoding
       when ENCODING[:iso]
-        Iconv.iconv("UTF-8", "ISO-8859-1", value)[0].chomp(0.chr)
+        Iconv.iconv("UTF-8", "ISO-8859-1", value)[0].chomp("\x00")
       when ENCODING[:utf16]
-        Iconv.iconv("UTF-8", "UTF-16", value)[0].chomp(0.chr).chomp(0.chr)
+        Iconv.iconv("UTF-8", "UTF-16", value)[0].chomp("\x00")
       when ENCODING[:utf16be]
-        Iconv.iconv("UTF-8", "UTF-16BE", value)[0].chomp(0.chr).chomp(0.chr)
+        Iconv.iconv("UTF-8", "UTF-16BE", value)[0].chomp("\x00")
       when ENCODING[:utf8]
-        value.chomp(0.chr) if value
+        value.chomp("\x00")
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{value}")
       end
@@ -161,6 +164,27 @@ module ID3V24
           raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{value}")
         end
       end
+    end
+    
+    def self.split_encoded(encoding, string)
+      # The ID3v2 spec makes life difficult by using nulls as delimiters in a
+      # string itself containing two Unicode strings, so code has to match on
+      # the byte-order marks to find the delimiter.
+      case encoding
+      when ENCODING[:iso], ENCODING[:utf8]
+        prefix, remainder = string.split("\x00", 2)
+      when ENCODING[:utf16], ENCODING[:utf16be]
+        prefix, remainder = string.split(/\x00\x00/, 2);
+        if (prefix.size % 2) != 0
+          prefix, remainder = string.split(/\x00\x00\x00/, 2)
+          prefix += "\x00"
+        end
+      else
+        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
+      end
+      
+      puts "ID3V24::TextFrame.split_encoded(encoding=#{encoding},string.size=#{string.size}) => [prefix='#{prefix}',remainder.size=#{remainder.size}]" if $DEBUG
+      [prefix, remainder]
     end
   end
   
@@ -223,22 +247,7 @@ module ID3V24
     protected
     
     def self.split_descr(encoding, string)
-      # The ID3v2 spec makes life difficult by using nulls as delimiters in a
-      # string itself containing two Unicode strings, so code has to match on
-      # the byte-order marks to find the delimiter.
-      case encoding
-      when ENCODING[:iso], ENCODING[:utf8]
-        descr, entry = string.split("\x00", 2)
-      when ENCODING[:utf16], ENCODING[:utf16be]
-        descr, entry = string.split(/\x00\x00/, 2);
-        if (descr.size % 2) != 0
-          descr, entry = string.split(/\x00\x00\x00/, 2)
-          descr += "\x00"
-        end
-      else
-        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
-      end
-      
+      descr, entry = split_encoded(encoding, string)
       [decode_value(encoding, descr), decode_value(encoding, entry)]
     end
   end
@@ -282,20 +291,7 @@ module ID3V24
     protected
     
     def self.split_descr(encoding, string)
-      case encoding
-      when ENCODING[:iso], ENCODING[:utf8]
-        descr, entry = string.split("\x00", 2)
-      when ENCODING[:utf16], ENCODING[:utf16be]
-        descr, entry = string.split(/\x00\x00/, 2);
-        if (descr.size % 2) != 0
-          descr, entry = string.split(/\x00\x00\x00/, 2)
-          descr += "\x00"
-        end
-      else
-        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
-      end
-      puts "matches #{matches.inspect}" if $DEBUG
-      
+      descr, entry = split_encoded(encoding, string)
       [decode_value(encoding, descr), entry]
     end
   end
@@ -389,25 +385,7 @@ module ID3V24
     def self.split_picture_components(encoding, string)
       mime_type, remainder = string.split("\x00", 2)
       picture_type, raw_content = remainder.unpack("aa*")
-      
-      puts "APICFrame.split_picture_components(#{encoding},...string...(size=#{string.size}))" if $DEBUG
-      puts "APICFrame.split_picture_components: mime_type #{mime_type} picture_type #{picture_type} raw_content size #{raw_content.size}" if $DEBUG
-      
-      case encoding
-      when ENCODING[:iso], ENCODING[:utf8]
-        descr, entry = raw_content.split("\x00", 2)
-      when ENCODING[:utf16], ENCODING[:utf16be]
-        descr, entry = raw_content.split(/\x00\x00/, 2);
-        if (descr.size % 2) != 0
-          descr, entry = raw_content.split(/\x00\x00\x00/, 2)
-          descr += "\x00"
-        end
-      else
-        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
-      end
-      
-      puts "APICFrame.split_picture_components raw_content_0 #{raw_content[0]} raw_content_1 #{raw_content[1].size}" if $DEBUG
-      puts "APICFrame.split_picture_components raw descr #{descr} entry size #{entry.size}" if $DEBUG
+      descr, entry = split_encoded(encoding, raw_content)
       
       [mime_type, picture_type, TextFrame.decode_value(encoding, descr), entry]
     end
@@ -418,19 +396,7 @@ module ID3V24
     
     def self.split_picture_components(encoding, string)
       mime_type, picture_type, raw_content = string.unpack("3aaa*")
-  
-      case encoding
-      when ENCODING[:iso], ENCODING[:utf8]
-        descr, entry = raw_content.split("\x00", 2)
-      when ENCODING[:utf16], ENCODING[:utf16be]
-        descr, entry = raw_content.split(/\x00\x00/, 2);
-        if (descr.size % 2) != 0
-          descr, entry = raw_content.split(/\x00\x00\x00/, 2)
-          descr += "\x00"
-        end
-      else
-        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
-      end
+      descr, entry = split_encoded(encoding, raw_content)
       
       [mime_type, picture_type, TextFrame.decode_value(encoding, descr), entry]
     end
@@ -463,10 +429,8 @@ module ID3V24
     end
   
     def self.from_s(value)
-      puts "raw value of COMM frame is #{value.inspect}" if $DEBUG
-      encoding, lang, str = value.unpack("ca3a*")
-      puts "encoding #{encoding} lang #{lang} str #{str.inspect}" if $DEBUG
-      descr, entry = split_descr(encoding, str)
+      encoding, lang, raw_content = value.unpack("ca3a*")
+      descr, entry = split_descr(encoding, raw_content)
       COMMFrame.new(encoding, lang, descr, entry)
     end
   
