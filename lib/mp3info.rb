@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 2c489926fe4d 2009/02/01 02:28:58 ogd $
+# $Id: mp3info.rb,v 6e10dc725368 2009/02/01 06:37:06 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
@@ -25,7 +25,7 @@ end
 class Mp3Info
   VERSION = "0.6"
   
-  ID3_V_1_0 = "ID3v1"
+  ID3_V_1_0 = "ID3"
   ID3_V_1_1 = "ID3v1.1"
   
   GENRES = [
@@ -493,21 +493,23 @@ class Mp3Info
     @tag1["album"] = read_id3_string(30)
     year_t = read_id3_string(4).to_i
     @tag1["year"] = year_t unless year_t == 0
+    
+    # the sole difference between ID3v1.1 and ID3v1 is that the former has the
+    # track number tucked in as an unsigned byte at the end of the comments field
     comments = @file.read(30)
-
-    if comments[-2] == 0
+    if comments[-2] == 0 && comments[-1] > 0
       @tag1['version'] = ID3_V_1_1
       @tag1["tracknum"] = comments[-1].to_i
       comments.chop! #remove the last char
     else
       @tag1['version'] = ID3_V_1_0
     end
-
     @tag1["comments"] = comments.strip
+    
     @tag1["genre"] = @file.getc
     @tag1["genre_s"] = GENRES[@tag1["genre"]] || "Unknown" # as per spec
   end
-
+  
   ### reads through @file from current pos until it finds a valid MPEG header
   ### returns the MPEG header as FixNum
   def find_next_frame
