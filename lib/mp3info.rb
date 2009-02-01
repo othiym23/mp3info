@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 2306745f384d 2009/02/01 02:27:04 ogd $
+# $Id: mp3info.rb,v 2c489926fe4d 2009/02/01 02:28:58 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
@@ -25,7 +25,7 @@ end
 class Mp3Info
   VERSION = "0.6"
   
-  ID3_V_1_0 = "ID3v1.0"
+  ID3_V_1_0 = "ID3v1"
   ID3_V_1_1 = "ID3v1.1"
   
   GENRES = [
@@ -40,7 +40,7 @@ class Mp3Info
     "Ethnic", "Gothic", "Darkwave", "Techno-Industrial", "Electronic", "Pop-Folk",
     "Eurodance", "Dream", "Southern Rock", "Comedy", "Cult", "Gangsta",
     "Top 40", "Christian Rap", "Pop/Funk", "Jungle", "Native American", "Cabaret",
-    "New Wave", "Psychadelic", "Rave", "Showtunes", "Trailer", "Lo-Fi",
+    "New Wave", "Psychedelic", "Rave", "Showtunes", "Trailer", "Lo-Fi",
     "Tribal", "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical",
     "Rock & Roll", "Hard Rock", "Folk", "Folk/Rock", "National Folk", "Swing",
     "Fast-Fusion", "Bebob", "Latin", "Revival", "Celtic", "Bluegrass", "Avantgarde",
