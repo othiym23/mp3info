@@ -1,7 +1,7 @@
 $:.unshift("lib/")
 
-require 'mp3info/mpeg_utils'
-require 'mp3info/mpeg_header'
+require 'base64'
+require 'mp3info'
 
 module MPEGUtils
   describe String, "when decoding strings into binary arrays" do
@@ -1102,5 +1102,1186 @@ describe MPEGHeader, "with valid but unusual headers" do
     # mode extension not supported by eyeD3
     (MPEGHeader.new(valid_header_array.to_binary_string).mode_extension & 
      MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31).should == MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31
+  end
+end
+
+module Mp3InfoHelper
+  TEST_TITLE        = "No Backrub"
+  TEST_ARTIST       = "Bikini Kill"
+  TEST_ALBUM        = "Reject All American"
+  TEST_YEAR         = "1996"
+  TEST_COMMENT      = "Feminism ruelz!"
+  TEST_TRACK_NUMBER = 7
+  TEST_GENRE_ID     = 43
+  # ID3v1 genre ID 43 -> Punk
+  TEST_GENRE_NAME   = "Punk"
+  
+  # not in the ID3v1 list of genres or the WinAmp extension list
+  INVALID_GENRE_ID  = 253
+  
+  def get_valid_mp3
+        # Command to create a dummy MP3
+        # dd if=/dev/zero bs=1024 count=15 | lame --preset cbr 128 -r -s 44.1 --bitwidth 16 - - | ruby -rbase64 -e 'print Base64.encode64($stdin.read)'
+    Base64.decode64 <<EOF
+//uQZAAAAAAAaQYAAAAAAA0gwAAAAAABpBwAAAAAADSDgAAATEFNRTMuOTNV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuOTNVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVV//uSZL6P8AAAaQAAAAAAAA0gAAAAAAABpAAAAAAAADSA
+AAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjkzVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kmT/j/AAAGkAAAAAAAANIAAA
+AAAAAaQAAAAAAAA0gAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVM
+QU1FMy45M1VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+5Jk/4/w
+AABpAAAAAAAADSAAAAAAAAGkAAAAAAAANIAAAABVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVTEFNRTMuOTNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVV//uSZP+P8AAAaQAAAAAAAA0gAAAAAAABpAAAAAAAADSAAAAAVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+VVVVVVVVVVVVVVVVVVVVVVVVVQ==
+EOF
+  end
+  
+  def create_sample_mp3_file(filename)
+    File.open(filename, "w") { |f| f.write(get_valid_mp3) }
+  end
+  
+  def sample_id3v1_0_attrs
+    [ TEST_TITLE,
+      TEST_ARTIST,
+      TEST_ALBUM,
+      TEST_YEAR,
+      TEST_COMMENT,
+      TEST_GENRE_ID ]
+  end
+  
+  def sample_id3v1_1_attrs
+    [ TEST_TITLE,
+      TEST_ARTIST,
+      TEST_ALBUM,
+      TEST_YEAR,
+      TEST_COMMENT,
+      TEST_TRACK_NUMBER,
+      TEST_GENRE_ID ]
+  end
+  
+  def sample_id3v1_tag
+    { "title"    => TEST_TITLE,
+      "artist"   => TEST_ARTIST,
+      "album"    => TEST_ALBUM,
+      "year"     => TEST_YEAR,
+      "comments" => TEST_COMMENT,
+      "genre"    => TEST_GENRE_ID,
+      "genre_s"  => TEST_GENRE_NAME,
+      "tracknum" => TEST_TRACK_NUMBER }
+  end
+  
+  def sample_id3v2_tag
+    { "COMM" => ID3V24::Frame.create_frame("COMM", TEST_COMMENT),
+      "TCON" => ID3V24::Frame.create_frame("TCON", TEST_GENRE_NAME),
+      "TIT2" => ID3V24::Frame.create_frame("TIT2", TEST_TITLE),
+      "TPE1" => ID3V24::Frame.create_frame("TPE1", TEST_ARTIST),
+      "TALB" => ID3V24::Frame.create_frame("TALB", TEST_ALBUM),
+      "TYER" => ID3V24::Frame.create_frame("TYER", TEST_YEAR),
+      "TRCK" => ID3V24::Frame.create_frame("TRCK", "#{TEST_TRACK_NUMBER}/12") }
+  end
+  
+  def random_string(size)
+    out = ""
+    size.times { out << rand(256).chr }
+    out
+  end
+  
+  def create_valid_id3_1_0_file(filename)
+    File.open(filename, "w") do |f|
+      f.write(get_valid_mp3)
+      # brutally low-level means of writing an ID3 tag on its own
+      f.write("TAG#{sample_id3v1_0_attrs.pack('A30A30A30A4A30C')}")
+    end
+  end
+  
+  def create_valid_id3_1_1_file(filename)
+    File.open(filename, "w") do |f|
+      f.write(get_valid_mp3)
+      # brutally low-level means of writing an ID3v1.1 tag on its own
+      f.write("TAG#{sample_id3v1_1_attrs.pack('A30A30A30A4a29CC')}")
+    end
+  end
+  
+  def update_id3_2_tag(filename, tag)
+    Mp3Info.open(filename) do |mp3|
+      mp3.tag2.update(tag)
+    end
+    
+    Mp3Info.open(filename) { |m| m.tag2 }
+  end
+  
+  def test_against_id3v2_prog(written_tag)
+    return if PLATFORM =~ /win32/
+    return if `which id3v2`.empty?
+    
+    start = false
+    id3v2_output = {}
+    `id3v2 -l #{@mp3_filename}`.each do |line|
+      if line =~ /^id3v2 tag info/
+        start = true
+        next
+      end
+      next unless start
+      k, v = /^(.{4}) \(.+\): (.+)$/.match(line)[1,2]
+      
+      #COMM (Comments): ()[spa]: fmg
+      v.sub!(/\(\)\[.{3}\]: (.+)/, '\1') if k == "COMM"
+      
+      id3v2_output[k] = v
+    end
+    
+    id3v2_output
+  end
+  
+  def prettify_tag(tag)
+    prettified_tag = {}
+    
+    tag.each do |key,value|
+      prettified_tag[key] = value.to_s_pretty
+    end
+    
+    prettified_tag
+  end
+end
+
+describe Mp3Info, "when loading an invalid MP3 file" do
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should recognize when it's passed total garbage" do
+    File.open(@mp3_filename, "w") do |f|
+      str = "0" * 32 * 1024
+      f.write(str)
+    end
+
+    lambda { Mp3Info.new(@mp3_filename) }.should raise_error(Mp3InfoError, "cannot find a valid frame after reading 32768 bytes from #{@mp3_filename}")
+  end
+end
+
+describe Mp3Info, "when loading a sample MP3 file" do
+  include Mp3InfoHelper
+
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should load a valid MP3 file without errors" do
+    lambda { Mp3Info.new(@mp3_filename).close }.should_not raise_error(Mp3InfoError)
+  end
+  
+  it "should successfully provide an Mp3Info object when opening a valid MP3 file" do
+    Mp3Info.open(@mp3_filename) { |info| info.should be_a(Mp3Info) }
+  end
+  
+  it "should return a string description when opening a valid MP3 file" do
+    Mp3Info.open(@mp3_filename) { |info| info.to_s.should be_a(String) }
+  end
+  
+  it "should detect that the sample file contains MPEG 1 audio" do
+    Mp3Info.open(@mp3_filename) { |info| info.mpeg_version.should == 1 }
+  end
+  
+  it "should detect that the sample file contains layer 3 audio" do
+    Mp3Info.open(@mp3_filename) { |info| info.layer.should == 3 }
+  end
+  
+  it "should detect that the sample file does not contain VBR-encoded audio" do
+    Mp3Info.open(@mp3_filename) { |info| info.vbr.should_not be_true }
+  end
+  
+  it "should detect that the sample file has a CBR bitrate of 128kbps" do
+    Mp3Info.open(@mp3_filename) { |info| info.bitrate.should == 128 }
+  end
+  
+  it "should detect that the sample file is encoded as joint stereo" do
+    Mp3Info.open(@mp3_filename) { |info| info.channel_mode.should == "Joint stereo" }
+  end
+  
+  it "should detect that the sample file has a sample rate of 44.1kHz" do
+    Mp3Info.open(@mp3_filename) { |info| info.samplerate.should == 44_100 }
+  end
+  
+  it "should detect that the sample file is not error-protected" do
+    Mp3Info.open(@mp3_filename) { |info| info.error_protection.should be_false }
+  end
+  
+  it "should detect that the sample file has a duration of 0.1305625 seconds" do
+    Mp3Info.open(@mp3_filename) { |info| info.length.should == 0.1305625 }
+  end
+  
+  it "should correctly format the summary info for the sample file" do
+    Mp3Info.open(@mp3_filename) { |info| info.to_s.should == "Time: 0:00        MPEG1.0 Layer 3           [ 128kbps @ 44.1kHz - Joint stereo ]" }
+  end
+end
+
+describe Mp3Info, 'when working with its "universal" tag' do
+  include Mp3InfoHelper
+  
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+  end
+  
+  it "should be able to repeatably update the universal tag without corrupting it" do
+    5.times do
+      tag = {"title" => Mp3InfoHelper::TEST_TITLE}
+      Mp3Info.open(@mp3_filename) do |mp3|
+        tag.each { |k,v| mp3.tag[k] = v }
+      end
+      
+      Mp3Info.open(@mp3_filename) { |m| m.tag }.should == tag
+    end
+  end
+  
+  it "should be able to store and retrieve shared information backed by an ID3v2 tag" do
+    tag = {}
+    %w{comments title artist album}.each { |k| tag[k] = k }
+    tag["tracknum"] = 34
+    
+    Mp3Info.open(@mp3_filename) do |mp3|
+      tag.each { |k,v| mp3.tag[k] = v }
+    end
+    
+    w = Mp3Info.open(@mp3_filename) { |m| m.tag }
+    w.delete("genre")
+    w.delete("genre_s")
+    w.should == tag
+  end
+end
+
+describe Mp3Info, "when working with ID3v1 tags" do
+  include Mp3InfoHelper
+
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should be able to add the tag without error" do
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error(Mp3InfoError)
+    Mp3Info.hastag1?(@mp3_filename).should be_true
+  end
+  
+  it "should be able to add and remove the tag without error" do
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error(Mp3InfoError)
+    Mp3Info.hastag1?(@mp3_filename).should be_true
+    lambda { Mp3Info.removetag1(@mp3_filename) }.should_not raise_error(Mp3InfoError)
+    Mp3Info.hastag1?(@mp3_filename).should be_false
+  end
+
+  it "should be able to add a tag and then remove it from within the open() block" do
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error(Mp3InfoError)
+    Mp3Info.hastag1?(@mp3_filename).should be_true
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.removetag1 } }.should_not raise_error(IOError, "closed stream")
+    Mp3Info.hastag1?(@mp3_filename).should be_false
+  end
+  
+  it "should be able to add and then find a ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.hastag1?(@mp3_filename).should be_true
+  end
+  
+  it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1.version.should == Mp3Info::ID3_V_1_0
+  end
+  
+  it "should be able to find the title from a ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['title'].should == Mp3InfoHelper::TEST_TITLE
+  end
+  
+  it "should be able to find the artist in an ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['artist'].should == Mp3InfoHelper::TEST_ARTIST
+  end
+  
+  it "should be able to find the album in an ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['album'].should == Mp3InfoHelper::TEST_ALBUM
+  end
+  
+  it "should be able to find the comments in an ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['comments'].should == Mp3InfoHelper::TEST_COMMENT
+  end
+  
+  it "should be able to find the genre ID in an ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['genre'].should == Mp3InfoHelper::TEST_GENRE_ID
+  end
+  
+  it "should be able to find the genre name in an ID3v1.0 tag" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['genre_s'].should == Mp3InfoHelper::TEST_GENRE_NAME
+  end
+  
+  it "should not be able to find the track number in an ID3v1.0 tag, because the tag doesn't contain it" do
+    create_valid_id3_1_0_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['tracknum'].should == nil
+  end
+  
+  it "should be able to add and then find an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.hastag1?(@mp3_filename).should be_true
+  end
+  
+  it "should correctly identify the tag as ID3v1.1 and not ID3v1.0" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1.version.should == Mp3Info::ID3_V_1_1
+  end
+  
+  it "should be able to find the title in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['title'].should == Mp3InfoHelper::TEST_TITLE
+  end
+  
+  it "should be able to find the artist in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['artist'].should == Mp3InfoHelper::TEST_ARTIST
+  end
+  
+  it "should be able to find the album in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['album'].should == Mp3InfoHelper::TEST_ALBUM
+  end
+  
+  it "should be able to find the comments in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['comments'].should == Mp3InfoHelper::TEST_COMMENT
+  end
+  
+  it "should be able to find the genre ID in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['genre'].should == Mp3InfoHelper::TEST_GENRE_ID
+  end
+  
+  it "should be able to find the genre name in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['genre_s'].should == Mp3InfoHelper::TEST_GENRE_NAME
+  end
+  
+  it "should be able to find the track number in an ID3v1.1 tag" do
+    create_valid_id3_1_1_file(@mp3_filename)
+    
+    Mp3Info.new(@mp3_filename).tag1['tracknum'].should == Mp3InfoHelper::TEST_TRACK_NUMBER
+  end
+  
+  it "should correctly name an invalid genre ID 'Unknown'" do
+    tag = sample_id3v1_tag
+    tag['genre'] = Mp3InfoHelper::INVALID_GENRE_ID
+    
+    Mp3Info.open(@mp3_filename) { |info| info.tag1 = tag }
+    Mp3Info.new(@mp3_filename).tag1['genre_s'].should == "Unknown"
+  end
+end
+
+describe Mp3Info, "when working with ID3v2 tags" do
+  include Mp3InfoHelper
+  
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @trivial_id3v2_tag = {"TIT2" => ID3V24::Frame.create_frame('TIT2', "sdfqdsf")}
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should be able to add the tag without error" do
+    finish_tag = {}
+    lambda { finish_tag = update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag) }.should_not raise_error(Mp3InfoError)
+    finish_tag.should == @trivial_id3v2_tag
+  end
+  
+  it "should be able to add and remove the tag without error" do
+    update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag)
+    
+    Mp3Info.hastag2?(@mp3_filename).should be_true
+    Mp3Info.removetag2(@mp3_filename)
+    Mp3Info.hastag2?(@mp3_filename).should be_false
+  end
+  
+  it "should be able to add the tag and then remove it from within the open() block" do
+    update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag)
+    
+    Mp3Info.hastag2?(@mp3_filename).should be_true
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.removetag2 } }.should_not raise_error(Mp3InfoError)
+    Mp3Info.hastag2?(@mp3_filename).should be_false
+  end
+  
+  it "should be able to discover the version of the ID3v2 tag written to disk" do
+    update_id3_2_tag(@mp3_filename, sample_id3v2_tag).version.should == "2.4.0"
+  end
+  
+  it "should be able to treat each ID3v2 frame as a directly-accessible attribute of the tag" do
+    tag = {
+      "TIT2" => ID3V24::Frame.create_frame("TIT2", "tit2"),
+      "TPE1" => ID3V24::Frame.create_frame("TPE1", "tpe1")
+      }
+    
+    Mp3Info.open(@mp3_filename) do |mp3|
+      tag.each do |k, v|
+        mp3.tag2.send("#{k}=".to_sym, v)
+      end
+      
+      mp3.tag2.should == tag
+    end
+  end
+  
+  # test the tag with the "id3v2" program -- you'll need a version of id3lib
+  # that's been patched to work with ID3v2 2.4.0 tags, which probably means
+  # a version of id3lib above 3.8.3
+  it "should produce results equivalent to those produced by the id3v2 utility" do
+    written_tag = update_id3_2_tag(@mp3_filename, sample_id3v2_tag)
+    written_tag.should == sample_id3v2_tag
+    
+    test_against_id3v2_prog(written_tag).should == prettify_tag(written_tag)
+  end
+  
+  it "should handle storing and retrieving tags containing arbitrary binary data" do
+    10.times do
+      tag = {}
+      ["PRIV", "APIC"].each do |k|
+        tag[k] = ID3V24::Frame.create_frame(k, random_string(50))
+      end
+      
+      update_id3_2_tag(@mp3_filename, tag).should == tag
+    end
+  end
+  
+  it "should handle storing tags via the tag update mechanism" do
+    tag = {}
+    ["PRIV", "APIC"].each do |k|
+      tag[k] = ID3V24::Frame.create_frame(k, random_string(50))
+    end
+    
+    Mp3Info.open(@mp3_filename) do |mp3|
+      # before update
+      mp3.tag2.should == {}
+      mp3.tag2.update(tag)
+    end
+    
+    # after update has been saved
+    Mp3Info.open(@mp3_filename) { |m| m.tag2 }.should == tag
+  end
+  
+  it "should make it easy to casually use ID3v2 tags" do
+    Mp3Info.open(@mp3_filename) do |mp3|
+      mp3.tag2.WCOM = "http://www.riaa.org/"
+      mp3.tag2.TXXX = "A sample comment"
+    end
+    
+    mp3 = Mp3Info.new(@mp3_filename)
+    saved_tag = mp3.tag2
+    
+    saved_tag.WCOM.value.should == "http://www.riaa.org/"
+    saved_tag.TXXX.value.should == "A sample comment"
+  end
+end
+
+describe ID3V24::Frame, "when working with individual frames" do
+  include Mp3InfoHelper
+  
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @trivial_id3v2_tag = {"TIT2" => ID3V24::Frame.create_frame('TIT2', "sdfqdsf")}
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should create a raw frame when given an unknown frame ID" do
+    ID3V24::Frame.create_frame('XXXX', 0).class.should == ID3V24::Frame
+  end
+  
+  it "should gracefully handle unknown frame types" do
+    crud = random_string(64)
+    tag = { "XNXT" => ID3V24::Frame.create_frame("XNXT", crud) }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    saved_tag.XNXT.class.should == ID3V24::Frame
+    saved_tag.XNXT.value.should == crud
+    saved_tag.XNXT.to_s_pretty.should == crud.inspect
+    saved_tag.XNXT.frame_info.should == "No description available for frame type 'XNXT'."
+  end
+  
+  it "should create a generic text frame when given an unknown Txxx frame ID" do
+    ID3V24::Frame.create_frame('TPOS', '1/14').class.should == ID3V24::TextFrame
+  end
+
+  it "should create a link frame when given an unknown Wxxx frame ID" do
+    ID3V24::Frame.create_frame('WOAR', 'http://www.dresdendolls.com/').class.should == ID3V24::LinkFrame
+  end
+
+  it "should create a custom frame type when given a custom ID (TCON)" do
+    ID3V24::Frame.create_frame('TCON', 'Experimetal').class.should == ID3V24::TCONFrame
+  end
+  
+  it "should correctly retrieve the description for the conductor frame" do
+    tag = { "TPE3" => ID3V24::Frame.create_frame("TPE3", "Leopold Stokowski") }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    saved_tag.TPE3.class.should == ID3V24::TextFrame
+    saved_tag.TPE3.value.should == "Leopold Stokowski"
+    saved_tag.TPE3.to_s_pretty.should == "Leopold Stokowski"
+    saved_tag.TPE3.frame_info.should ==  "The 'Conductor' frame is used for the name of the conductor."
+  end
+  
+  it "should correctly retrieve the description for the original audio link frame" do
+    tag = { "WOAF" => ID3V24::Frame.create_frame("WOAF", "http://example.com/audio.html") }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    saved_tag.WOAF.class.should == ID3V24::LinkFrame
+    saved_tag.WOAF.value.should == "http://example.com/audio.html"
+    saved_tag.WOAF.to_s_pretty.should == "URL: http://example.com/audio.html"
+    saved_tag.WOAF.frame_info.should == "The 'Official audio file webpage' frame is a URL pointing at a file specific webpage."
+  end
+  
+  it "should correctly store lots of binary data in a frame" do
+    tag = {"APIC" => ID3V24::Frame.create_frame("APIC", random_string(2 ** 16)) }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    saved_tag.APIC.value.size.should == (2 ** 16)
+    saved_tag.should == tag
+  end
+end
+
+describe ID3V24::Frame, "when dealing with the various frame encoding types" do
+  include Mp3InfoHelper
+  
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should correctly handle ISO 8859-1 text" do
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Junior Citizen (lé Freak!)")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:iso]
+    tag = { "TIT2" => tit2 }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    # ID3V24::TextFrame::ENCODING[:iso] => 0
+    saved_tag.TIT2.encoding.should == 0
+    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:iso]
+    saved_tag.TIT2.value.should == "Junior Citizen (lé Freak!)"
+  end
+  
+  it "should correctly handle UTF-16 Unicode text with a byte-order mark" do
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:utf16]
+    tag = { "TIT2" => tit2 }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    # ID3V24::TextFrame::ENCODING[:utf16] => 1
+    saved_tag.TIT2.encoding.should == 1
+    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+    saved_tag.TIT2.value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+  end
+  
+  it "should correctly handle big-endian UTF-16 Unicode text" do
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:utf16be]
+    tag = { "TIT2" => tit2 }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    # ID3V24::TextFrame::ENCODING[:utf16be] => 2
+    saved_tag.TIT2.encoding.should == 2
+    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:utf16be]
+    saved_tag.TIT2.value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+  end
+  
+  it "should correctly handle UTF-8 Unicode text" do
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:utf8]
+    tag = { "TIT2" => tit2 }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    # ID3V24::TextFrame::ENCODING[:utf8] => 3
+    saved_tag.TIT2.encoding.should == 3
+    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
+    saved_tag.TIT2.value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+  end
+  
+  it "should raise a conversion error when trying to save Unicode text in an ISO 8859-1-encoded frame" do
+    tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
+    tit2.encoding = ID3V24::TextFrame::ENCODING[:iso]
+    tag = { "TIT2" => tit2 }
+    lambda { update_id3_2_tag(@mp3_filename, tag) }.should raise_error(Iconv::IllegalSequence)
+  end
+end
+
+describe ID3V24::APICFrame, "when creating a new APIC (picture) frame with defaults" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+
+    @random_data = random_string(128)
+    tag = { "APIC" => ID3V24::Frame.create_frame("APIC", @random_data) }
+    @saved_frame = update_id3_2_tag(@mp3_filename, tag).APIC
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::APICFrame
+  end
+  
+  it "should choose a default encoding for the description of the image of UTF-16" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  end
+  
+  it "should default to having a blank description" do
+    @saved_frame.description.should == "cover image"
+  end
+  
+  it "should default to having an image type of 'image/jpeg'" do
+    @saved_frame.mime_type.should == 'image/jpeg'
+  end
+  
+  it "should default to a picture type of 3 ('Cover (front)')" do
+    @saved_frame.picture_type.should == "\x03"
+  end
+  
+  it "should default to a picture type name of 'Cover (front)'" do
+    @saved_frame.picture_type_name.should == "Cover (front)"
+  end
+  
+  it "should safely retrieve the picture data" do
+    @saved_frame.value.should == @random_data
+  end
+  
+  it "should have a consistent pretty description with default values set" do
+    @saved_frame.to_s_pretty.should == "Attached Picture (cover image) of image type image/jpeg and class Cover (front) of size 128"
+  end
+end
+
+describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defaults" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @comment_text = "This is a sample comment."
+    tag = { "COMM" => ID3V24::Frame.create_frame("COMM", @comment_text) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.COMM
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::COMMFrame
+  end
+  
+  it "should choose a default encoding for the description of the image of UTF-16" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  end
+  
+  it "should have a default description of 'Mp3Info Comment'" do
+    @saved_frame.description.should == 'Mp3Info Comment'
+  end
+  
+  it "should default to being in English (sorry, non-English-speaking world)" do
+    @saved_frame.language.should == 'eng'
+  end
+  
+  it "should default having a pretty format identical to id3v2's" do
+    @saved_frame.to_s_pretty.should == "(Mp3Info Comment)[eng]: This is a sample comment."
+  end
+  
+  it "should retrieve the stored comment value correctly" do
+    @saved_frame.value.should == @comment_text
+  end
+  
+  it "should produce output identical to id3v2's when compared" do
+    test_against_id3v2_prog(@saved_tag).should == prettify_tag(@saved_tag)
+  end
+end
+
+describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame customized for ::AOAIOXXYSZ::" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @comment_text = "Track 5"
+    comm = ID3V24::Frame.create_frame("COMM", @comment_text)
+    comm.description = '::AOAIOXXYSZ:: Info'
+    tag = { "COMM" => comm }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.COMM
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::COMMFrame
+  end
+  
+  it "should choose a default encoding for the description of the image of UTF-16" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  end
+  
+  it "should describe itself as an '::AOAIOXXYSZ:: Info' frame" do
+    @saved_frame.description.should == '::AOAIOXXYSZ:: Info'
+  end
+  
+  it "should default to being in English (sorry, non-English-speaking world)" do
+    @saved_frame.language.should == 'eng'
+  end
+  
+  it "should default having a pretty format identical to id3v2's" do
+    @saved_frame.to_s_pretty.should == "(::AOAIOXXYSZ:: Info)[eng]: Track 5"
+  end
+  
+  it "should retrieve the stored comment value correctly" do
+    @saved_frame.value.should == @comment_text
+  end
+  
+  it "should produce output identical to id3v2's when compared" do
+    test_against_id3v2_prog(@saved_tag).should == prettify_tag(@saved_tag)
+  end
+end
+
+describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame containing Russian (and other Unicode)" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @comment_text = "Здравствуйте dïáçrìtícs!"
+    comm = ID3V24::Frame.create_frame("COMM", @comment_text)
+    comm.language = 'rus'
+    tag = { "COMM" => comm }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.COMM
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should be in Russian" do
+    @saved_frame.language.should == 'rus'
+  end
+  
+  it "should retrieve the stored comment value correctly" do
+    @saved_frame.value.should == @comment_text
+  end
+  
+  it "should default having a pretty format identical to id3v2's, if id3v2 actually supported Unicode" do
+    @saved_frame.to_s_pretty.should == "(Mp3Info Comment)[rus]: Здравствуйте dïáçrìtícs!"
+  end
+end
+
+describe ID3V24::PRIVFrame, "when creating a new PRIV (private data) frame with defaults" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    # Base64 encode the data because for this test I want to test the defaults, not binary storage
+    @random_data = Base64::encode64(random_string(128))
+    tag = { "PRIV" => ID3V24::Frame.create_frame("PRIV", @random_data) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.PRIV
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::PRIVFrame
+  end
+  
+  it "should default to being owned by me (sure, why not?)" do
+    @saved_frame.owner.should == 'mailto:ogd@aoaioxxysz.net'
+  end
+  
+  it "should retrieve the stored private data correctly" do
+    @saved_frame.value.should == @random_data
+  end
+  
+  it "should produce a useful pretty-printed representation" do
+    @saved_frame.to_s_pretty.should == "PRIVATE DATA (from mailto:ogd@aoaioxxysz.net) [#{@random_data.inspect}]"
+  end
+end
+
+describe ID3V24::TCMPFrame, "when creating a new TCMP (iTunes-specific compilation flag) frame" do
+  include Mp3InfoHelper
+  
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should correctly indicate when the track is part of a compilation" do
+    tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", true) }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    saved_tag.TCMP.class.should == ID3V24::TCMPFrame
+    saved_tag.TCMP.value.should == true
+    saved_tag.TCMP.to_s_pretty.should == "This track is part of a compilation."
+  end
+  
+  it "should correctly indicate when the track is not part of a compilation" do
+    tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", false) }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    
+    saved_tag.TCMP.class.should == ID3V24::TCMPFrame
+    saved_tag.TCMP.value.should == false
+    saved_tag.TCMP.to_s_pretty.should == "This track is not part of a compilation."
+  end
+end
+
+describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre that corresponds to an ID3v1 genre ID" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @genre_name = "Jungle"
+    tag = { "TCON" => ID3V24::Frame.create_frame("TCON", @genre_name) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.TCON
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::TCONFrame
+  end
+  
+  it "should retrieve '#{@genre_name}' as the bare genre name" do
+    @saved_frame.value.should == @genre_name
+  end
+  
+  it "should find the numeric genre ID for '#{@genre_name}'" do
+    @saved_frame.genre_code.should == 63
+  end
+  
+  it "should pretty-print the genre name id3v2 style, as 'Name (id)'" do
+    @saved_frame.to_s_pretty.should == "Jungle (63)"
+  end
+end
+
+describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre with no genre ID" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @genre_name = "Experimental"
+    tag = { "TCON" => ID3V24::Frame.create_frame("TCON", @genre_name) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.TCON
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::TCONFrame
+  end
+  
+  it "should retrieve '#{@genre_name}' as the bare genre name" do
+    @saved_frame.value.should == @genre_name
+  end
+  
+  it "should fail to find a numeric genre ID for '#{@genre_name}' and use 255 instead" do
+    @saved_frame.genre_code.should == 255
+  end
+  
+  it "should pretty-print the genre name id3v2 style, as 'Name (255)'" do
+    @saved_frame.to_s_pretty.should == "Experimental (255)"
+  end
+end
+
+describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame with defaults" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @user_text = "Here is some random user-defined text."
+    tag = { "TXXX" => ID3V24::Frame.create_frame("TXXX", @user_text) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.TXXX
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::TXXXFrame
+  end
+  
+  it "should be saved as UTF-16 Unicode text with a byte-order mark by default" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  end
+  
+  it "should have 'Mp3Info Comment' as its default description (this should be overridden in practice)" do
+    @saved_frame.description.should == 'Mp3Info Comment'
+  end
+  
+  it "should safely retrieve its value" do
+    @saved_frame.value.should == @user_text
+  end
+  
+  it "should pretty-print in the style of id3v2" do
+    @saved_frame.to_s_pretty.should == "(Mp3Info Comment) : Here is some random user-defined text."
+  end
+end
+
+describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame with defaults" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @user_link = "http://www.yourmom.gov"
+    tag = { "WXXX" => ID3V24::Frame.create_frame("WXXX", @user_link) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.WXXX
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::WXXXFrame
+  end
+  
+  it "should have a description encoded as UTF-16 Unicode text with a byte-order mark by default" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  end
+  
+  it "should have 'Mp3Info User Link' as its default description (this should be overridden in practice)" do
+    @saved_frame.description.should == 'Mp3Info User Link'
+  end
+  
+  it "should safely retrieve its value" do
+    @saved_frame.value.should == @user_link
+  end
+  
+  it "should pretty-print in the style of id3v2" do
+    @saved_frame.to_s_pretty.should == "(Mp3Info User Link) : http://www.yourmom.gov"
+  end
+end
+
+describe ID3V24::UFIDFrame, "when creating a new UFID (unique file identifier) frame" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @ufid = "2451-4235-af32a3-1312"
+    tag = { "UFID" => ID3V24::Frame.create_frame("UFID", @ufid) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.UFID
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::UFIDFrame
+  end
+  
+  it "has no default namespace, but uses 'http://www.id3.org/dummy/ufid.html' instead" do
+    @saved_frame.namespace.should == "http://www.id3.org/dummy/ufid.html"
+  end
+  
+  it "should retrieve the stored ID unmolested" do
+    @saved_frame.value.should == @ufid
+  end
+  
+  it "should pretty-print the unique ID as namespace: \"ID\"" do
+    @saved_frame.to_s_pretty.should == 'http://www.id3.org/dummy/ufid.html: "2451-4235-af32a3-1312"'
+  end
+end
+
+describe ID3V24::XDORFrame, "when dealing with the iTunes and ID3v2.3-specific XDOR (date of release) frame" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @release_date = Time.gm(1993, 3, 8)
+    tag = { "XDOR" => ID3V24::Frame.create_frame("XDOR", @release_date) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.XDOR
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should convert the release date to a known value captured from an iTunes-created file" do
+    xdor = ID3V24::Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
+    xdor.to_s.should == "\001\376\377\0001\0009\0009\0003\000-\0000\0003\000-\0000\0008\000\000"
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::XDORFrame
+  end
+  
+  it "should reconstitute the release date properly" do
+    @saved_frame.value.should == @release_date
+  end
+  
+  it "should pretty-print the release date as an RFC-compliant date" do
+    @saved_frame.to_s_pretty.should == "Release date: Mon Mar 08 00:00:00 UTC 1993"
+  end
+end
+
+describe ID3V24::XSOPFrame, "when dealing with the iTunes and ID3v2.3-specific XSOP (artist sort order) frame" do
+  include Mp3InfoHelper
+  
+  before :all do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+    
+    @artist_the = "Clash, The"
+    tag = { "XSOP" => ID3V24::Frame.create_frame("XSOP", @artist_the) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    @saved_frame = @saved_tag.XSOP
+  end
+  
+  after :all do
+    FileUtils.rm_f(@mp3_filename)
+  end
+  
+  it "should have been reconstituted as the correct class" do
+    @saved_frame.class.should == ID3V24::XSOPFrame
+  end
+  
+  it "should reconstitute the artist sort name properly" do
+    @saved_frame.value.should == @artist_the
+  end
+  
+  it "should pretty-print the artist sort name identically to printing its raw value" do
+    @saved_frame.to_s_pretty.should == @artist_the
+  end
+end
+
+describe ID3V24::Frame, "when reading examples of real MP3 files captured in the wild" do
+  it "should read ID3v2.2 tags correctly" do
+    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
+    tag2 = mp3.tag2
+    
+    tag2.TP1.value.should == 'Keith Fullerton Whitman'
+    tag2.TCM.value.should == 'Keith Fullerton Whitman'
+    tag2.TAL.value.should == 'Multiples'
+    tag2.TCO.value.should == 'Electronic'
+    tag2.TCO.genre_code.should == '(26)'
+    tag2.TYE.value.should == '2005'
+    tag2.TRK.value.should == '1/8'
   end
 end

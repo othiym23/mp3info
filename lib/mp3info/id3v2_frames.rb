@@ -254,7 +254,7 @@ module ID3V24
     end
     
     def self.default(value)
-      WXXXFrame.new(DEFAULT_ENCODING, 'Mp3Info User Link Frame', value)
+      WXXXFrame.new(DEFAULT_ENCODING, 'Mp3Info User Link', value)
     end
   
     def self.from_s(value)
