@@ -28,7 +28,7 @@ module ID3V24
     
     def self.create_frame_from_string(type, value)
       klass = find_class(type)
-      puts "ID3V24.create_frame_from_string(type='#{type}',value.size=#{value.size}) =>..."
+      puts "ID3V24.create_frame_from_string(type='#{type}',value.size=#{value.size}) =>..." if $DEBUG
       
       if klass
         puts "...klass='#{klass}'" if $DEBUG
