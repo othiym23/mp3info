@@ -340,7 +340,7 @@ module ID3V24
     end
     
     def self.default(value)
-      APICFrame.new(DEFAULT_ENCODING, "image/jpeg", "\x00", "cover image", value)
+      APICFrame.new(DEFAULT_ENCODING, "image/jpeg", "\x03", "cover image", value)
     end
   
     def self.from_s(value)
