@@ -27,6 +27,7 @@ module ID3V24
     end
     
     def self.create_frame_from_string(type, value)
+      puts "ID3V24.create_frame_from_string(#{type},...value...(size=#{value.size}))" if $DEBUG
       klass = find_class(type)
 
       if klass
@@ -226,22 +227,19 @@ module ID3V24
       # string itself containing two Unicode strings, so code has to match on
       # the byte-order marks to find the delimiter.
       case encoding
-      when ENCODING[:iso]
-        matches = string.match(/^(([^\000]*)\000)?([^\000]*\000?)/m)
-      when ENCODING[:utf16]
-        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?([\376\377]{2}.*\000\000)/m)
-      when ENCODING[:utf16be]
-        matches = string.match(/^((.*?)\000\000)?(.*\000\000)/m)
-      when ENCODING[:utf8]
-        matches = string.match(/^(([^\000]*\000)?\000)?([^\000]*\000)/m)
+      when ENCODING[:iso], ENCODING[:utf8]
+        descr, entry = string.split("\x00", 2)
+      when ENCODING[:utf16], ENCODING[:utf16be]
+        descr, entry = string.split(/\x00\x00/, 2);
+        if (descr.size % 2) != 0
+          descr, entry = string.split(/\x00\x00\x00/, 2)
+          descr += "\x00"
+        end
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
-      descr = decode_value(encoding, matches[2]).tr("\000",'') if matches && matches[2]
-      entry = decode_value(encoding, matches[3]).tr("\000",'') if matches && matches[3]
       
-      descr = '' if descr.nil?
-      [descr, entry]
+      [decode_value(encoding, descr), decode_value(encoding, entry)]
     end
   end
   
@@ -284,26 +282,21 @@ module ID3V24
     protected
     
     def self.split_descr(encoding, string)
-      # TODO: Factor out the common behavior into TextFrame and only override as necessary
-      # here
       case encoding
-      when ENCODING[:iso]
-        matches = string.match(/^(([^\000]*)\000)?([^\000]*)/m)
-      when ENCODING[:utf16]
-        matches = string.match(/^(([\376\377]{2}.*?)\000\000)?(.*)/m)
-      when ENCODING[:utf16be]
-        matches = string.match(/^((.*?)\000\000)?(.*)/m)
-      when ENCODING[:utf8]
-        matches = string.match(/^(([^\000]*\000)?\000)([^\000]*)$/m)
+      when ENCODING[:iso], ENCODING[:utf8]
+        descr, entry = string.split("\x00", 2)
+      when ENCODING[:utf16], ENCODING[:utf16be]
+        descr, entry = string.split(/\x00\x00/, 2);
+        if (descr.size % 2) != 0
+          descr, entry = string.split(/\x00\x00\x00/, 2)
+          descr += "\x00"
+        end
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
       puts "matches #{matches.inspect}" if $DEBUG
-      descr = decode_value(encoding, matches[2]) if matches
-      entry = matches[3] if matches
-  
-      descr = '' if descr.nil?
-      [descr, entry]
+      
+      [decode_value(encoding, descr), entry]
     end
   end
   
@@ -332,8 +325,9 @@ module ID3V24
                       "\x13" =>  "Band/artist logotype",
                       "\x14" =>  "Publisher/Studio logotype" }
     
-    def initialize(encoding, mime_type, picture_type, description, picture_data)
+    def initialize(encoding, mime_type, picture_type, description, picture_data, raw_size = 0)
       super(encoding, description, picture_data)
+      @raw_size = raw_size if raw_size > 0
       @mime_type = mime_type
       @picture_type = picture_type
       @type = 'APIC'
@@ -344,9 +338,10 @@ module ID3V24
     end
   
     def self.from_s(value)
+      puts "APICFrame.from_s(...value...(size=#{value.size}))" if $DEBUG
       encoding, str = value.unpack("ca*")
       mime_type, picture_type, descr, entry = split_picture_components(encoding, str)
-      APICFrame.new(encoding, mime_type, picture_type, descr, entry)
+      APICFrame.new(encoding, mime_type, picture_type, descr, entry, value.size)
     end
     
     def APICFrame.picture_type_to_name(type)
@@ -392,27 +387,29 @@ module ID3V24
     protected
     
     def self.split_picture_components(encoding, string)
-      matches = string.match(/^([^\000]*)\000([\x00-\x14])(.+)/m)
-      mime_type = matches[1] if matches
-      picture_type = matches[2] if matches
-      raw_content = matches[3] if matches
-  
+      mime_type, remainder = string.split("\x00", 2)
+      picture_type, raw_content = remainder.unpack("aa*")
+      
+      puts "APICFrame.split_picture_components(#{encoding},...string...(size=#{string.size}))" if $DEBUG
+      puts "APICFrame.split_picture_components: mime_type #{mime_type} picture_type #{picture_type} raw_content size #{raw_content.size}" if $DEBUG
+      
       case encoding
-      when ENCODING[:iso]
-        cooked_matches = raw_content.match(/^(([^\000]*)\000)(.*)/m)
-      when ENCODING[:utf16]
-        cooked_matches = raw_content.match(/^(([\376\377]{2}.*?)\000\000)(.*)/m)
-      when ENCODING[:utf16be]
-        cooked_matches = raw_content.match(/^((.*?)\000\000)(.*)/m)
-      when ENCODING[:utf8]
-        cooked_matches = raw_content.match(/^(([^\000]*\000)\000\000)(.*)/m)
+      when ENCODING[:iso], ENCODING[:utf8]
+        descr, entry = raw_content.split("\x00", 2)
+      when ENCODING[:utf16], ENCODING[:utf16be]
+        descr, entry = raw_content.split(/\x00\x00/, 2);
+        if (descr.size % 2) != 0
+          descr, entry = raw_content.split(/\x00\x00\x00/, 2)
+          descr += "\x00"
+        end
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
-      descr = TextFrame.decode_value(encoding, cooked_matches[2]) if cooked_matches
-      entry = cooked_matches[3] if cooked_matches
-  
-      [mime_type, picture_type, descr, entry]
+      
+      puts "APICFrame.split_picture_components raw_content_0 #{raw_content[0]} raw_content_1 #{raw_content[1].size}" if $DEBUG
+      puts "APICFrame.split_picture_components raw descr #{descr} entry size #{entry.size}" if $DEBUG
+      
+      [mime_type, picture_type, TextFrame.decode_value(encoding, descr), entry]
     end
   end
   
@@ -420,27 +417,22 @@ module ID3V24
     protected
     
     def self.split_picture_components(encoding, string)
-      matches = string.match(/^(.{3})(.)(.*)/m)
-      mime_type = mimify(matches[1]) if matches
-      picture_type = matches[2] if matches
-      raw_content = matches[3] if matches
+      mime_type, picture_type, raw_content = string.unpack("3aaa*")
   
       case encoding
-      when ENCODING[:iso]
-        cooked_matches = raw_content.match(/^(([^\000]*)\000)(.*)/m)
-      when ENCODING[:utf16]
-        cooked_matches = raw_content.match(/^(([\376\377]{2}.*?)\000\000)(.*)/m)
-      when ENCODING[:utf16be]
-        cooked_matches = raw_content.match(/^((.*?)\000\000)(.*)/m)
-      when ENCODING[:utf8]
-        cooked_matches = raw_content.match(/^(([^\000]*\000)\000\000)(.*)/m)
+      when ENCODING[:iso], ENCODING[:utf8]
+        descr, entry = raw_content.split("\x00", 2)
+      when ENCODING[:utf16], ENCODING[:utf16be]
+        descr, entry = raw_content.split(/\x00\x00/, 2);
+        if (descr.size % 2) != 0
+          descr, entry = raw_content.split(/\x00\x00\x00/, 2)
+          descr += "\x00"
+        end
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
-      descr = TextFrame.decode_value(encoding, cooked_matches[2]) if cooked_matches
-      entry = cooked_matches[3] if cooked_matches
-  
-      [mime_type, picture_type, descr, entry]
+      
+      [mime_type, picture_type, TextFrame.decode_value(encoding, descr), entry]
     end
     
     def self.mimify(image_type)
@@ -516,9 +508,7 @@ module ID3V24
     end
   
     def self.from_s(string)
-      matches = string.match(/^([^\000]*)\000(.*)/m)
-      owner = matches[1] if matches
-      value = matches[2] if matches
+      owner, value = string.split("\x00", 2)
   
       PRIVFrame.new(owner, value)
     end
