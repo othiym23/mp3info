@@ -562,22 +562,16 @@ module ID3V24
   
   class TCONFrame < TextFrame
     def initialize(encoding, value)
-      super('TCON', encoding, value)
+      super('TCON', encoding, TCONFrame.from_genre_code(value))
     end
     
     def self.default(value)
-      TCONFrame.new(DEFAULT_ENCODING, value)
+      TCONFrame.new(DEFAULT_ENCODING, TCONFrame.from_genre_code(value))
     end
   
     def self.from_s(value)
       encoding, string = value.unpack("ca*")
-  
-      hidden_genre = string.match(/\((\d+)\)/)
-      if hidden_genre
-        string = Mp3Info::GENRES[hidden_genre[1].to_i]
-      end
-  
-      TCONFrame.new(encoding, TextFrame.decode_value(encoding, string))
+      TCONFrame.new(encoding, TextFrame.decode_value(encoding, TCONFrame.from_genre_code(string)))
     end
     
     def genre_code
@@ -589,6 +583,18 @@ module ID3V24
     def to_s_pretty
       "#{@value} (#{genre_code})"
     end
+    
+    def TCONFrame.from_genre_code(string)
+      hidden_genre = string.match(/\((\d+)\)/)
+      if hidden_genre
+        Mp3Info::GENRES[hidden_genre[1].to_i]
+      else
+        string
+      end
+    end
+  end
+  
+  class TCOFrame < TCONFrame
   end
   
   class UFIDFrame < Frame
