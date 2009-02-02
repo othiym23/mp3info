@@ -1,4 +1,3 @@
-require "mp3info/extension_modules"
 require "mp3info/id3v2_frames"
 
 # This class is not intended to be used directly
@@ -64,13 +63,13 @@ class ID3v2 < DelegateClass(Hash)
     raise("can't find version_maj ('#{version_maj}')") unless [2, 3, 4].include?(version_maj)
     @version_maj, @version_min = version_maj, version_min
     @valid = true
-    @tag2_len = @io.get_syncsafe
+    @tag2_len = @io.read(4).from_synchsafe_string
     case @version_maj
       when 2
         read_id3v2_2_frames(tag2_len)
       when 3,4
         # seek past extended header if present
-        @io.seek(@io.get_syncsafe - 4, IO::SEEK_CUR) if ext_header
+        @io.seek(@io.read(4).from_synchsafe_string - 4, IO::SEEK_CUR) if ext_header
         read_id3v2_3_frames(tag2_len)
     end
     @io_position = @io.pos
@@ -103,7 +102,7 @@ class ID3v2 < DelegateClass(Hash)
 
     #version_maj, version_min, unsync, ext_header, experimental, footer
     tag_str << [ VERSION_MAJ, 0, "0000" ].pack("CCB4")
-    tag_str << to_syncsafe(tag.size)
+    tag_str << tag.size.to_synchsafe_string
     tag_str << tag
     p tag_str if $DEBUG
     tag_str
@@ -119,9 +118,9 @@ class ID3v2 < DelegateClass(Hash)
 
     # ID3v2.4 has synch safe frame headers
     if @version_maj == 4
-      header << to_syncsafe(encoded_frame_data.size)
+      header << encoded_frame_data.size.to_synchsafe_string
     else
-      header << [encoded_frame_data.size].pack("N")
+      header << encoded_frame_data.size.to_binary_string
     end
 
     header << "\x00"*2 #flags
@@ -154,9 +153,9 @@ class ID3v2 < DelegateClass(Hash)
       else
         # ID3v2.4 has synch safe frame headers
         if @version_maj == 4
-          size = @io.get_syncsafe #this seems to be a bug
+          size = @io.read(4).from_synchsafe_string
         else
-          size = @io.get32bits
+          size = @io.read(4).to_binary_decimal
         end
 
         puts "name '#{name}' size #{size} " if $DEBUG
@@ -208,20 +207,5 @@ class ID3v2 < DelegateClass(Hash)
     until @io.getc == 0xff
     end
     @io.seek(-1, IO::SEEK_CUR)
-  end
-  
-  ### convert an 32 integer to a syncsafe string
-  def to_syncsafe(num)
-    raise ArgumentError, "Only positive numbers can be translated" if num < 0
-    raise ArgumentError, "Synchsafe value must be less than 2^28 - 1" if num > 268435455
-    
-    binary_string = ''
-    
-    binary_string += ((num >> 21) & 0x7f).chr
-    binary_string += ((num >> 14) & 0x7f).chr
-    binary_string += ((num >>  7) & 0x7f).chr
-    binary_string += ((num >>  0) & 0x7f).chr
-    
-    binary_string
   end
 end

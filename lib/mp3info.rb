@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v b56df04ef43c 2009/02/02 01:56:23 ogd $
+# $Id: mp3info.rb,v 796a597cab04 2009/02/02 05:49:28 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
@@ -10,7 +10,6 @@ $: << File.join(File.dirname(script_path), '../lib')
 
 require "delegate"
 require "fileutils"
-require "mp3info/extension_modules"
 require "mp3info/mpeg_header"
 require "mp3info/id3v2"
 
@@ -175,7 +174,6 @@ class Mp3Info
     @tag2 = ID3v2.new
 
     @file = File.new(filename, "rb")
-    @file.extend(Mp3FileMethods)
     
     return unless File.stat(filename).size? #FIXME
 
@@ -232,15 +230,15 @@ class Mp3Info
         vbr_head = @file.read(4)
         if vbr_head == "Xing"
           puts "Xing header (VBR) detected" if $DEBUG
-          flags = @file.get32bits
+          flags = @file.read(4).to_binary_decimal
           @streamsize = @frames = 0
-          flags[1] == 1 and @frames = @file.get32bits
-          flags[2] == 1 and @streamsize = @file.get32bits 
+          flags[1] == 1 and @frames = @file.read(4).to_binary_decimal
+          flags[2] == 1 and @streamsize = @file.read(4).to_binary_decimal 
           puts "#{@frames} frames" if $DEBUG
           raise(Mp3InfoError, "bad VBR header for #{filename}") if @frames.zero?
           # currently this just skips the TOC entries if they're found
           @file.seek(100, IO::SEEK_CUR) if flags[0] == 1
-          @vbr_quality = @file.get32bits if flags[3] == 1
+          @vbr_quality = @file.read(4).to_binary_decimal if flags[3] == 1
           @length = (26/1000.0)*@frames
           @vbr = true
         else

@@ -168,6 +168,28 @@ module MPEGUtils
     end
   end
   
+  describe String, "when decoding synchsafe values into binary decimals" do
+    it "should translate the empty string to 0" do
+      ''.from_synchsafe_string.should == 0
+    end
+    
+    it "should translate '0' to 48" do
+      '0'.from_synchsafe_string.should == 48
+    end
+    
+    it "should translate 65,536 back from a synchsafe version correctly" do
+      65_536.to_synchsafe_string.from_synchsafe_string.should == 65_536
+    end
+    
+    it "should translate 2 ** 27 - 1 back from a synchsafe version correctly" do
+      (2 ** 27 - 1).to_synchsafe_string.from_synchsafe_string.should == (2 ** 27 - 1)
+    end
+    
+    it "should translate \"0x81828384\" to 2,172,814,212, even though the source isn't synchsafe and the result is a Bignum" do
+      "\x81\x82\x83\x84".from_synchsafe_string.should == 2_172_814_212
+    end
+  end
+  
   describe Array, "when encoding binary arrays into strings" do
     it "should turn the empty array back into the empty string" do
       [].to_binary_string.should == ''
@@ -447,12 +469,16 @@ module MPEGUtils
       18.to_synchsafe_string.should == "\x00\x00\x00\x12"
     end
     
-    it "should convert 268435455 to '\\x7f\\x7f\\x7f\\x7f'" do
-      268435455.to_synchsafe_string.should == "\x7f\x7f\x7f\x7f"
+    it "should convert 268,435,455 to '\\x7f\\x7f\\x7f\\x7f'" do
+      268_435_455.to_synchsafe_string.should == "\x7f\x7f\x7f\x7f"
     end
     
-    it "should convert 4411213 to '\\x02\\r\\x1eM'" do
-      4411213.to_synchsafe_string.should == "\x02\r\x1eM"
+    it "should convert 4,411,213 to '\\x02\\r\\x1eM'" do
+      4_411_213.to_synchsafe_string.should == "\x02\r\x1eM"
+    end
+    
+    it "should throw an error when trying to convert a Bignum (2,172,814,212) to a synchsafe string (see String specs)" do
+      lambda { 2_172_814_212.to_synchsafe_string.should == "foo" }.should raise_error(NoMethodError, "undefined method `to_synchsafe_string' for 2172814212:Bignum")
     end
   end
   
