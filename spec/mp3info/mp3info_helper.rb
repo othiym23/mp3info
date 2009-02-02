@@ -127,11 +127,21 @@ EOF
     out
   end
   
+  def packed_id3_1_0_tag(tag = sample_id3v1_tag)
+    attrs = [tag['title'], tag['artist'], tag['album'], tag['year'], tag['comments'], tag['genre']]
+    "TAG#{attrs.pack('A30A30A30A4A30C')}"
+  end
+  
+  def packed_id3_1_1_tag(tag = sample_id3v1_tag)
+    attrs = [tag['title'], tag['artist'], tag['album'], tag['year'], tag['comments'], tag['tracknum'], tag['genre']]
+    "TAG#{attrs.pack('A30A30A30A4a29CC')}"
+  end
+  
   def create_valid_id3_1_0_file(filename)
     File.open(filename, "w") do |f|
       f.write(get_valid_mp3)
       # brutally low-level means of writing an ID3 tag on its own
-      f.write("TAG#{sample_id3v1_0_attrs.pack('A30A30A30A4A30C')}")
+      f.write(packed_id3_1_0_tag)
     end
   end
   
@@ -139,7 +149,7 @@ EOF
     File.open(filename, "w") do |f|
       f.write(get_valid_mp3)
       # brutally low-level means of writing an ID3v1.1 tag on its own
-      f.write("TAG#{sample_id3v1_1_attrs.pack('A30A30A30A4a29CC')}")
+      f.write(packed_id3_1_1_tag)
     end
   end
   
