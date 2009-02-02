@@ -69,7 +69,7 @@ module ID3V24
     end
     
     def to_s_pretty
-      @value.inspect
+      @value
     end
     
     def ==(object)

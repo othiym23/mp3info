@@ -1,5 +1,5 @@
 class Mp3Info 
-  module HashKeys #:nodoc:
+  module HashKeys #:nodoc: :deprecated:
     ### lets you specify hash["key"] as hash.key
     ### this came from CodingInRuby on RubyGarden
     ### http://wiki.rubygarden.org/Ruby/page/show/RubyIdioms
@@ -7,23 +7,9 @@ class Mp3Info
       m = meth.id2name
       if /=$/ =~ m
         if args.length < 2
-          if args[0].is_a? ID3V24::Frame
-            self[m.chop] = args[0]
-          elsif args[0].is_a? Array
-            list = []
-            args[0].each do |thing|
-              if thing.is_a? ID3V24::Frame
-                list << thing
-              else
-                list << ID3V24::Frame.create_frame(m.chop, thing.to_s)
-              end
-            end
-            self[m.chop] = list
-          else
-            self[m.chop] = ID3V24::Frame.create_frame(m.chop, args[0].to_s)
-          end
+          self[m.chop] = args[0]
         else
-          # is there any way to get here without major hackery?
+          # is there any way to get here without a direct message send?
           self[m.chop] = args
         end
       else
