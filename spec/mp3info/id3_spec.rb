@@ -42,7 +42,7 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
     create_valid_id3_1_0_file(@mp3_filename)
     
-    Mp3Info.new(@mp3_filename).tag1.version.should == Mp3Info::ID3_V_1_0
+    Mp3Info.new(@mp3_filename).tag1['version'].should == Mp3Info::ID3_V_1_0
   end
   
   it "should be able to find the title from a ID3v1.0 tag" do
@@ -96,7 +96,7 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should correctly identify the tag as ID3v1.1 and not ID3v1.0" do
     create_valid_id3_1_1_file(@mp3_filename)
     
-    Mp3Info.new(@mp3_filename).tag1.version.should == Mp3Info::ID3_V_1_1
+    Mp3Info.new(@mp3_filename).tag1['version'].should == Mp3Info::ID3_V_1_1
   end
   
   it "should be able to find the title in an ID3v1.1 tag" do

@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 6e10dc725368 2009/02/01 06:37:06 ogd $
+# $Id: mp3info.rb,v b56df04ef43c 2009/02/02 01:56:23 ogd $
 # License:: Ruby
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
@@ -172,8 +172,6 @@ class Mp3Info
     @hastag1 = false
     
     @tag1 = {}
-    @tag1.extend(HashKeys)
-
     @tag2 = ID3v2.new
 
     @file = File.new(filename, "rb")
@@ -206,7 +204,6 @@ class Mp3Info
         end
       end
 
-      @tag.extend(HashKeys)
       @tag_orig = @tag.dup
 
       ### extracts MPEG info from MPEG header and stores it in the hash @mpeg
@@ -250,10 +247,10 @@ class Mp3Info
           # for cbr, calculate duration with the given bitrate
           @streamsize = @file.stat.size - (@hastag1 ? TAGSIZE : 0) - (@tag2.valid? ? @tag2.io_position : 0)
           @length = ((@streamsize << 3)/1000.0)/bitrate
-          if @tag2.TLEN
+          if @tag2['TLEN']
             # but if another duration is given and it isn't close (within 5%)
             #  assume the mp3 is vbr and go with the given duration
-            tlen = (@tag2.TLEN.is_a?(Array) ? @tag2.TLEN.last : @tag2.TLEN).value.to_i / 1000
+            tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
             percent_diff = ((@length.to_i-tlen)/tlen.to_f)
             if percent_diff.abs > 0.05
               # without the xing header, this is the best guess without reading
@@ -416,8 +413,8 @@ class Mp3Info
       time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
     else
       length = ((@streamsize << 3) / 1000.0) / bitrate
-      if @tag2.TLEN
-        tlen = (@tag2.TLEN.is_a?(Array) ? @tag2.TLEN.last : @tag2.TLEN).value.to_i / 1000
+      if @tag2['TLEN']
+        tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
         percent_diff = ((length.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
           length = tlen

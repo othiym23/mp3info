@@ -1,23 +1,4 @@
 class Mp3Info 
-  module HashKeys #:nodoc: :deprecated:
-    ### lets you specify hash["key"] as hash.key
-    ### this came from CodingInRuby on RubyGarden
-    ### http://wiki.rubygarden.org/Ruby/page/show/RubyIdioms
-    def method_missing(meth,*args)
-      m = meth.id2name
-      if /=$/ =~ m
-        if args.length < 2
-          self[m.chop] = args[0]
-        else
-          # is there any way to get here without a direct message send?
-          self[m.chop] = args
-        end
-      else
-        self[m]
-      end
-    end
-  end
-
   module Mp3FileMethods #:nodoc:
     def get32bits
       size_string = read(4)

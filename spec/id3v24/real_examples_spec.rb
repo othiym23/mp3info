@@ -8,14 +8,14 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
     tag2 = mp3.tag2
     
-    tag2.TP1.value.should == 'Keith Fullerton Whitman'
-    tag2.TCM.value.should == 'Keith Fullerton Whitman'
-    tag2.TAL.value.should == 'Multiples'
-    tag2.TCO.value.should == 'Ambient'
-    tag2.TCO.genre_code.should == 26
-    tag2.TCO.to_s_pretty.should == 'Ambient (26)'
-    tag2.TYE.value.should == '2005'
-    tag2.TRK.value.should == '1/8'
+    tag2['TP1'].value.should == 'Keith Fullerton Whitman'
+    tag2['TCM'].value.should == 'Keith Fullerton Whitman'
+    tag2['TAL'].value.should == 'Multiples'
+    tag2['TCO'].value.should == 'Ambient'
+    tag2['TCO'].genre_code.should == 26
+    tag2['TCO'].to_s_pretty.should == 'Ambient (26)'
+    tag2['TYE'].value.should == '2005'
+    tag2['TRK'].value.should == '1/8'
   end
   
   it "should read image frames from ID3v2.3 tags without mangling them" do

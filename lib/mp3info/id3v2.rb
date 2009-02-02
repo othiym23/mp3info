@@ -5,8 +5,6 @@ require "mp3info/id3v2_frames"
 class ID3v2 < DelegateClass(Hash) 
   VERSION_MAJ = 4
 
-  include Mp3Info::HashKeys
-  
   attr_reader :io_position
   attr_reader :options
   attr_reader :tag2_len
@@ -214,8 +212,8 @@ class ID3v2 < DelegateClass(Hash)
   
   ### convert an 32 integer to a syncsafe string
   def to_syncsafe(num)
-    raise ArgumentError, "Only positive numbers can be translated" if self < 0
-    raise ArgumentError, "Synchsafe value must be less than 2^28 - 1" if self > 268435455
+    raise ArgumentError, "Only positive numbers can be translated" if num < 0
+    raise ArgumentError, "Synchsafe value must be less than 2^28 - 1" if num > 268435455
     
     binary_string = ''
     

@@ -42,30 +42,6 @@ describe Mp3Info, "when working with ID3v2 tags" do
     update_id3_2_tag(@mp3_filename, sample_id3v2_tag).version.should == "2.4.0"
   end
   
-  it "should be able to treat each ID3v2 frame as a directly-accessible attribute of the tag" do
-    tag = {
-      "TIT2" => ID3V24::Frame.create_frame("TIT2", "tit2"),
-      "TPE1" => ID3V24::Frame.create_frame("TPE1", "tpe1")
-      }
-    
-    # Do it once with the hackish HashKeys direct method...
-    Mp3Info.open(@mp3_filename) do |mp3|
-      mp3.tag2.TIT2 = "tit2"
-      mp3.tag2.TPE1 = "tpe1"
-      
-      mp3.tag2.should == tag
-    end
-    
-    # ...and again with direct message sending to invoke the HashKeys delegation
-    Mp3Info.open(@mp3_filename) do |mp3|
-      tag.each do |k, v|
-        mp3.tag2.send("#{k}=".to_sym, v)
-      end
-      
-      mp3.tag2.should == tag
-    end
-  end
-  
   # test the tag with the "id3v2" program -- you'll need a version of id3lib
   # that's been patched to work with ID3v2 2.4.0 tags, which probably means
   # a version of id3lib above 3.8.3
