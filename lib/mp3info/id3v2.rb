@@ -26,7 +26,26 @@ class ID3v2 < DelegateClass(Hash)
     @version_maj = VERSION_MAJ
     @version_min = 0
   end
-
+  
+  def []=(key, args)
+    value = args
+    if value.is_a? ID3V24::Frame
+      @hash[key] = value
+    elsif value.is_a? Array
+      list = []
+      value.each do |thing|
+        if thing.is_a? ID3V24::Frame
+          list << thing
+        else
+          list << ID3V24::Frame.create_frame(key, thing.to_s)
+        end
+      end
+      @hash[key] = list
+    else
+      @hash[key] = ID3V24::Frame.create_frame(key, value.to_s)
+    end
+  end
+  
   def valid?
     @valid
   end

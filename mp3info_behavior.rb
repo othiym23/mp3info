@@ -1120,6 +1120,12 @@ module Mp3InfoHelper
   # not in the ID3v1 list of genres or the WinAmp extension list
   INVALID_GENRE_ID  = 253
   
+  # Use a nice, big prime size for binary strings to push string writing and
+  # reading routines harder
+  #
+  # http://primes.utm.edu/curios/page.php/78787.html
+  TEST_PRIME        = 78787
+  
   def get_valid_mp3
         # Command to create a dummy MP3
         # dd if=/dev/zero bs=1024 count=15 | lame --preset cbr 128 -r -s 44.1 --bitwidth 16 - - | ruby -rbase64 -e 'print Base64.encode64($stdin.read)'
@@ -1218,9 +1224,9 @@ EOF
       "TRCK" => ID3V24::Frame.create_frame("TRCK", "#{TEST_TRACK_NUMBER}/12") }
   end
   
-  def random_string(size)
+  def random_string
     out = ""
-    size.times { out << rand(256).chr }
+    TEST_PRIME.times { out << rand(256).chr }
     out
   end
   
@@ -1591,6 +1597,15 @@ describe Mp3Info, "when working with ID3v2 tags" do
       "TPE1" => ID3V24::Frame.create_frame("TPE1", "tpe1")
       }
     
+    # Do it once with the hackish HashKeys direct method...
+    Mp3Info.open(@mp3_filename) do |mp3|
+      mp3.tag2.TIT2 = "tit2"
+      mp3.tag2.TPE1 = "tpe1"
+      
+      mp3.tag2.should == tag
+    end
+    
+    # ...and again with direct message sending to invoke the HashKeys delegation
     Mp3Info.open(@mp3_filename) do |mp3|
       tag.each do |k, v|
         mp3.tag2.send("#{k}=".to_sym, v)
@@ -1611,20 +1626,18 @@ describe Mp3Info, "when working with ID3v2 tags" do
   end
   
   it "should handle storing and retrieving tags containing arbitrary binary data" do
-    10.times do
-      tag = {}
-      ["PRIV", "APIC"].each do |k|
-        tag[k] = ID3V24::Frame.create_frame(k, random_string(50))
-      end
-      
-      update_id3_2_tag(@mp3_filename, tag).should == tag
+    tag = {}
+    ["PRIV", "XNBC", "APIC", "XNXT"].each do |k|
+      tag[k] = ID3V24::Frame.create_frame(k, random_string)
     end
+    
+    update_id3_2_tag(@mp3_filename, tag).should == tag
   end
   
-  it "should handle storing tags via the tag update mechanism" do
+  it "should handle storing tags via the tag update mechanism in mp3info's open() block" do
     tag = {}
-    ["PRIV", "APIC"].each do |k|
-      tag[k] = ID3V24::Frame.create_frame(k, random_string(50))
+    ["PRIV", "XNBC", "APIC", "XNXT"].each do |k|
+      tag[k] = ID3V24::Frame.create_frame(k, random_string)
     end
     
     Mp3Info.open(@mp3_filename) do |mp3|
@@ -1647,15 +1660,15 @@ describe Mp3Info, "when working with ID3v2 tags" do
   
   it "should make it easy to casually use ID3v2 tags" do
     Mp3Info.open(@mp3_filename) do |mp3|
-      mp3.tag2.WCOM = "http://www.riaa.org/"
-      mp3.tag2.TXXX = "A sample comment"
+      mp3.tag2['WCOM'] = "http://www.riaa.org/"
+      mp3.tag2['TXXX'] = "A sample comment"
     end
     
     mp3 = Mp3Info.new(@mp3_filename)
     saved_tag = mp3.tag2
     
-    saved_tag.WCOM.value.should == "http://www.riaa.org/"
-    saved_tag.TXXX.value.should == "A sample comment"
+    saved_tag['WCOM'].value.should == "http://www.riaa.org/"
+    saved_tag['TXXX'].value.should == "A sample comment"
   end
 end
 
@@ -1678,14 +1691,14 @@ describe ID3V24::Frame, "when working with individual frames" do
   end
   
   it "should gracefully handle unknown frame types" do
-    crud = random_string(64)
+    crud = random_string
     tag = { "XNXT" => ID3V24::Frame.create_frame("XNXT", crud) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag.XNXT.class.should == ID3V24::Frame
-    saved_tag.XNXT.value.should == crud
-    saved_tag.XNXT.to_s_pretty.should == crud.inspect
-    saved_tag.XNXT.frame_info.should == "No description available for frame type 'XNXT'."
+    saved_tag['XNXT'].class.should == ID3V24::Frame
+    saved_tag['XNXT'].value.size.should == crud.size
+    Digest::SHA1.hexdigest(saved_tag['XNXT'].to_s_pretty).should == Digest::SHA1.hexdigest(crud)
+    saved_tag['XNXT'].frame_info.should == "No description available for frame type 'XNXT'."
   end
   
   it "should create a generic text frame when given an unknown Txxx frame ID" do
@@ -1704,26 +1717,26 @@ describe ID3V24::Frame, "when working with individual frames" do
     tag = { "TPE3" => ID3V24::Frame.create_frame("TPE3", "Leopold Stokowski") }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag.TPE3.class.should == ID3V24::TextFrame
-    saved_tag.TPE3.value.should == "Leopold Stokowski"
-    saved_tag.TPE3.to_s_pretty.should == "Leopold Stokowski"
-    saved_tag.TPE3.frame_info.should ==  "The 'Conductor' frame is used for the name of the conductor."
+    saved_tag['TPE3'].class.should == ID3V24::TextFrame
+    saved_tag['TPE3'].value.should == "Leopold Stokowski"
+    saved_tag['TPE3'].to_s_pretty.should == "Leopold Stokowski"
+    saved_tag['TPE3'].frame_info.should ==  "The 'Conductor' frame is used for the name of the conductor."
   end
   
   it "should correctly retrieve the description for the original audio link frame" do
     tag = { "WOAF" => ID3V24::Frame.create_frame("WOAF", "http://example.com/audio.html") }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag.WOAF.class.should == ID3V24::LinkFrame
-    saved_tag.WOAF.value.should == "http://example.com/audio.html"
-    saved_tag.WOAF.to_s_pretty.should == "URL: http://example.com/audio.html"
-    saved_tag.WOAF.frame_info.should == "The 'Official audio file webpage' frame is a URL pointing at a file specific webpage."
+    saved_tag['WOAF'].class.should == ID3V24::LinkFrame
+    saved_tag['WOAF'].value.should == "http://example.com/audio.html"
+    saved_tag['WOAF'].to_s_pretty.should == "URL: http://example.com/audio.html"
+    saved_tag['WOAF'].frame_info.should == "The 'Official audio file webpage' frame is a URL pointing at a file specific webpage."
   end
   
   it "should correctly store lots of binary data in a frame" do
-    tag = {"APIC" => ID3V24::Frame.create_frame("APIC", random_string(2 ** 16)) }
+    tag = {"APIC" => ID3V24::Frame.create_frame("APIC", random_string) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    saved_tag.APIC.value.size.should == (2 ** 16)
+    saved_tag['APIC'].value.size.should == Mp3InfoHelper::TEST_PRIME
     saved_tag.should == tag
   end
 end
@@ -1747,9 +1760,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:iso] => 0
-    saved_tag.TIT2.encoding.should == 0
-    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:iso]
-    saved_tag.TIT2.value.should == "Junior Citizen (lé Freak!)"
+    saved_tag['TIT2'].encoding.should == 0
+    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:iso]
+    saved_tag['TIT2'].value.should == "Junior Citizen (lé Freak!)"
   end
   
   it "should correctly handle UTF-16 Unicode text with a byte-order mark" do
@@ -1759,9 +1772,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:utf16] => 1
-    saved_tag.TIT2.encoding.should == 1
-    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
-    saved_tag.TIT2.value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+    saved_tag['TIT2'].encoding.should == 1
+    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+    saved_tag['TIT2'].value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
   end
   
   it "should correctly handle big-endian UTF-16 Unicode text" do
@@ -1771,9 +1784,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:utf16be] => 2
-    saved_tag.TIT2.encoding.should == 2
-    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:utf16be]
-    saved_tag.TIT2.value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+    saved_tag['TIT2'].encoding.should == 2
+    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:utf16be]
+    saved_tag['TIT2'].value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
   end
   
   it "should correctly handle UTF-8 Unicode text" do
@@ -1783,9 +1796,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:utf8] => 3
-    saved_tag.TIT2.encoding.should == 3
-    saved_tag.TIT2.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
-    saved_tag.TIT2.value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+    saved_tag['TIT2'].encoding.should == 3
+    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
+    saved_tag['TIT2'].value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
   end
   
   it "should raise a conversion error when trying to save Unicode text in an ISO 8859-1-encoded frame" do
@@ -1803,9 +1816,9 @@ describe ID3V24::APICFrame, "when creating a new APIC (picture) frame with defau
     @mp3_filename = "test_mp3info.mp3"
     create_sample_mp3_file(@mp3_filename)
 
-    @random_data = random_string(128)
+    @random_data = random_string
     tag = { "APIC" => ID3V24::Frame.create_frame("APIC", @random_data) }
-    @saved_frame = update_id3_2_tag(@mp3_filename, tag).APIC
+    @saved_frame = update_id3_2_tag(@mp3_filename, tag)['APIC']
   end
   
   after :all do
@@ -1841,7 +1854,7 @@ describe ID3V24::APICFrame, "when creating a new APIC (picture) frame with defau
   end
   
   it "should have a consistent pretty description with default values set" do
-    @saved_frame.to_s_pretty.should == "Attached Picture (cover image) of image type image/jpeg and class Cover (front) of size 128"
+    @saved_frame.to_s_pretty.should == "Attached Picture (cover image) of image type image/jpeg and class Cover (front) of size #{Mp3InfoHelper::TEST_PRIME}"
   end
 end
 
@@ -1855,7 +1868,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defau
     @comment_text = "This is a sample comment."
     tag = { "COMM" => ID3V24::Frame.create_frame("COMM", @comment_text) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.COMM
+    @saved_frame = @saved_tag['COMM']
   end
   
   after :all do
@@ -1903,7 +1916,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame customized
     comm.description = '::AOAIOXXYSZ:: Info'
     tag = { "COMM" => comm }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.COMM
+    @saved_frame = @saved_tag['COMM']
   end
   
   after :all do
@@ -1951,7 +1964,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame containing
     comm.language = 'rus'
     tag = { "COMM" => comm }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.COMM
+    @saved_frame = @saved_tag['COMM']
   end
   
   after :all do
@@ -1979,10 +1992,10 @@ describe ID3V24::PRIVFrame, "when creating a new PRIV (private data) frame with 
     create_sample_mp3_file(@mp3_filename)
     
     # Base64 encode the data because for this test I want to test the defaults, not binary storage
-    @random_data = Base64::encode64(random_string(128))
+    @random_data = Base64::encode64(random_string)
     tag = { "PRIV" => ID3V24::Frame.create_frame("PRIV", @random_data) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.PRIV
+    @saved_frame = @saved_tag['PRIV']
   end
   
   after :all do
@@ -2022,18 +2035,18 @@ describe ID3V24::TCMPFrame, "when creating a new TCMP (iTunes-specific compilati
     tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", true) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag.TCMP.class.should == ID3V24::TCMPFrame
-    saved_tag.TCMP.value.should == true
-    saved_tag.TCMP.to_s_pretty.should == "This track is part of a compilation."
+    saved_tag['TCMP'].class.should == ID3V24::TCMPFrame
+    saved_tag['TCMP'].value.should == true
+    saved_tag['TCMP'].to_s_pretty.should == "This track is part of a compilation."
   end
   
   it "should correctly indicate when the track is not part of a compilation" do
     tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", false) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag.TCMP.class.should == ID3V24::TCMPFrame
-    saved_tag.TCMP.value.should == false
-    saved_tag.TCMP.to_s_pretty.should == "This track is not part of a compilation."
+    saved_tag['TCMP'].class.should == ID3V24::TCMPFrame
+    saved_tag['TCMP'].value.should == false
+    saved_tag['TCMP'].to_s_pretty.should == "This track is not part of a compilation."
   end
 end
 
@@ -2047,7 +2060,7 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
     @genre_name = "Jungle"
     tag = { "TCON" => ID3V24::Frame.create_frame("TCON", @genre_name) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.TCON
+    @saved_frame = @saved_tag['TCON']
   end
   
   after :all do
@@ -2081,7 +2094,7 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
     @genre_name = "Experimental"
     tag = { "TCON" => ID3V24::Frame.create_frame("TCON", @genre_name) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.TCON
+    @saved_frame = @saved_tag['TCON']
   end
   
   after :all do
@@ -2113,9 +2126,9 @@ describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame 
     create_sample_mp3_file(@mp3_filename)
     
     @user_text = "Here is some random user-defined text."
-    tag = { "TXXX" => ID3V24::Frame.create_frame("TXXX", @user_text) }
-    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.TXXX
+    @new_tag = { "TXXX" => ID3V24::Frame.create_frame("TXXX", @user_text) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, @new_tag)
+    @saved_frame = @saved_tag['TXXX']
   end
   
   after :all do
@@ -2138,6 +2151,10 @@ describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame 
     @saved_frame.value.should == @user_text
   end
   
+  it "should be directly comparable as a whole frame" do
+    @saved_frame.should == @new_tag['TXXX']
+  end
+  
   it "should pretty-print in the style of id3v2" do
     @saved_frame.to_s_pretty.should == "(Mp3Info Comment) : Here is some random user-defined text."
   end
@@ -2151,9 +2168,9 @@ describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame 
     create_sample_mp3_file(@mp3_filename)
     
     @user_link = "http://www.yourmom.gov"
-    tag = { "WXXX" => ID3V24::Frame.create_frame("WXXX", @user_link) }
-    @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.WXXX
+    @new_tag = { "WXXX" => ID3V24::Frame.create_frame("WXXX", @user_link) }
+    @saved_tag = update_id3_2_tag(@mp3_filename, @new_tag)
+    @saved_frame = @saved_tag['WXXX']
   end
   
   after :all do
@@ -2176,6 +2193,10 @@ describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame 
     @saved_frame.value.should == @user_link
   end
   
+  it "should be directly comparable as a whole frame" do
+    @saved_frame.should == @new_tag['WXXX']
+  end
+  
   it "should pretty-print in the style of id3v2" do
     @saved_frame.to_s_pretty.should == "(Mp3Info User Link) : http://www.yourmom.gov"
   end
@@ -2191,7 +2212,7 @@ describe ID3V24::UFIDFrame, "when creating a new UFID (unique file identifier) f
     @ufid = "2451-4235-af32a3-1312"
     tag = { "UFID" => ID3V24::Frame.create_frame("UFID", @ufid) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.UFID
+    @saved_frame = @saved_tag['UFID']
   end
   
   after :all do
@@ -2225,7 +2246,7 @@ describe ID3V24::XDORFrame, "when dealing with the iTunes and ID3v2.3-specific X
     @release_date = Time.gm(1993, 3, 8)
     tag = { "XDOR" => ID3V24::Frame.create_frame("XDOR", @release_date) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.XDOR
+    @saved_frame = @saved_tag['XDOR']
   end
   
   after :all do
@@ -2260,7 +2281,7 @@ describe ID3V24::XSOPFrame, "when dealing with the iTunes and ID3v2.3-specific X
     @artist_the = "Clash, The"
     tag = { "XSOP" => ID3V24::Frame.create_frame("XSOP", @artist_the) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag.XSOP
+    @saved_frame = @saved_tag['XSOP']
   end
   
   after :all do
@@ -2300,9 +2321,9 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     tag2 = mp3.tag2
     
     mp3.tag2_len.should == 7302
-    tag2.APIC.raw_size.should == 5026
-    Digest::SHA1.hexdigest(tag2.APIC.value).should == '6902c6f4f81838208dd26f88274bf7444f7798a7'
-    tag2.APIC.value.size.should == 5013
+    tag2['APIC'].raw_size.should == 5026
+    Digest::SHA1.hexdigest(tag2['APIC'].value).should == '6902c6f4f81838208dd26f88274bf7444f7798a7'
+    tag2['APIC'].value.size.should == 5013
   end
   
   it "should correctly read frame lengths from ID3v2.4 tags even if the lengths aren't encoded syncsafe" do
@@ -2310,18 +2331,18 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     tag2 = mp3.tag2
     
     mp3.tag2_len.should == 35_092
-    tag2.APIC.raw_size.should == 34_698
-    tag2.APIC.value.size.should == 34_685
-    tag2.COMM.first.language.should == 'eng'
-    tag2.COMM.first.value.should == '<<in Love With The Music>>'
-    tag2.WXXX.value.should == 'http://www.kompakt-net.com'
-    tag2.TPE1.value.should == 'Jürgen Paape'
-    tag2.TIT1.value.should == 'Kompakt Extra 47'
-    tag2.TIT2.value.should == 'Fruity Loops 1'
-    tag2.TDRC.value.should == '2007'
-    tag2.TLAN.value.should == 'German'
-    tag2.TENC.value.should == 'LAME 3.96'
-    tag2.TCON.value.should == 'Techno'
+    tag2['APIC'].raw_size.should == 34_698
+    tag2['APIC'].value.size.should == 34_685
+    tag2['COMM'].first.language.should == 'eng'
+    tag2['COMM'].first.value.should == '<<in Love With The Music>>'
+    tag2['WXXX'].value.should == 'http://www.kompakt-net.com'
+    tag2['TPE1'].value.should == 'Jürgen Paape'
+    tag2['TIT1'].value.should == 'Kompakt Extra 47'
+    tag2['TIT2'].value.should == 'Fruity Loops 1'
+    tag2['TDRC'].value.should == '2007'
+    tag2['TLAN'].value.should == 'German'
+    tag2['TENC'].value.should == 'LAME 3.96'
+    tag2['TCON'].value.should == 'Techno'
   end
   
   it "should correctly find all the repeated frames, no matter how many are in a tag" do
@@ -2343,47 +2364,47 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     # TYER (Year): 2002
     # TYER (Year): 2002
     
-    tag2.COMM.size.should == 3
-    tag2.COMM.detect { |frame|
+    tag2['COMM'].size.should == 3
+    tag2['COMM'].detect { |frame|
       'XXX' == frame.language && 
       '' == frame.description &&
       'RIPT with GRIP' == frame.value
     }.should be_true
     
-    tag2.COMM.detect { |frame|
+    tag2['COMM'].detect { |frame|
       "\000\000\000" == frame.language && 
       '' == frame.description &&
       'Created by Grip' == frame.value
     }.should be_true
     
-    tag2.COMM.detect { |frame|
+    tag2['COMM'].detect { |frame|
       'XXX' == frame.language && 
       'ID3v1 Comment' == frame.description &&
       'RIPT with GRIP' == frame.value
     }.should be_true
     
-    tag2.TALB.size.should == 2
-    tag2.TALB.detect { |frame|
+    tag2['TALB'].size.should == 2
+    tag2['TALB'].detect { |frame|
       'Skilligan\'s Island' == frame.value
     }.should be_true
     
-    tag2.TIT2.size.should == 2
-    tag2.TIT2.detect { |frame|
+    tag2['TIT2'].size.should == 2
+    tag2['TIT2'].detect { |frame|
       'I Still Live With My Moms' == frame.value
     }.should be_true
     
-    tag2.TPE1.size.should == 2
-    tag2.TPE1.detect { |frame|
+    tag2['TPE1'].size.should == 2
+    tag2['TPE1'].detect { |frame|
       'Master Fool' == frame.value
     }.should be_true
     
-    tag2.TRCK.size.should == 2
-    tag2.TRCK.detect { |frame|
+    tag2['TRCK'].size.should == 2
+    tag2['TRCK'].detect { |frame|
       '14' == frame.value
     }.should be_true
     
-    tag2.TYER.size.should == 2
-    tag2.TYER.detect { |frame|
+    tag2['TYER'].size.should == 2
+    tag2['TYER'].detect { |frame|
       '2002' == frame.value
     }.should be_true
   end
