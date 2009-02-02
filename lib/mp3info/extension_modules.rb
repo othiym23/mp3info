@@ -18,16 +18,6 @@ class Mp3Info
     end
   end
 
-  module NumericBits #:nodoc:
-    ### returns the selected bit range (b, a) as a number
-    ### NOTE: b > a  if not, returns 0
-    def bits(b, a)
-      t = 0
-      b.downto(a) { |i| t += t + self[i] }
-      t
-    end
-  end
-
   module Mp3FileMethods #:nodoc:
     def get32bits
       size_string = read(4)
