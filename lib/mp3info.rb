@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 726c43e51252 2009/02/09 05:55:30 ogd $
+# $Id: mp3info.rb,v 730e44b0259d 2009/02/09 08:18:39 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -12,6 +12,7 @@ require 'delegate'
 require 'fileutils'
 require 'tempfile'
 require 'mp3info/mpeg_header'
+require 'mp3info/xing_header'
 require 'mp3info/id3'
 require 'mp3info/id3v2'
 
@@ -36,6 +37,12 @@ class Mp3Info
   # number of bytes to read in at once in file scanning operations
   CHUNK_SIZE = 2 ** 16
   
+  # MPEG header
+  attr_reader :mpeg_header
+  
+  # Xing header
+  attr_reader :xing_header
+  
   # mpeg version = 1 or 2
   def mpeg_version
     @mpeg_header.version
@@ -48,13 +55,12 @@ class Mp3Info
 
   # bitrate in kbps
   def bitrate
-    @bitrate ||= false
-    if @bitrate
-      @bitrate
-    elsif vbr
-      (((@streamsize / @frames) * samplerate) / 144) >> 10
-    else
+    if has_xing_header?
+      (((@xing_header.bytes / @xing_header.frames) * samplerate) / 144) >> 10
+    elsif has_mpeg_header?
       @mpeg_header.bitrate
+    else
+      0
     end
   end
 
@@ -142,7 +148,15 @@ class Mp3Info
   def hastag2?
     defined?(@tag2) && nil != @tag2 && @tag2.valid?
   end
-
+  
+  def has_xing_header?
+    defined?(@xing_header) && nil != @xing_header
+  end
+  
+  def has_mpeg_header?
+    defined?(@mpeg_header) && nil != @mpeg_header
+  end
+  
   def removetag1
     if Mp3Info.hastag1?(@filename)
       newsize = File.size(@filename) - ID3::TAGSIZE
@@ -188,74 +202,42 @@ class Mp3Info
     #
     # if anything is left after reading tags, read MPEG data
     #
-    while (total_bytes - file.pos) > 0 do
-      $stderr.puts("Mp3Info.initialize about to call next_frame, file.pos=#{file.pos}") if $DEBUG
-      header_pos, header_data = next_frame(file)
-      candidate_header = MPEGHeader.new(header_data)
-      next unless candidate_header.valid?
+    cur_pos = file.pos
+    begin
+      $stderr.puts("Mp3Info.initialize about to call find_next_frame, file.pos=#{file.pos}") if $DEBUG
+      header_pos, header_data = find_next_frame(file)
+      mpeg_candidate = MPEGHeader.new(header_data)
+      @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
+      $stderr.puts("MPEG header found, is [#{@mpeg_header.inspect}]") if $DEBUG && @mpeg_header
       
-      # found it, move along
-      file.seek(header_pos + 4)
-      $stderr.puts("MPEG header found, is [#{candidate_header.inspect}]") if $DEBUG
-      @mpeg_header = candidate_header
-      break
+      file.seek(header_pos)
+      cur_frame = read_next_frame(file)
+      xing_candidate = XingHeader.new(cur_frame)
+      @xing_header = xing_candidate if xing_candidate.valid?
+      $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && @xing_header
+    rescue Mp3InfoError
+      $stderr.puts("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
+      file.seek(cur_pos)
     end
     
     #
-    # parse out the VBR info, if available
+    # calculate the CBR bitrate, streamsize, length
     #
-    
-    if defined?(@mpeg_header)
-      # the seek offsets below are highly magical and need more documentation
-      if 1 == mpeg_version
-        if @mpeg_header.mode_extension == (MPEGHeader::MODE_EXTENSION_BANDS_4_TO_31 | MPEGHeader::MODE_EXTENSION_BANDS_8_TO_31)
-          file.seek(17, IO::SEEK_CUR)
-        else
-          file.seek(32, IO::SEEK_CUR)
-        end
-      else
-        if @mpeg_header.mode_extension == (MPEGHeader::MODE_EXTENSION_BANDS_4_TO_31 | MPEGHeader::MODE_EXTENSION_BANDS_8_TO_31)
-          file.seek(9, IO::SEEK_CUR)
-        else
-          file.seek(17, IO::SEEK_CUR)
-        end
-      end
-    
-      # assume the file is CBR unless the Xing tag indicates otherwise
-      @vbr = false
-      $stderr.puts("Mp3Info.initialize file.pos is #{file.pos}") if $DEBUG
-      vbr_head = file.read(4)
-      $stderr.puts("Mp3Info.initialize VBR header is #{vbr_head.inspect}") if $DEBUG
-      if vbr_head == "Xing"
-        $stderr.puts "Xing header (VBR) detected" if $DEBUG
-        flags = file.read(4).to_binary_decimal
-        @streamsize = @frames = 0
-        flags[1] == 1 and @frames = file.read(4).to_binary_decimal
-        flags[2] == 1 and @streamsize = file.read(4).to_binary_decimal 
-        $stderr.puts("Mp3Info.initialize #{@frames} frames") if $DEBUG
-        raise(Mp3InfoError, "bad VBR header for #{filename}") if @frames.zero?
-        
-        # TODO currently this just skips the TOC entries if they're found
-        file.seek(100, IO::SEEK_CUR) if flags[0] == 1
-        @vbr_quality = file.read(4).to_binary_decimal if flags[3] == 1
-        @length = (26 / 1000.0) * @frames
-        @vbr = true
-      else
-        # for cbr, calculate duration with the given bitrate
-        @streamsize = file.stat.size - (hastag1? ? ID3::TAGSIZE : 0) - ((hastag2? ? (@tag2.tag_length + 10) : 0))
-        @length = ((@streamsize << 3) / 1000.0) / bitrate
-        if hastag2? && @tag2['TLEN']
-          # but if another duration is given and it isn't close (within 5%)
-          #  assume the mp3 is vbr and go with the given duration
-          tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
-          percent_diff = ((@length.to_i - tlen) / tlen.to_f)
-          if percent_diff.abs > 0.05
-            # without the Xing header, this is the best guess without reading
-            #  every single frame
-            @vbr = true
-            @length = tlen
-            @bitrate = (@streamsize / bitrate) >> 10
-          end
+    if has_mpeg_header? && !has_xing_header?
+      # for cbr, calculate duration with the given bitrate
+      @streamsize = file.stat.size - (hastag1? ? ID3::TAGSIZE : 0) - ((hastag2? ? (@tag2.tag_length + 10) : 0))
+      @length = ((@streamsize << 3) / 1000.0) / bitrate
+      if hastag2? && @tag2['TLEN']
+        # but if another duration is given and it isn't close (within 5%)
+        #  assume the mp3 is vbr and go with the given duration
+        tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
+        percent_diff = ((@length.to_i - tlen) / tlen.to_f)
+        if percent_diff.abs > 0.05
+          # without the Xing header, this is the best guess without reading
+          #  every single frame
+          @vbr = true
+          @length = tlen
+          @bitrate = (@streamsize / bitrate) >> 10
         end
       end
     end
@@ -278,6 +260,10 @@ class Mp3Info
     file.close
     
     load_universal_tag!
+    
+    if !(hastag1? || hastag2? || has_mpeg_header? || has_xing_header?)
+      raise(Mp3InfoError, "There was no useful metadata in #{@filename}, are you sure it's an MP3?")
+    end
   end
   
   # Flush pending modifications to tags and close the file
@@ -457,8 +443,8 @@ class Mp3Info
         
         yield temporary if block
         
-        $stderr.puts("Mp3Info.write_changed_file! about to call next_frame, file.pos=#{original.pos}") if $DEBUG
-        header_pos, header = next_frame(original)
+        $stderr.puts("Mp3Info.write_changed_file! about to call find_next_frame, file.pos=#{original.pos}") if $DEBUG
+        header_pos, header = find_next_frame(original)
         original.seek(header_pos)
         $stderr.puts("Mp3Info.write_changed_file! original file is at location #{original.pos}") if $DEBUG
         bufsize = original.stat.blksize || 4096
@@ -472,11 +458,11 @@ class Mp3Info
   end
   
   def time_string
-    if @vbr
-      length = (26 / 1000.0) * @frames
+    if has_xing_header?
+      length = (26 / 1000.0) * @xing_header.frames
       seconds = length.floor % 60
       minutes = length.floor / 60
-      leftover = @frames % (1000 / 26)
+      leftover = @xing_header.frames % (1000 / 26)
       time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
     else
       length = ((@streamsize << 3) / 1000.0) / bitrate
@@ -494,8 +480,28 @@ class Mp3Info
     
     time_string
   end
+  
+  # This method assumes that the file pointer is at the beginning of a frame.
+  #
+  # It returns either the next frame or the remainder of the stream.
+  def read_next_frame(file)
+    cur_pos = file.pos
+    file.seek(1, IO::SEEK_CUR)
     
-  def next_frame(file)
+    frame_size = 0
+    
+    begin
+      next_pos, data = find_next_frame(file)
+      frame_size = next_pos - cur_pos
+    rescue Mp3InfoError
+      frame_size = file.stat.size - cur_pos
+    end
+    
+    file.seek(cur_pos)
+    file.read(frame_size)
+  end
+  
+  def find_next_frame(file)
     header_pos = 0
     header = nil
     
@@ -503,7 +509,7 @@ class Mp3Info
     cur_pos = file.pos
     loop do
       header_pos, header = find_sync(file, cur_pos)
-      $stderr.puts("Mp3Info.next_frame file.pos is %u, header_pos is %u, header is %#x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
+      $stderr.puts("Mp3Info.find_next_frame file.pos is %u, header_pos is %u, header is %#x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
       break if nil == header || valid_mpeg_header?(header)
       cur_pos = header_pos + 1
     end

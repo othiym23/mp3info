@@ -77,7 +77,7 @@ class MPEGHeader
     @layer = (@raw_data >> 17) & 0x3
     
     # p -- 0 indicates the data following the frame header is a 16-bit CRC
-    @error_protection = !((@raw_data >> 16) & 0x1)
+    @error_protection = !(((@raw_data >> 16) & 0x1) == 0x1)
     
     # bbbb -- combined with the version and layer, produces the CBR bitrate for the frame
     # NOTE: ignored in VBR streams, see XingTag for accurate bitrate information
@@ -167,6 +167,16 @@ class MPEGHeader
     end
     
     bitrate
+  end
+  
+  def frame_length
+    if 1 == layer
+      padding = (padded_stream? ? 1 : 0) * 4;
+      (((12_000 * bitrate) / sample_rate) + padding) * 4
+    else
+      padding = padded_stream? ? 1 : 0;
+      ((144_000 * bitrate) / sample_rate) + padding
+    end
   end
   
   def sample_rate
