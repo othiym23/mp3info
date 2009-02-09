@@ -16,19 +16,19 @@ describe Mp3Info, "when working with ID3v1 tags" do
   end
   
   it "should be able to add the tag without error" do
-    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error(Mp3InfoError)
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error
     Mp3Info.hastag1?(@mp3_filename).should be_true
   end
   
   it "should be able to add and remove the tag without error" do
-    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error(Mp3InfoError)
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error
     Mp3Info.hastag1?(@mp3_filename).should be_true
-    lambda { Mp3Info.removetag1(@mp3_filename) }.should_not raise_error(Mp3InfoError)
+    lambda { Mp3Info.removetag1(@mp3_filename) }.should_not raise_error
     Mp3Info.hastag1?(@mp3_filename).should be_false
   end
 
   it "should be able to add a tag and then remove it from within the open() block" do
-    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error(Mp3InfoError)
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error
     Mp3Info.hastag1?(@mp3_filename).should be_true
     lambda { Mp3Info.open(@mp3_filename) { |info| info.removetag1 } }.should_not raise_error(IOError, "closed stream")
     Mp3Info.hastag1?(@mp3_filename).should be_false
@@ -43,7 +43,7 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
     create_valid_id3_1_0_file(@mp3_filename)
     
-    Mp3Info.new(@mp3_filename).tag1['version'].should == Mp3Info::ID3_V_1_0
+    Mp3Info.new(@mp3_filename).tag1.version.should == ID3::VERSION_1
   end
   
   it "should be able to find the title from a ID3v1.0 tag" do
@@ -97,7 +97,7 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should correctly identify the tag as ID3v1.1 and not ID3v1.0" do
     create_valid_id3_1_1_file(@mp3_filename)
     
-    Mp3Info.new(@mp3_filename).tag1['version'].should == Mp3Info::ID3_V_1_1
+    Mp3Info.new(@mp3_filename).tag1.version.should == ID3::VERSION_1_1
   end
   
   it "should be able to find the title in an ID3v1.1 tag" do
@@ -148,80 +148,5 @@ describe Mp3Info, "when working with ID3v1 tags" do
     
     Mp3Info.open(@mp3_filename) { |info| info.tag1 = tag }
     Mp3Info.new(@mp3_filename).tag1['genre_s'].should == "Unknown"
-  end
-end
-
-describe ID3, "when working with standalone ID3 tags" do
-  include Mp3InfoHelper
-  
-  it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
-    ID3.new(packed_id3_1_0_tag).version.should == ID3::VERSION_1
-  end
-  
-  it "should be able to find the title from a ID3v1.0 tag" do
-    ID3.new(packed_id3_1_0_tag)['title'].should == Mp3InfoHelper::TEST_TITLE
-  end
-  
-  it "should be able to find the artist in an ID3v1.0 tag" do
-    ID3.new(packed_id3_1_0_tag)['artist'].should == Mp3InfoHelper::TEST_ARTIST
-  end
-  
-  it "should be able to find the album in an ID3v1.0 tag" do
-    ID3.new(packed_id3_1_0_tag)['album'].should == Mp3InfoHelper::TEST_ALBUM
-  end
-  
-  it "should be able to find the comments in an ID3v1.0 tag" do
-    ID3.new(packed_id3_1_0_tag)['comments'].should == Mp3InfoHelper::TEST_COMMENT
-  end
-  
-  it "should be able to find the genre ID in an ID3v1.0 tag" do
-    ID3.new(packed_id3_1_0_tag)['genre'].should == Mp3InfoHelper::TEST_GENRE_ID
-  end
-  
-  it "should be able to find the genre name in an ID3v1.0 tag" do
-    ID3.new(packed_id3_1_0_tag)['genre_s'].should == Mp3InfoHelper::TEST_GENRE_NAME
-  end
-  
-  it "should not be able to find the track number in an ID3v1.0 tag, because the tag doesn't contain it" do
-    ID3.new(packed_id3_1_0_tag)['tracknum'].should == nil
-  end
-  
-  it "should correctly identify the tag as ID3v1.1 and not ID3v1.0" do
-    ID3.new(packed_id3_1_1_tag).version.should == ID3::VERSION_1_1
-  end
-  
-  it "should be able to find the title in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['title'].should == Mp3InfoHelper::TEST_TITLE
-  end
-  
-  it "should be able to find the artist in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['artist'].should == Mp3InfoHelper::TEST_ARTIST
-  end
-  
-  it "should be able to find the album in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['album'].should == Mp3InfoHelper::TEST_ALBUM
-  end
-  
-  it "should be able to find the comments in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['comments'].should == Mp3InfoHelper::TEST_COMMENT
-  end
-  
-  it "should be able to find the genre ID in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['genre'].should == Mp3InfoHelper::TEST_GENRE_ID
-  end
-  
-  it "should be able to find the genre name in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['genre_s'].should == Mp3InfoHelper::TEST_GENRE_NAME
-  end
-  
-  it "should be able to find the track number in an ID3v1.1 tag" do
-    ID3.new(packed_id3_1_1_tag)['tracknum'].should == Mp3InfoHelper::TEST_TRACK_NUMBER
-  end
-  
-  it "should correctly name an invalid genre ID 'Unknown'" do
-    tag = sample_id3v1_tag
-    tag['genre'] = Mp3InfoHelper::INVALID_GENRE_ID
-    
-    ID3.new(packed_id3_1_1_tag(tag))['genre_s'].should == "Unknown"
   end
 end

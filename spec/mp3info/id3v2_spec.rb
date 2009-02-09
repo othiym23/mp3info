@@ -23,7 +23,9 @@ describe Mp3Info, "when working with ID3v2 tags" do
   end
   
   it "should be able to add and remove the tag without error" do
+    file_size = File.stat(@mp3_filename).size
     update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag)
+    File.stat(@mp3_filename).size.should > file_size
     
     Mp3Info.hastag2?(@mp3_filename).should be_true
     Mp3Info.removetag2(@mp3_filename)
@@ -69,7 +71,8 @@ describe Mp3Info, "when working with ID3v2 tags" do
     
     Mp3Info.open(@mp3_filename) do |mp3|
       # before update
-      mp3.tag2.should == {}
+      mp3.tag2.should be_nil
+      mp3.tag2 = ID3V2.new
       mp3.tag2.update(tag)
     end
     
@@ -85,8 +88,15 @@ describe Mp3Info, "when working with ID3v2 tags" do
     lambda { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/230-unicode.tag')) }.should_not raise_error
   end
   
+  it "should default to not creating an ID3v2 tag for casual use" do
+    Mp3Info.open(@mp3_filename) do |mp3|
+      mp3.tag2.should be_nil
+    end
+  end
+  
   it "should make it easy to casually use ID3v2 tags" do
     Mp3Info.open(@mp3_filename) do |mp3|
+      mp3.tag2 = ID3V2.new
       mp3.tag2['WCOM'] = "http://www.riaa.org/"
       mp3.tag2['TXXX'] = "A sample comment"
     end

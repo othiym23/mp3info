@@ -2,6 +2,8 @@ require 'yaml'
 require 'iconv'
 
 module ID3V24
+  class FrameException < StandardError ; end
+  
   class Frame
     attr_reader :type
     attr_reader :raw_size
@@ -28,23 +30,23 @@ module ID3V24
     
     def self.create_frame_from_string(type, value)
       klass = find_class(type)
-      puts "ID3V24.create_frame_from_string(type='#{type}',value.size=#{value.size}) =>..." if $DEBUG
+      $stderr.puts("ID3V24.create_frame_from_string(type='#{type}',value=[#{value.inspect}]) =>...") if $DEBUG
       
       if klass
-        puts "...klass='#{klass}'" if $DEBUG
+        $stderr.puts("...klass='#{klass}'") if $DEBUG
         klass.from_s(value)
       else
         # all the 'T###' frames contain encoded text, all the
         # 'W###' frames contain URIs
         case type[0,1]
         when 'T'
-          puts "...klass='ID3V24::TextFrame'" if $DEBUG
+          $stderr.puts("...klass='ID3V24::TextFrame'") if $DEBUG
           TextFrame.from_s(value, type)
         when 'W'
-          puts "...klass='ID3V24::LinkFrame'" if $DEBUG
+          $stderr.puts("...klass='ID3V24::LinkFrame'") if $DEBUG
           LinkFrame.from_s(value, type)
         else
-          puts "...klass='ID3V24::Frame'" if $DEBUG
+          $stderr.puts("...klass='ID3V24::Frame'") if $DEBUG
           Frame.from_s(value, type)
         end
       end
@@ -145,7 +147,7 @@ module ID3V24
       when ENCODING[:utf8]
         value.chomp("\x00")
       else
-        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{value}")
+        raise(FrameException, "invalid encoding #{encoding} encountered in tag value #{value.inspect}")
       end
     end
     
@@ -183,7 +185,7 @@ module ID3V24
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
       
-      puts "ID3V24::TextFrame.split_encoded(encoding=#{encoding},string.size=#{string.size}) => [prefix='#{prefix}',remainder.size=#{remainder.size}]" if $DEBUG
+      $stderr.puts("ID3V24::TextFrame.split_encoded(encoding=#{encoding},string=[#{string.inspect}]) => [prefix='#{prefix.inspect}',remainder=[#{remainder.inspect}]]") if $DEBUG
       [prefix, remainder]
     end
   end
@@ -265,9 +267,9 @@ module ID3V24
     end
   
     def self.from_s(value)
-      puts "raw value of WXXX frame is #{value.inspect}" if $DEBUG
+      $stderr.puts("raw value of WXXX frame is #{value.inspect}") if $DEBUG
       encoding, str = value.unpack("ca*")
-      puts "encoding #{encoding} str #{str.inspect}" if $DEBUG
+      $stderr.puts("encoding #{encoding} str #{str.inspect}") if $DEBUG
       descr, entry = split_descr(encoding, str)
       WXXXFrame.new(encoding, descr, entry)
     end
@@ -334,7 +336,7 @@ module ID3V24
     end
   
     def self.from_s(value)
-      puts "APICFrame.from_s(...value...(size=#{value.size}))" if $DEBUG
+      $stderr.puts("APICFrame.from_s(value.size=#{value.size})") if $DEBUG
       encoding, str = value.unpack("ca*")
       mime_type, picture_type, descr, entry = split_picture_components(encoding, str)
       APICFrame.new(encoding, mime_type, picture_type, descr, entry, value.size)
@@ -431,6 +433,7 @@ module ID3V24
     def self.from_s(value)
       encoding, lang, raw_content = value.unpack("ca3a*")
       descr, entry = split_descr(encoding, raw_content)
+      $stderr.puts("ID3V24::COMMFrame.from_s(value=[#{value.inspect}]) => [encoding=#{encoding}, lang=[#{lang}], descr=[#{descr}], entry=[#{entry}]]") if $DEBUG
       COMMFrame.new(encoding, lang, descr, entry)
     end
   
@@ -530,7 +533,7 @@ module ID3V24
     
     def genre_code
       reversed = {}
-      Mp3Info::GENRES.each_index{ |index| reversed[Mp3Info::GENRES[index]] = index}
+      ID3::GENRES.each_index{ |index| reversed[ID3::GENRES[index]] = index}
       reversed[@value] || 255
     end
   
@@ -541,7 +544,7 @@ module ID3V24
     def TCONFrame.from_genre_code(string)
       hidden_genre = string.match(/\((\d+)\)/)
       if hidden_genre
-        Mp3Info::GENRES[hidden_genre[1].to_i]
+        ID3::GENRES[hidden_genre[1].to_i]
       else
         string
       end

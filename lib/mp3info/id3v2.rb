@@ -1,27 +1,36 @@
+require "delegate"
+require 'mp3info/mpeg_utils'
 require "mp3info/id3v2_frames"
 
-# This class is not intended to be used directly
-class ID3v2 < DelegateClass(Hash) 
-  VERSION_MAJ = 4
+class ID3V2InternalError < StandardError ; end
 
-  attr_reader :io_position
-  attr_reader :options
-  attr_reader :tag2_len
+# This class can be used directly, as it does no I/O of its own.
+class ID3V2 < DelegateClass(Hash)
+  DEFAULT_MAJOR_VERSION = 4
+  DEFAULT_MINOR_VERSION = 0
   
-  def initialize(options = {})
-    @options = { 
-      :lang => "ENG", 
-      :encoding => :iso  #language encoding bit 0 for iso_8859_1, 1 for unicode
-    }
-    @options.update(options)
-    
+  def initialize
+    # initialize the delegated hash
     @hash = {}
-
-    @hash_orig = {}
     super(@hash)
-    @valid = false
-    @version_maj = VERSION_MAJ
-    @version_min = 0
+    
+    # set defaults for everything
+    @raw_tag = self.to_bin
+    
+    # hash to identify if tag is changed after creation
+    @hash_orig = {}
+  end
+  
+  def changed?
+    !defined?(@hash_orig) || @hash_orig != @hash
+  end
+  
+  def valid?
+    valid_major_version?
+  end
+  
+  def valid_major_version?
+    [2, 3, 4].include?(major_version)
   end
   
   def []=(key, args)
@@ -43,73 +52,90 @@ class ID3v2 < DelegateClass(Hash)
     end
   end
   
-  def valid?
-    @valid
+  def major_version
+    @raw_tag[3]
   end
-
-  def changed?
-    @hash_orig != @hash
+  
+  def minor_version
+    @raw_tag[4]
   end
   
   def version
-    "2.#{@version_maj}.#{@version_min}"
+    "2.#{major_version}.#{minor_version}"
   end
-
-  ### gets id3v2 tag information from io
-  def from_io(io)
-    @io = io
-    version_maj, version_min, flags = @io.read(3).unpack("CCB4")
-    unsync, ext_header, experimental, footer = (0..3).collect { |i| flags[i].chr == '1' }
-    raise("can't find version_maj ('#{version_maj}')") unless [2, 3, 4].include?(version_maj)
-    @version_maj, @version_min = version_maj, version_min
-    @valid = true
-    @tag2_len = @io.read(4).from_synchsafe_string
-    case @version_maj
-      when 2
-        read_id3v2_2_frames(tag2_len)
-      when 3,4
-        # seek past extended header if present
-        @io.seek(@io.read(4).from_synchsafe_string - 4, IO::SEEK_CUR) if ext_header
-        read_id3v2_3_frames(tag2_len)
-    end
-    @io_position = @io.pos
+  
+  def flags
+    @raw_tag[5]
+  end
+  
+  def unsynchronized?
+    flags.to_binary_array[4] == 1
+  end
+  
+  def extended_header?
+    flags.to_binary_array[5] == 1
+  end
+  
+  def experimental?
+    flags.to_binary_array[6] == 1
+  end
+  
+  def footer?
+    flags.to_binary_array[7] == 1
+  end
+  
+  def tag_length
+    @raw_tag[6..9].from_synchsafe_string
+  end
+  
+  def from_bin(string)
+    # let's get serious here
+    raise(ID3V2ParseError, "Tag started with '#{string[0...3]}' instead of 'ID3'") unless string.starts_with?('ID3')
     
+    # save the tag to get at the versions and flags after the fact
+    @raw_tag = string
+    
+    raise(ID3V2ParseError, "Can't find version_maj ('#{major_version}')") unless valid_major_version?
+    
+    @hash.update(parse_id3v2_frames(major_version, string))
     @hash_orig = @hash.dup
-    #no more reading
-    @io = nil
-    # we should now have io sitting at the first MPEG frame
   end
-
+  
   def to_bin
     #TODO handle of @tag2[TLEN"]
     #TODO add of crc
     #TODO add restrictions tag
-
-    tag = ""
-    @hash.each do |k, v|
-      next unless v
-      next if v.respond_to?("empty?") and v.empty?
-      if v.is_a?(Array)
-        v.each do |frame|
-          tag << encode_frame(k,frame)
+    if changed?
+      tag = ""
+      @hash.each do |k, v|
+        next unless v
+        next if v.respond_to?("empty?") and v.empty?
+        if v.is_a?(Array)
+          v.each do |frame|
+            tag << encode_frame(k,frame)
+          end
+        else
+          tag << encode_frame(k,v)
         end
-      else
-        tag << encode_frame(k,v)
       end
+
+      tag_str = "ID3"
+
+      #version_maj, version_min, [unsync, ext_header, experimental, footer]
+      tag_str << [ DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
+      tag_str << tag.size.to_synchsafe_string
+      tag_str << tag
+      $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
+      tag_str
+    else
+      raise(ID3V2InternalError,"Can't return an uninitialized tag.") unless defined?(@raw_tag) && nil != @raw_tag
+      $stderr.puts "ID3V2.to_bin tag unchanged, returning cached raw tag [#{@raw_tag}]." if $DEBUG
+      @raw_tag
     end
-
-    tag_str = ""
-
-    #version_maj, version_min, unsync, ext_header, experimental, footer
-    tag_str << [ VERSION_MAJ, 0, "0000" ].pack("CCB4")
-    tag_str << tag.size.to_synchsafe_string
-    tag_str << tag
-    p tag_str if $DEBUG
-    tag_str
   end
 
   private
-
+  
   def encode_frame(type, frame_value)
     encoded_frame_data =  encode_tag(type, frame_value)
 
@@ -117,7 +143,7 @@ class ID3v2 < DelegateClass(Hash)
     header << type[0,4]   #4 character max for a tag's key
 
     # ID3v2.4 has synch safe frame headers
-    if @version_maj == 4
+    if major_version == 4
       header << encoded_frame_data.size.to_synchsafe_string
     else
       header << encoded_frame_data.size.to_binary_string
@@ -130,82 +156,93 @@ class ID3v2 < DelegateClass(Hash)
   end
 
   def encode_tag(name, value)
-    puts "encode_tag(#{name.inspect}, #{value.inspect})" if $DEBUG
+    $stderr.puts("encode_tag(#{name.inspect}, #{value.inspect})") if $DEBUG
     value.to_s
   end
-
-  # create an ID3v2 frame from a raw binary string
-  def decode_tag(name, value)
-    puts "ID3v2.decode_tag(name='#{name}',value.size=#{value.size})" if $DEBUG
-    ID3V24::Frame.create_frame_from_string(name, value)
-  end
-
-  ### reads id3 ver 2.3.x/2.4.x frames and adds the contents to @tag2 hash
-  ###  tag2_len (fixnum) = length of entire id3v2 data, as reported in header
-  ### NOTE: the id3v2 header does not take padding zeroes into consideration
-  def read_id3v2_3_frames(tag2_len)
-    loop do # there are 2 ways to end the loop
-      name = @io.read(4)
-      if name[0] == 0 or name == "MP3e" #bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
-        @io.seek(-4, IO::SEEK_CUR)    # 1. find a padding zero,
-        seek_to_v2_end
-        break
-      else
-        # ID3v2.4 has synch safe frame headers
-        if @version_maj == 4
-          size = @io.read(4).from_synchsafe_string
-        else
-          size = @io.read(4).to_binary_decimal
-        end
-
-        puts "name '#{name}' size #{size} " if $DEBUG
-        @io.seek(2, IO::SEEK_CUR)     # skip flags
-        add_value_to_tag2(name, size)
-
+  
+  def parse_id3v2_frames(version, string)
+    $stderr.puts("ID3V2.parse_id3v2_frames(version=#{version},string=[#{string.inspect}])") if $DEBUG
+    frame_hash = {}
+    # 3 bytes for 'ID3'
+    # 3 bytes for major version, minor version, and header flags
+    # 4 bytes for tag size
+    cur_pos = 10
+    
+    while cur_pos < string.size do
+      name = string.slice(cur_pos, default_width(version))
+      cur_pos += default_width(version)
+      $stderr.puts("parse_id3v2_frames name is #{name}") if $DEBUG
+      
+      break if frame_name_invalid?(version, name)
+      
+      size = frame_size(version, cur_pos, string)
+      cur_pos += default_width(version)
+      $stderr.puts("parse_id3v2_frames size is #{size}") if $DEBUG
+      
+      # ID3v2.2 lacks the awesomely useful frame flags of later versions
+      # TODO do something useful with the frame flags
+      if 2 != version
+        frame_flags = string.slice(cur_pos, 2)
+        cur_pos += 2
+        $stderr.puts("parse_id3v2_frames flags are #{frame_flags.inspect}") if $DEBUG
       end
-      break if @io.pos >= tag2_len # 2. reach length from header
+      
+      add_frame(frame_hash, name, string.slice(cur_pos, size))
+      cur_pos += size
     end
-  end    
-
-  ### reads id3 ver 2.2.x frames and adds the contents to @tag2 hash
-  ###  tag2_len (fixnum) = length of entire id3v2 data, as reported in header
-  ### NOTE: the id3v2 header does not take padding zero's into consideration
-  def read_id3v2_2_frames(tag2_len)
-    loop do
-      name = @io.read(3)
-      if name[0] == 0
-        @io.seek(-3, IO::SEEK_CUR)
-        seek_to_v2_end
-        break
-      else
-        size = (@io.getc << 16) + (@io.getc << 8) + @io.getc
-        add_value_to_tag2(name, size)
-        break if @io.pos >= tag2_len
-      end
+    
+    frame_hash
+  end
+  
+  def default_width(version)
+    case version
+    when 2
+      3
+    when 3, 4
+      4
     end
   end
   
-  ### Add data to tag2["name"]
-  ### read lang_encoding, decode data if unicode and
-  ### create an array if the key already exists in the tag
-  def add_value_to_tag2(name, size)
-    puts "add_value_to_tag2 name #{name} size #{size}" if $DEBUG
-    data = decode_tag(name, @io.read(size))
-    if self.keys.include?(name)
-      unless self[name].is_a?(Array)
-        self[name] = [self[name]]
+  def frame_name_invalid?(version, name)
+    case version
+    when 2
+      name[0] == 0
+    when 3, 4
+      #bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
+      name[0] == 0 or name == "MP3e"
+    end
+  end
+  
+  def frame_size(version, cur_pos, string)
+    case version
+    when 2
+      # 3 bytes for frame size
+      string[cur_pos..(cur_pos + 2)].to_binary_decimal
+    when 3
+      # ID3v2.3 does not have synchsafe sizes
+      string[cur_pos..(cur_pos + 3)].to_binary_decimal
+    when 4
+      # ID3v2.4 has synchsafe frame headers
+      string[cur_pos..(cur_pos + 3)].from_synchsafe_string
+    end
+  end
+
+  # Parse a string from a frame
+  #
+  # An oddity of this class is that it handles multiple frames with the same
+  # ID but only returns them as a list if there's more than 1. For consistency's
+  # sake this should return a list every time, so consider that a TODO.
+  def add_frame(hash, name, string)
+    $stderr.puts "ID3V2.add_frame(name='#{name}',string=[#{string.inspect}])" if $DEBUG
+    frame = ID3V24::Frame.create_frame_from_string(name, string)
+    if hash.keys.include?(name)
+      unless hash[name].is_a?(Array)
+        hash[name] = [hash[name]]
       end
-      self[name] << data
+      hash[name] << frame
     else
-      self[name] = data 
+      hash[name] = frame
     end
-  end
-  
-  ### runs thru @file one char at a time looking for best guess of first MPEG
-  ###  frame, which should be first 0xff byte after id3v2 padding zero's
-  def seek_to_v2_end
-    until @io.getc == 0xff
-    end
-    @io.seek(-1, IO::SEEK_CUR)
   end
 end
+ 

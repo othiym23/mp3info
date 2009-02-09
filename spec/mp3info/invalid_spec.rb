@@ -17,6 +17,6 @@ describe Mp3Info, "when loading an invalid MP3 file" do
       f.write(str)
     end
 
-    lambda { Mp3Info.new(@mp3_filename) }.should raise_error(Mp3InfoError, "cannot find a valid frame after reading 32768 bytes from #{@mp3_filename}")
+    lambda { Mp3Info.new(@mp3_filename) }.should raise_error(Mp3InfoError, "cannot find a valid frame after reading #{File.size(@mp3_filename)} bytes from #{@mp3_filename} of size #{File.size(@mp3_filename)}")
   end
 end

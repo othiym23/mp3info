@@ -22,7 +22,7 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/RAC/Double Jointed/03 - RAC - Nine.mp3'))
     tag2 = mp3.tag2
     
-    mp3.tag2_len.should == 7302
+    mp3.tag2.tag_length.should == 7302
     tag2['APIC'].raw_size.should == 5026
     Digest::SHA1.hexdigest(tag2['APIC'].value).should == '6902c6f4f81838208dd26f88274bf7444f7798a7'
     tag2['APIC'].value.size.should == 5013
@@ -32,7 +32,7 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
     tag2 = mp3.tag2
     
-    mp3.tag2_len.should == 35_092
+    mp3.tag2.tag_length.should == 35_092
     tag2['APIC'].raw_size.should == 34_698
     tag2['APIC'].value.size.should == 34_685
     tag2['COMM'].first.language.should == 'eng'

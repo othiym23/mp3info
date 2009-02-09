@@ -155,6 +155,7 @@ EOF
   
   def update_id3_2_tag(filename, tag)
     Mp3Info.open(filename) do |mp3|
+      mp3.tag2 = ID3V2.new unless mp3.tag2
       mp3.tag2.update(tag)
     end
     

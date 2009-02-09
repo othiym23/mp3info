@@ -1,6 +1,6 @@
-$:.unshift("lib/")
+$:.unshift("spec/")
 
-require 'mp3info'
+require 'mp3info/mp3info_helper'
 
 describe Mp3Info, 'when working with its "universal" tag' do
   include Mp3InfoHelper
