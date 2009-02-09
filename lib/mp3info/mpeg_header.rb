@@ -1,8 +1,7 @@
 require 'mp3info/mpeg_utils'
 
 # lots of stuff can go wrong with an MPEG header
-class InvalidMPEGHeader < ArgumentError
-end
+class InvalidMPEGHeader < StandardError ; end
 
 # MPEG headers can be altered with this class, but mostly for testing purposes
 class MPEGHeader
