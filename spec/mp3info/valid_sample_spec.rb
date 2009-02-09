@@ -27,15 +27,15 @@ describe Mp3Info, "when loading a sample MP3 file" do
   end
   
   it "should detect that the sample file contains MPEG 1 audio" do
-    Mp3Info.open(@mp3_filename) { |info| info.mpeg_version.should == 1 }
+    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.version.should == 1 }
   end
   
   it "should detect that the sample file contains layer 3 audio" do
-    Mp3Info.open(@mp3_filename) { |info| info.layer.should == 3 }
+    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.layer.should == 3 }
   end
   
   it "should detect that the sample file does not contain VBR-encoded audio" do
-    Mp3Info.open(@mp3_filename) { |info| info.vbr.should_not be_true }
+    Mp3Info.open(@mp3_filename) { |info| info.vbr?.should_not be_true }
   end
   
   it "should detect that the sample file has a CBR bitrate of 128kbps" do
@@ -43,15 +43,15 @@ describe Mp3Info, "when loading a sample MP3 file" do
   end
   
   it "should detect that the sample file is encoded as joint stereo" do
-    Mp3Info.open(@mp3_filename) { |info| info.channel_mode.should == "Joint stereo" }
+    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.mode.should == "Joint stereo" }
   end
   
   it "should detect that the sample file has a sample rate of 44.1kHz" do
-    Mp3Info.open(@mp3_filename) { |info| info.samplerate.should == 44_100 }
+    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.sample_rate.should == 44_100 }
   end
   
   it "should detect that the sample file is not error-protected" do
-    Mp3Info.open(@mp3_filename) { |info| info.error_protection.should be_false }
+    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.error_protection.should be_false }
   end
   
   it "should detect that the sample file has a duration of 0.1305625 seconds" do

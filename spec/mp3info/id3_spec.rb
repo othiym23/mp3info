@@ -17,27 +17,27 @@ describe Mp3Info, "when working with ID3v1 tags" do
   
   it "should be able to add the tag without error" do
     lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error
-    Mp3Info.hastag1?(@mp3_filename).should be_true
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
   end
   
   it "should be able to add and remove the tag without error" do
     lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error
-    Mp3Info.hastag1?(@mp3_filename).should be_true
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
     lambda { Mp3Info.removetag1(@mp3_filename) }.should_not raise_error
-    Mp3Info.hastag1?(@mp3_filename).should be_false
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_false
   end
 
   it "should be able to add a tag and then remove it from within the open() block" do
     lambda { Mp3Info.open(@mp3_filename) { |info| info.tag1 = sample_id3v1_tag } }.should_not raise_error
-    Mp3Info.hastag1?(@mp3_filename).should be_true
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
     lambda { Mp3Info.open(@mp3_filename) { |info| info.removetag1 } }.should_not raise_error(IOError, "closed stream")
-    Mp3Info.hastag1?(@mp3_filename).should be_false
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_false
   end
   
   it "should be able to add and then find a ID3v1.0 tag" do
     create_valid_id3_1_0_file(@mp3_filename)
     
-    Mp3Info.hastag1?(@mp3_filename).should be_true
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
   end
   
   it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
@@ -91,7 +91,7 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should be able to add and then find an ID3v1.1 tag" do
     create_valid_id3_1_1_file(@mp3_filename)
     
-    Mp3Info.hastag1?(@mp3_filename).should be_true
+    Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
   end
   
   it "should correctly identify the tag as ID3v1.1 and not ID3v1.0" do

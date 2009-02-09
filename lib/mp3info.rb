@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 730e44b0259d 2009/02/09 08:18:39 ogd $
+# $Id: mp3info.rb,v 7c0f94fd5799 2009/02/09 08:44:25 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -43,20 +43,10 @@ class Mp3Info
   # Xing header
   attr_reader :xing_header
   
-  # mpeg version = 1 or 2
-  def mpeg_version
-    @mpeg_header.version
-  end
-
-  # layer = 1, 2, or 3
-  def layer
-    @mpeg_header.layer
-  end
-
   # bitrate in kbps
   def bitrate
     if has_xing_header?
-      (((@xing_header.bytes / @xing_header.frames) * samplerate) / 144) >> 10
+      (((@xing_header.bytes / @xing_header.frames) * @mpeg_header.sample_rate) / 144) >> 10
     elsif has_mpeg_header?
       @mpeg_header.bitrate
     else
@@ -64,29 +54,16 @@ class Mp3Info
     end
   end
 
-  # samplerate in Hz
-  def samplerate
-    @mpeg_header.sample_rate
-  end
-
-  # channel mode => "Stereo", "JStereo", "Dual Channel" or "Single Channel"
-  def channel_mode
-    @mpeg_header.mode
-  end
-
   # variable bitrate => true or false
-  attr_reader :vbr
+  def vbr?
+    (has_xing_header? && xing_header.vbr?) || (defined?(@vbr) && @vbr)
+  end
 
   # length in seconds as a Float
   attr_reader :length
 
-  # error protection => true or false
-  def error_protection
-    @mpeg_header.error_protection
-  end
-
-  #a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @tag1
-  #this tag has priority over @tag1 and @tag2 when writing the tag with #close
+  # a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @tag1
+  # this tag has priority over @tag1 and @tag2 when writing the tag with #close
   attr_reader :tag
 
   # The ID3v2 tag is a class that acts as a hash. You can update it and it will
@@ -94,7 +71,7 @@ class Mp3Info
   attr_reader :tag1
   
   def tag1=(new_hash)
-    @tag1 = ID3.new unless hastag1?
+    @tag1 = ID3.new unless has_id3v1_tag?
     @tag1.update(new_hash)
   end
   
@@ -105,27 +82,27 @@ class Mp3Info
   # the original filename
   attr_reader :filename
 
-  # Moved hastag1? and hastag2? to be booleans
+  # Moved has_id3v1_tag? and has_id3v2_tag? to be booleans
   attr_reader :hastag1, :hastag2
 
   # expose the raw size of the tag for quality-checking purposes
   attr_reader :tag_size
   
-  def self.hastag1?(filename)
+  def self.has_id3v1_tag?(filename)
     File.open(filename) { |f|
       f.seek(-ID3::TAGSIZE, File::SEEK_END)
       f.read(3) == "TAG"
     }
   end
 
-  def self.hastag2?(filename)
+  def self.has_id3v2_tag?(filename)
     File.open(filename) { |f|
       f.read(3) == "ID3"
     }
   end
 
   def self.removetag1(filename)
-    if self.hastag1?(filename)
+    if self.has_id3v1_tag?(filename)
       newsize = File.size(filename) - ID3::TAGSIZE
       File.open(filename, "rb+") { |f| f.truncate(newsize) }
     end
@@ -137,15 +114,15 @@ class Mp3Info
     end
   end
   
-  def hastag?
+  def has_universal_tag?
     defined?(@tag)
   end
 
-  def hastag1?
+  def has_id3v1_tag?
     defined?(@tag1) && nil != @tag1 && @tag1.valid?
   end
 
-  def hastag2?
+  def has_id3v2_tag?
     defined?(@tag2) && nil != @tag2 && @tag2.valid?
   end
   
@@ -158,13 +135,13 @@ class Mp3Info
   end
   
   def removetag1
-    if Mp3Info.hastag1?(@filename)
+    if Mp3Info.has_id3v1_tag?(@filename)
       newsize = File.size(@filename) - ID3::TAGSIZE
       $stderr.puts("Mp3Info.removetag1 has ID3v1 tag, file will have new size #{newsize}.") if $DEBUG
       File.truncate(@filename, newsize)
     end
     
-    if hastag1?
+    if has_id3v1_tag?
       @tag1 = nil
     end
   end
@@ -225,9 +202,9 @@ class Mp3Info
     #
     if has_mpeg_header? && !has_xing_header?
       # for cbr, calculate duration with the given bitrate
-      @streamsize = file.stat.size - (hastag1? ? ID3::TAGSIZE : 0) - ((hastag2? ? (@tag2.tag_length + 10) : 0))
+      @streamsize = file.stat.size - (has_id3v1_tag? ? ID3::TAGSIZE : 0) - ((has_id3v2_tag? ? (@tag2.tag_length + 10) : 0))
       @length = ((@streamsize << 3) / 1000.0) / bitrate
-      if hastag2? && @tag2['TLEN']
+      if has_id3v2_tag? && @tag2['TLEN']
         # but if another duration is given and it isn't close (within 5%)
         #  assume the mp3 is vbr and go with the given duration
         tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
@@ -249,7 +226,7 @@ class Mp3Info
       file.seek(-ID3::TAGSIZE, IO::SEEK_END)
       if file.read(3) == 'TAG'
         file.seek(-3, IO::SEEK_CUR)
-        if hastag1?
+        if has_id3v1_tag?
           @tag1.update(load_id3_1_tag(file))
         else
           @tag1 = load_id3_1_tag(file)
@@ -261,7 +238,7 @@ class Mp3Info
     
     load_universal_tag!
     
-    if !(hastag1? || hastag2? || has_mpeg_header? || has_xing_header?)
+    if !(has_id3v1_tag? || has_id3v2_tag? || has_mpeg_header? || has_xing_header?)
       raise(Mp3InfoError, "There was no useful metadata in #{@filename}, are you sure it's an MP3?")
     end
   end
@@ -338,8 +315,8 @@ class Mp3Info
   # inspect inside Mp3Info
   def to_s
     time = "Time: #{time_string}"
-    type = "MPEG#{mpeg_version} Layer #{layer}"
-    properties = "[ #{@vbr ? "~" : ""}#{bitrate}kbps @ #{samplerate / 1000.0}kHz - #{channel_mode} ]#{error_protection ? " +error" : ""}"
+    type = "MPEG#{@mpeg_header.version} Layer #{@mpeg_header.layer}"
+    properties = "[ #{vbr? ? "~" : ""}#{bitrate}kbps @ #{@mpeg_header.sample_rate / 1000.0}kHz - #{@mpeg_header.mode} ]#{@mpeg_header.error_protection ? " +error" : ""}"
     
     # try to always keep the string representation at 80 characters
     "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"
@@ -350,11 +327,11 @@ class Mp3Info
   def load_universal_tag!
     @tag = {}
     
-    if hastag1?
+    if has_id3v1_tag?
       @tag = @tag1.dup
     end
     
-    if hastag2?
+    if has_id3v2_tag?
       @tag = {}
       V1_V2_TAG_MAPPING.each do |key1, key2| 
         t2 = @tag2[key2]
@@ -372,19 +349,19 @@ class Mp3Info
   end
   
   def prepare_universal_tag!
-    if hastag? && @tag != @tag_orig
+    if has_universal_tag? && @tag != @tag_orig
       $stderr.puts("Mp3Info.prepare_universal_tag! universal tag has changed") if $DEBUG
-      if !(hastag1? || hastag2?)
+      if !(has_id3v1_tag? || has_id3v2_tag?)
         @tag2 = ID3V2.new
       end
       
-      if hastag1?
+      if has_id3v1_tag?
         @tag.each do |k, v|
           @tag1[k] = v
         end
       end
       
-      if hastag2?
+      if has_id3v2_tag?
         V1_V2_TAG_MAPPING.each do |key1, key2|
           @tag2[key2] = @tag[key1] if @tag[key1]
         end
@@ -393,7 +370,7 @@ class Mp3Info
   end
   
   def save_id3v1_changes!
-    if hastag1? && @tag1.changed?
+    if has_id3v1_tag? && @tag1.changed?
       $stderr.puts("Mp3Info.save_id3v1_changes! #{@tag1.version} tag has changed") if $DEBUG
       raise(Mp3InfoError, "file is not writable") unless File.writable?(@filename)
       
@@ -415,14 +392,14 @@ class Mp3Info
   end
 
   def update_file_with_changed_id3v2!
-    if hastag2?
+    if has_id3v2_tag?
       if @tag2.changed?
         $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@tag2.version} tag has changed" if $DEBUG
         write_changed_file! { |file| file.write(@tag2.to_bin) unless @tag2.empty? }
       else
         $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@tag2.version} tag is unchanged, not writing file" if $DEBUG
       end
-    elsif Mp3Info.hastag2?(@filename)
+    elsif Mp3Info.has_id3v2_tag?(@filename)
       $stderr.puts("Mp3Info.update_file_with_changed_id3v2! ID3v2 tag has been eliminated from previously tagged file.") if $DEBUG
       write_changed_file!
     end
@@ -466,7 +443,7 @@ class Mp3Info
       time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
     else
       length = ((@streamsize << 3) / 1000.0) / bitrate
-      if hastag2? && @tag2['TLEN']
+      if has_id3v2_tag? && @tag2['TLEN']
         tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
         percent_diff = ((length.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
