@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v ff91be31cf9a 2009/02/10 18:14:30 ogd $
+# $Id: mp3info.rb,v a3eb5f298509 2009/02/10 18:14:52 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -23,7 +23,7 @@ require 'mp3info/id3v2'
 class Mp3InfoError < StandardError ; end
 
 class Mp3Info
-  VERSION = "0.6"
+  VERSION = "0.7-fln"
   
   V1_V2_TAG_MAPPING = { 
     "title"    => "TIT2",
