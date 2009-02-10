@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 92e1c65bb574 2009/02/10 17:54:04 ogd $
+# $Id: mp3info.rb,v 8f4989666dda 2009/02/10 17:56:34 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -345,7 +345,7 @@ class Mp3Info
   # but the universal tag relies upon not stomping on the empty tag if it
   # exists.
   def actually_has_id3v2_tag?
-    defined?(@tag2) && nil != @tag2 && @tag2.valid?
+    nil != defined?(@tag2) && nil != @tag2 && @tag2.valid?
   end
   
   def load_universal_tag!
