@@ -40,6 +40,22 @@ describe Mp3Info, "when working with ID3v2 tags" do
     Mp3Info.has_id3v2_tag?(@mp3_filename).should be_false
   end
   
+  it "should not have a tag until one is automatically created" do
+    mp3 = Mp3Info.new(@mp3_filename)
+    mp3.has_id3v2_tag?.should be_false
+    mp3.tag2['TPE1'] = 'The Mighty Boosh'
+    mp3.has_id3v2_tag?.should be_true
+    mp3.tag2['TPE1'].value.should == 'The Mighty Boosh'
+  end
+  
+  it "should create ID3v2.4.0 tags by default" do
+    mp3 = Mp3Info.new(@mp3_filename)
+    mp3.has_id3v2_tag?.should be_false
+    mp3.tag2['TRCK'] = "1/8"
+    mp3.has_id3v2_tag?.should be_true
+    mp3.tag2.version.should == "2.4.0"
+  end
+  
   it "should be able to discover the version of the ID3v2 tag written to disk" do
     update_id3_2_tag(@mp3_filename, sample_id3v2_tag).version.should == "2.4.0"
   end
@@ -71,7 +87,7 @@ describe Mp3Info, "when working with ID3v2 tags" do
     
     Mp3Info.open(@mp3_filename) do |mp3|
       # before update
-      mp3.tag2.should be_nil
+      mp3.has_id3v2_tag?.should be_false
       mp3.tag2 = ID3V2.new
       mp3.tag2.update(tag)
     end
@@ -88,9 +104,9 @@ describe Mp3Info, "when working with ID3v2 tags" do
     lambda { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/230-unicode.tag')) }.should_not raise_error
   end
   
-  it "should default to not creating an ID3v2 tag for casual use" do
+  it "should default to not exposing the ID3v2 tag for casual use until it's had a frame added" do
     Mp3Info.open(@mp3_filename) do |mp3|
-      mp3.tag2.should be_nil
+      mp3.has_id3v2_tag?.should be_false
     end
   end
   

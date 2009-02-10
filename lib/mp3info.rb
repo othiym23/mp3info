@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 588c909e3100 2009/02/10 17:33:29 ogd $
+# $Id: mp3info.rb,v 92e1c65bb574 2009/02/10 17:54:04 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -127,7 +127,7 @@ class Mp3Info
   end
 
   def has_id3v2_tag?
-    nil != defined?(@tag2) && nil != @tag2 && @tag2.valid?
+    actually_has_id3v2_tag? && @tag2.size > 0
   end
   
   def has_mpeg_header?
@@ -248,14 +248,15 @@ class Mp3Info
     
     file.close
     
-    # there should always be a ID3 tag available for convenience
-    @tag1 = ID3.new if nil == defined? @tag1
-    
     load_universal_tag!
     
     if !(has_id3v1_tag? || has_id3v2_tag? || has_mpeg_header? || has_xing_header?)
       raise(Mp3InfoError, "There was no useful metadata in #{@filename}, are you sure it's an MP3?")
     end
+    
+    # there should always be tags available for convenience
+    @tag1 = ID3.new if nil == defined? @tag1
+    @tag2 = ID3V2.new if nil == defined? @tag2
   end
   
   # Flush pending modifications to tags and close the file
@@ -338,7 +339,15 @@ class Mp3Info
   end
 
   private
-
+  
+  # Internal semantics are a little different than what is exposed -- casual
+  # users should only think the file has an MP3 tag when the tag has contents,
+  # but the universal tag relies upon not stomping on the empty tag if it
+  # exists.
+  def actually_has_id3v2_tag?
+    defined?(@tag2) && nil != @tag2 && @tag2.valid?
+  end
+  
   def load_universal_tag!
     @tag = {}
     
@@ -346,7 +355,7 @@ class Mp3Info
       @tag = @tag1.dup
     end
     
-    if has_id3v2_tag?
+    if actually_has_id3v2_tag?
       @tag = {}
       V1_V2_TAG_MAPPING.each do |key1, key2| 
         t2 = @tag2[key2]
@@ -366,7 +375,7 @@ class Mp3Info
   def prepare_universal_tag!
     if has_universal_tag? && @tag != @tag_orig
       $stderr.puts("Mp3Info.prepare_universal_tag! universal tag has changed") if $DEBUG
-      if !(has_id3v1_tag? || has_id3v2_tag?)
+      if !(has_id3v1_tag? || actually_has_id3v2_tag?)
         @tag2 = ID3V2.new
       end
       
@@ -376,7 +385,7 @@ class Mp3Info
         end
       end
       
-      if has_id3v2_tag?
+      if actually_has_id3v2_tag?
         V1_V2_TAG_MAPPING.each do |key1, key2|
           @tag2[key2] = @tag[key1] if @tag[key1]
         end
