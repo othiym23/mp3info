@@ -23,14 +23,14 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should be able to add and remove the tag without error" do
     lambda { Mp3Info.open(@mp3_filename) { |info| info.id3v1_tag = sample_id3v1_tag } }.should_not raise_error
     Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
-    lambda { Mp3Info.removeid3v1_tag(@mp3_filename) }.should_not raise_error
+    lambda { Mp3Info.remove_id3v1_tag(@mp3_filename) }.should_not raise_error
     Mp3Info.has_id3v1_tag?(@mp3_filename).should be_false
   end
 
   it "should be able to add a tag and then remove it from within the open() block" do
     lambda { Mp3Info.open(@mp3_filename) { |info| info.id3v1_tag = sample_id3v1_tag } }.should_not raise_error
     Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
-    lambda { Mp3Info.open(@mp3_filename) { |info| info.removeid3v1_tag } }.should_not raise_error(IOError, "closed stream")
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.remove_id3v1_tag } }.should_not raise_error(IOError, "closed stream")
     Mp3Info.has_id3v1_tag?(@mp3_filename).should be_false
   end
   

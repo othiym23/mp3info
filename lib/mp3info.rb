@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v da9192ba5f7d 2009/02/10 18:11:37 ogd $
+# $Id: mp3info.rb,v ff91be31cf9a 2009/02/10 18:14:30 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -99,14 +99,14 @@ class Mp3Info
     }
   end
 
-  def self.removeid3v1_tag(filename)
+  def self.remove_id3v1_tag(filename)
     if self.has_id3v1_tag?(filename)
       newsize = File.size(filename) - ID3::TAGSIZE
       File.open(filename, "rb+") { |f| f.truncate(newsize) }
     end
   end
   
-  def self.removeid3v2_tag(filename)
+  def self.remove_id3v2_tag(filename)
     self.open(filename) do |mp3|
       mp3.id3v2_tag = nil
     end
@@ -136,10 +136,10 @@ class Mp3Info
     nil != defined?(@lame_header) && nil != @lame_header
   end
   
-  def removeid3v1_tag
+  def remove_id3v1_tag
     if Mp3Info.has_id3v1_tag?(@filename)
       newsize = File.size(@filename) - ID3::TAGSIZE
-      $stderr.puts("Mp3Info.removeid3v1_tag has ID3v1 tag, file will have new size #{newsize}.") if $DEBUG
+      $stderr.puts("Mp3Info.remove_id3v1_tag has ID3v1 tag, file will have new size #{newsize}.") if $DEBUG
       File.truncate(@filename, newsize)
     end
     
@@ -148,7 +148,7 @@ class Mp3Info
     end
   end
   
-  def removeid3v2_tag
+  def remove_id3v2_tag
     @id3v2_tag.clear
   end
 
