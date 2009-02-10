@@ -90,7 +90,7 @@ class ID3V2 < DelegateClass(Hash)
   
   def from_bin(string)
     # let's get serious here
-    raise(ID3V2ParseError, "Tag started with '#{string[0...3]}' instead of 'ID3'") unless string.starts_with?('ID3')
+    raise(ID3V2ParseError, "Tag started with '#{string[0...3]}' instead of 'ID3'") unless string.index('ID3') == 0
     
     # save the tag to get at the versions and flags after the fact
     @raw_tag = string
