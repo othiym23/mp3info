@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 8f4989666dda 2009/02/10 17:56:34 ogd $
+# $Id: mp3info.rb,v a92f7f2ade5f 2009/02/10 18:05:51 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -66,17 +66,17 @@ class Mp3Info
   # length in seconds as a Float
   attr_reader :length
 
-  # a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @tag1
-  # this tag has priority over @tag1 and @tag2 when writing the tag with #close
+  # a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @id3v1_tag
+  # this tag has priority over @id3v1_tag and @tag2 when writing the tag with #close
   attr_reader :tag
 
   # The ID3 tag is a class that acts as a hash. You can update it and it will
   # be written out when the file is closed.
-  attr_reader :tag1
+  attr_reader :id3v1_tag
   
-  def tag1=(new_hash)
-    @tag1 = ID3.new unless has_id3v1_tag?
-    @tag1.update(new_hash)
+  def id3v1_tag=(new_hash)
+    @id3v1_tag = ID3.new unless has_id3v1_tag?
+    @id3v1_tag.update(new_hash)
   end
   
   # id3v2 tag attribute as an ID3V2 object. You can modify it, it will be written when calling
@@ -86,12 +86,6 @@ class Mp3Info
   # the original filename
   attr_reader :filename
 
-  # Moved has_id3v1_tag? and has_id3v2_tag? to be booleans
-  attr_reader :hastag1, :hastag2
-
-  # expose the raw size of the tag for quality-checking purposes
-  attr_reader :tag_size
-  
   def self.has_id3v1_tag?(filename)
     File.open(filename) { |f|
       f.seek(-ID3::TAGSIZE, File::SEEK_END)
@@ -105,7 +99,7 @@ class Mp3Info
     }
   end
 
-  def self.removetag1(filename)
+  def self.removeid3v1_tag(filename)
     if self.has_id3v1_tag?(filename)
       newsize = File.size(filename) - ID3::TAGSIZE
       File.open(filename, "rb+") { |f| f.truncate(newsize) }
@@ -123,7 +117,7 @@ class Mp3Info
   end
 
   def has_id3v1_tag?
-    nil != defined?(@tag1) && nil != @tag1 && @tag1.valid? && @tag1.size > 0
+    nil != defined?(@id3v1_tag) && nil != @id3v1_tag && @id3v1_tag.valid? && @id3v1_tag.size > 0
   end
 
   def has_id3v2_tag?
@@ -142,15 +136,15 @@ class Mp3Info
     nil != defined?(@lame_header) && nil != @lame_header
   end
   
-  def removetag1
+  def removeid3v1_tag
     if Mp3Info.has_id3v1_tag?(@filename)
       newsize = File.size(@filename) - ID3::TAGSIZE
-      $stderr.puts("Mp3Info.removetag1 has ID3v1 tag, file will have new size #{newsize}.") if $DEBUG
+      $stderr.puts("Mp3Info.removeid3v1_tag has ID3v1 tag, file will have new size #{newsize}.") if $DEBUG
       File.truncate(@filename, newsize)
     end
     
     if has_id3v1_tag?
-      @tag1 = nil
+      @id3v1_tag = nil
     end
   end
   
@@ -173,8 +167,8 @@ class Mp3Info
     when 'TAG' # ID3 tag at the beginning of the file (unusual)
       $stderr.puts("Mp3Info.initialize TAG found at beginning of file") if $DEBUG
       file.seek(-3, IO::SEEK_CUR)
-      @tag1 = load_id3_1_tag(file)
-      $stderr.puts("Mp3Info.initialize ID3 tag is #{@tag1.inspect}") if $DEBUG
+      @id3v1_tag = load_id3_1_tag(file)
+      $stderr.puts("Mp3Info.initialize ID3 tag is #{@id3v1_tag.inspect}") if $DEBUG
     when 'ID3' # ID3v2 tag
       $stderr.puts("Mp3Info.initialize ID3 found at beginning of file") if $DEBUG
       file.seek(-3, IO::SEEK_CUR)
@@ -239,9 +233,9 @@ class Mp3Info
       if file.read(3) == 'TAG'
         file.seek(-3, IO::SEEK_CUR)
         if has_id3v1_tag?
-          @tag1.update(load_id3_1_tag(file))
+          @id3v1_tag.update(load_id3_1_tag(file))
         else
-          @tag1 = load_id3_1_tag(file)
+          @id3v1_tag = load_id3_1_tag(file)
         end
       end
     end
@@ -255,7 +249,7 @@ class Mp3Info
     end
     
     # there should always be tags available for convenience
-    @tag1 = ID3.new if nil == defined? @tag1
+    @id3v1_tag = ID3.new if nil == defined? @id3v1_tag
     @tag2 = ID3V2.new if nil == defined? @tag2
   end
   
@@ -352,7 +346,7 @@ class Mp3Info
     @tag = {}
     
     if has_id3v1_tag?
-      @tag = @tag1.dup
+      @tag = @id3v1_tag.dup
     end
     
     if actually_has_id3v2_tag?
@@ -381,7 +375,7 @@ class Mp3Info
       
       if has_id3v1_tag?
         @tag.each do |k, v|
-          @tag1[k] = v
+          @id3v1_tag[k] = v
         end
       end
       
@@ -394,8 +388,8 @@ class Mp3Info
   end
   
   def save_id3v1_changes!
-    if has_id3v1_tag? && @tag1.changed?
-      $stderr.puts("Mp3Info.save_id3v1_changes! #{@tag1.version} tag has changed") if $DEBUG
+    if has_id3v1_tag? && @id3v1_tag.changed?
+      $stderr.puts("Mp3Info.save_id3v1_changes! #{@id3v1_tag.version} tag has changed") if $DEBUG
       raise(Mp3InfoError, "file is not writable") unless File.writable?(@filename)
       
       File.open(@filename, 'rb+') do |file|
@@ -408,9 +402,9 @@ class Mp3Info
           # append new tag to end of file
           file.seek(0, File::SEEK_END)
         end
-        writable_tag = @tag1.sync_bin
-        $stderr.puts("Mp3Info.close #{@tag1.version} [#{writable_tag.inspect}] about to be written at #{file.pos}") if $DEBUG
-        file.write(@tag1.sync_bin)
+        writable_tag = @id3v1_tag.sync_bin
+        $stderr.puts("Mp3Info.close #{@id3v1_tag.version} [#{writable_tag.inspect}] about to be written at #{file.pos}") if $DEBUG
+        file.write(@id3v1_tag.sync_bin)
       end
     end
   end
