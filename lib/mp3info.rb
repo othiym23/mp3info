@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 71b7c54c4e3f 2009/02/10 19:10:49 ogd $
+# $Id: mp3info.rb,v 7c0f94fd5799 2009/02/09 08:44:25 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -432,7 +432,7 @@ class Mp3Info
     
     tmpfile_path = nil
     File.open(@filename, 'rb+') do |original|
-      Tempfile.open('mp3info') do |temporary|
+      Tempfile.open('mp3info', File.dirname(@filename)) do |temporary|
         tmpfile_path = temporary.path
         
         yield temporary if block
