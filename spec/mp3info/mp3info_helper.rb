@@ -155,11 +155,10 @@ EOF
   
   def update_id3_2_tag(filename, tag)
     Mp3Info.open(filename) do |mp3|
-      mp3.tag2 = ID3V2.new unless mp3.tag2
-      mp3.tag2.update(tag)
+      mp3.id3v2_tag.update(tag)
     end
     
-    Mp3Info.open(filename) { |m| m.tag2 }
+    Mp3Info.open(filename) { |m| m.id3v2_tag }
   end
   
   def test_against_id3v2_prog(written_tag)

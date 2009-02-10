@@ -102,9 +102,8 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def to_bin
-    #TODO handle of @tag2[TLEN"]
-    #TODO add of crc
-    #TODO add restrictions tag
+    #TODO handle TLEN frames
+    #TODO add CRC
     if changed?
       tag = ""
       @hash.each do |k, v|
@@ -121,7 +120,7 @@ class ID3V2 < DelegateClass(Hash)
 
       tag_str = "ID3"
 
-      #version_maj, version_min, [unsync, ext_header, experimental, footer]
+      #TODO flags: version_maj, version_min, [unsync, ext_header, experimental, footer]
       tag_str << [ DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
       tag_str << tag.size.to_synchsafe_string
       tag_str << tag

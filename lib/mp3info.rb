@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v a92f7f2ade5f 2009/02/10 18:05:51 ogd $
+# $Id: mp3info.rb,v da9192ba5f7d 2009/02/10 18:11:37 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -67,7 +67,7 @@ class Mp3Info
   attr_reader :length
 
   # a sort of "universal" tag, regardless of the tag version, 1 or 2, with the same keys as @id3v1_tag
-  # this tag has priority over @id3v1_tag and @tag2 when writing the tag with #close
+  # this tag has priority over @id3v1_tag and @id3v2_tag when writing the tag with #close
   attr_reader :tag
 
   # The ID3 tag is a class that acts as a hash. You can update it and it will
@@ -81,7 +81,7 @@ class Mp3Info
   
   # id3v2 tag attribute as an ID3V2 object. You can modify it, it will be written when calling
   # "close" method.
-  attr_accessor :tag2
+  attr_accessor :id3v2_tag
 
   # the original filename
   attr_reader :filename
@@ -106,9 +106,9 @@ class Mp3Info
     end
   end
   
-  def self.removetag2(filename)
+  def self.removeid3v2_tag(filename)
     self.open(filename) do |mp3|
-      mp3.tag2 = nil
+      mp3.id3v2_tag = nil
     end
   end
   
@@ -121,7 +121,7 @@ class Mp3Info
   end
 
   def has_id3v2_tag?
-    actually_has_id3v2_tag? && @tag2.size > 0
+    actually_has_id3v2_tag? && @id3v2_tag.size > 0
   end
   
   def has_mpeg_header?
@@ -148,8 +148,8 @@ class Mp3Info
     end
   end
   
-  def removetag2
-    @tag2.clear
+  def removeid3v2_tag
+    @id3v2_tag.clear
   end
 
   # Instantiate a new Mp3Info object with name +filename+
@@ -172,7 +172,7 @@ class Mp3Info
     when 'ID3' # ID3v2 tag
       $stderr.puts("Mp3Info.initialize ID3 found at beginning of file") if $DEBUG
       file.seek(-3, IO::SEEK_CUR)
-      @tag2 = load_id3_2_tag(file)
+      @id3v2_tag = load_id3_2_tag(file)
     else
       $stderr.puts("Mp3Info.initialize no tag found at beginning of file") if $DEBUG
       file.seek(0)
@@ -208,12 +208,12 @@ class Mp3Info
     #
     if has_mpeg_header? && !has_xing_header?
       # for cbr, calculate duration with the given bitrate
-      @streamsize = file.stat.size - (has_id3v1_tag? ? ID3::TAGSIZE : 0) - ((has_id3v2_tag? ? (@tag2.tag_length + 10) : 0))
+      @streamsize = file.stat.size - (has_id3v1_tag? ? ID3::TAGSIZE : 0) - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
       @length = ((@streamsize << 3) / 1000.0) / bitrate
-      if has_id3v2_tag? && @tag2['TLEN']
+      if has_id3v2_tag? && @id3v2_tag['TLEN']
         # but if another duration is given and it isn't close (within 5%)
         #  assume the mp3 is vbr and go with the given duration
-        tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
+        tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
         percent_diff = ((@length.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
           # without the Xing header, this is the best guess without reading
@@ -250,7 +250,7 @@ class Mp3Info
     
     # there should always be tags available for convenience
     @id3v1_tag = ID3.new if nil == defined? @id3v1_tag
-    @tag2 = ID3V2.new if nil == defined? @tag2
+    @id3v2_tag = ID3V2.new if nil == defined? @id3v2_tag
   end
   
   # Flush pending modifications to tags and close the file
@@ -339,7 +339,7 @@ class Mp3Info
   # but the universal tag relies upon not stomping on the empty tag if it
   # exists.
   def actually_has_id3v2_tag?
-    nil != defined?(@tag2) && nil != @tag2 && @tag2.valid?
+    nil != defined?(@id3v2_tag) && nil != @id3v2_tag && @id3v2_tag.valid?
   end
   
   def load_universal_tag!
@@ -352,12 +352,12 @@ class Mp3Info
     if actually_has_id3v2_tag?
       @tag = {}
       V1_V2_TAG_MAPPING.each do |key1, key2| 
-        t2 = @tag2[key2]
+        t2 = @id3v2_tag[key2]
         next unless t2
         @tag[key1] = t2.is_a?(Array) ? t2.first.value : t2.value
 
         if key1 == "tracknum"
-          val = @tag2[key2].is_a?(Array) ? @tag2[key2].first.value : @tag2[key2].value
+          val = @id3v2_tag[key2].is_a?(Array) ? @id3v2_tag[key2].first.value : @id3v2_tag[key2].value
           @tag[key1] = val.to_i
         end
       end
@@ -370,7 +370,7 @@ class Mp3Info
     if has_universal_tag? && @tag != @tag_orig
       $stderr.puts("Mp3Info.prepare_universal_tag! universal tag has changed") if $DEBUG
       if !(has_id3v1_tag? || actually_has_id3v2_tag?)
-        @tag2 = ID3V2.new
+        @id3v2_tag = ID3V2.new
       end
       
       if has_id3v1_tag?
@@ -381,7 +381,7 @@ class Mp3Info
       
       if actually_has_id3v2_tag?
         V1_V2_TAG_MAPPING.each do |key1, key2|
-          @tag2[key2] = @tag[key1] if @tag[key1]
+          @id3v2_tag[key2] = @tag[key1] if @tag[key1]
         end
       end
     end
@@ -411,11 +411,11 @@ class Mp3Info
 
   def update_file_with_changed_id3v2!
     if has_id3v2_tag?
-      if @tag2.changed?
-        $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@tag2.version} tag has changed" if $DEBUG
-        write_changed_file! { |file| file.write(@tag2.to_bin) unless @tag2.empty? }
+      if @id3v2_tag.changed?
+        $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag has changed" if $DEBUG
+        write_changed_file! { |file| file.write(@id3v2_tag.to_bin) unless @id3v2_tag.empty? }
       else
-        $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@tag2.version} tag is unchanged, not writing file" if $DEBUG
+        $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag is unchanged, not writing file" if $DEBUG
       end
     elsif Mp3Info.has_id3v2_tag?(@filename)
       $stderr.puts("Mp3Info.update_file_with_changed_id3v2! ID3v2 tag has been eliminated from previously tagged file.") if $DEBUG
@@ -461,8 +461,8 @@ class Mp3Info
       time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
     else
       length = ((@streamsize << 3) / 1000.0) / bitrate
-      if has_id3v2_tag? && @tag2['TLEN']
-        tlen = (@tag2['TLEN'].is_a?(Array) ? @tag2['TLEN'].last : @tag2['TLEN']).value.to_i / 1000
+      if has_id3v2_tag? && @id3v2_tag['TLEN']
+        tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
         percent_diff = ((length.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
           length = tlen

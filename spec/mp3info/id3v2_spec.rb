@@ -28,7 +28,7 @@ describe Mp3Info, "when working with ID3v2 tags" do
     File.stat(@mp3_filename).size.should > file_size
     
     Mp3Info.has_id3v2_tag?(@mp3_filename).should be_true
-    Mp3Info.removetag2(@mp3_filename)
+    Mp3Info.removeid3v2_tag(@mp3_filename)
     Mp3Info.has_id3v2_tag?(@mp3_filename).should be_false
   end
   
@@ -36,24 +36,24 @@ describe Mp3Info, "when working with ID3v2 tags" do
     update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag)
     
     Mp3Info.has_id3v2_tag?(@mp3_filename).should be_true
-    lambda { Mp3Info.open(@mp3_filename) { |info| info.removetag2 } }.should_not raise_error(Mp3InfoError)
+    lambda { Mp3Info.open(@mp3_filename) { |info| info.removeid3v2_tag } }.should_not raise_error(Mp3InfoError)
     Mp3Info.has_id3v2_tag?(@mp3_filename).should be_false
   end
   
   it "should not have a tag until one is automatically created" do
     mp3 = Mp3Info.new(@mp3_filename)
     mp3.has_id3v2_tag?.should be_false
-    mp3.tag2['TPE1'] = 'The Mighty Boosh'
+    mp3.id3v2_tag['TPE1'] = 'The Mighty Boosh'
     mp3.has_id3v2_tag?.should be_true
-    mp3.tag2['TPE1'].value.should == 'The Mighty Boosh'
+    mp3.id3v2_tag['TPE1'].value.should == 'The Mighty Boosh'
   end
   
   it "should create ID3v2.4.0 tags by default" do
     mp3 = Mp3Info.new(@mp3_filename)
     mp3.has_id3v2_tag?.should be_false
-    mp3.tag2['TRCK'] = "1/8"
+    mp3.id3v2_tag['TRCK'] = "1/8"
     mp3.has_id3v2_tag?.should be_true
-    mp3.tag2.version.should == "2.4.0"
+    mp3.id3v2_tag.version.should == "2.4.0"
   end
   
   it "should be able to discover the version of the ID3v2 tag written to disk" do
@@ -88,12 +88,12 @@ describe Mp3Info, "when working with ID3v2 tags" do
     Mp3Info.open(@mp3_filename) do |mp3|
       # before update
       mp3.has_id3v2_tag?.should be_false
-      mp3.tag2 = ID3V2.new
-      mp3.tag2.update(tag)
+      mp3.id3v2_tag = ID3V2.new
+      mp3.id3v2_tag.update(tag)
     end
     
     # after update has been saved
-    Mp3Info.open(@mp3_filename) { |m| m.tag2 }.should == tag
+    Mp3Info.open(@mp3_filename) { |m| m.id3v2_tag }.should == tag
   end
   
   it "should read an ID3v2 tag from a truncated MP3 file" do
@@ -112,13 +112,13 @@ describe Mp3Info, "when working with ID3v2 tags" do
   
   it "should make it easy to casually use ID3v2 tags" do
     Mp3Info.open(@mp3_filename) do |mp3|
-      mp3.tag2 = ID3V2.new
-      mp3.tag2['WCOM'] = "http://www.riaa.org/"
-      mp3.tag2['TXXX'] = "A sample comment"
+      mp3.id3v2_tag = ID3V2.new
+      mp3.id3v2_tag['WCOM'] = "http://www.riaa.org/"
+      mp3.id3v2_tag['TXXX'] = "A sample comment"
     end
     
     mp3 = Mp3Info.new(@mp3_filename)
-    saved_tag = mp3.tag2
+    saved_tag = mp3.id3v2_tag
     
     saved_tag['WCOM'].value.should == "http://www.riaa.org/"
     saved_tag['TXXX'].value.should == "A sample comment"
