@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v 7c0f94fd5799 2009/02/09 08:44:25 ogd $
+# $Id: mp3info.rb,v e0d9c55924bf 2009/02/10 09:45:44 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -13,6 +13,7 @@ require 'fileutils'
 require 'tempfile'
 require 'mp3info/mpeg_header'
 require 'mp3info/xing_header'
+require 'mp3info/lame_header'
 require 'mp3info/id3'
 require 'mp3info/id3v2'
 
@@ -42,6 +43,9 @@ class Mp3Info
   
   # Xing header
   attr_reader :xing_header
+  
+  # LAME header
+  attr_reader :lame_header
   
   # bitrate in kbps
   def bitrate
@@ -115,23 +119,27 @@ class Mp3Info
   end
   
   def has_universal_tag?
-    defined?(@tag)
+    nil != defined?(@tag)
   end
 
   def has_id3v1_tag?
-    defined?(@tag1) && nil != @tag1 && @tag1.valid?
+    nil != defined?(@tag1) && nil != @tag1 && @tag1.valid?
   end
 
   def has_id3v2_tag?
-    defined?(@tag2) && nil != @tag2 && @tag2.valid?
-  end
-  
-  def has_xing_header?
-    defined?(@xing_header) && nil != @xing_header
+    nil != defined?(@tag2) && nil != @tag2 && @tag2.valid?
   end
   
   def has_mpeg_header?
-    defined?(@mpeg_header) && nil != @mpeg_header
+    nil != defined?(@mpeg_header) && nil != @mpeg_header
+  end
+  
+  def has_xing_header?
+    nil != defined?(@xing_header) && nil != @xing_header
+  end
+  
+  def has_lame_header?
+    nil != defined?(@lame_header) && nil != @lame_header
   end
   
   def removetag1
@@ -185,13 +193,17 @@ class Mp3Info
       header_pos, header_data = find_next_frame(file)
       mpeg_candidate = MPEGHeader.new(header_data)
       @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
-      $stderr.puts("MPEG header found, is [#{@mpeg_header.inspect}]") if $DEBUG && @mpeg_header
+      $stderr.puts("MPEG header found, is [#{@mpeg_header.inspect}]") if $DEBUG && has_mpeg_header?
       
       file.seek(header_pos)
       cur_frame = read_next_frame(file)
       xing_candidate = XingHeader.new(cur_frame)
       @xing_header = xing_candidate if xing_candidate.valid?
-      $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && @xing_header
+      $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && has_xing_header?
+      
+      lame_candidate = LAMEHeader.new(cur_frame)
+      @lame_header = lame_candidate if lame_candidate.valid?
+      $stderr.puts("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
     rescue Mp3InfoError
       $stderr.puts("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
       file.seek(cur_pos)
