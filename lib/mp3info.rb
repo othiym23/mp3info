@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v a3eb5f298509 2009/02/10 18:14:52 ogd $
+# $Id: mp3info.rb,v 71b7c54c4e3f 2009/02/10 19:10:49 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -75,7 +75,6 @@ class Mp3Info
   attr_reader :id3v1_tag
   
   def id3v1_tag=(new_hash)
-    @id3v1_tag = ID3.new unless has_id3v1_tag?
     @id3v1_tag.update(new_hash)
   end
   
