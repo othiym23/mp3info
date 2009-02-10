@@ -1,4 +1,4 @@
-# $Id: mp3info.rb,v e0d9c55924bf 2009/02/10 09:45:44 ogd $
+# $Id: mp3info.rb,v 588c909e3100 2009/02/10 17:33:29 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -70,7 +70,7 @@ class Mp3Info
   # this tag has priority over @tag1 and @tag2 when writing the tag with #close
   attr_reader :tag
 
-  # The ID3v2 tag is a class that acts as a hash. You can update it and it will
+  # The ID3 tag is a class that acts as a hash. You can update it and it will
   # be written out when the file is closed.
   attr_reader :tag1
   
@@ -123,7 +123,7 @@ class Mp3Info
   end
 
   def has_id3v1_tag?
-    nil != defined?(@tag1) && nil != @tag1 && @tag1.valid?
+    nil != defined?(@tag1) && nil != @tag1 && @tag1.valid? && @tag1.size > 0
   end
 
   def has_id3v2_tag?
@@ -247,6 +247,9 @@ class Mp3Info
     end
     
     file.close
+    
+    # there should always be a ID3 tag available for convenience
+    @tag1 = ID3.new if nil == defined? @tag1
     
     load_universal_tag!
     

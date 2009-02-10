@@ -40,6 +40,22 @@ describe Mp3Info, "when working with ID3v1 tags" do
     Mp3Info.has_id3v1_tag?(@mp3_filename).should be_true
   end
   
+  it "should not have a tag until one is automatically created" do
+    mp3 = Mp3Info.new(@mp3_filename)
+    mp3.has_id3v1_tag?.should be_false
+    mp3.tag1['artist'] = 'The Mighty Boosh'
+    mp3.has_id3v1_tag?.should be_true
+    mp3.tag1['artist'].should == 'The Mighty Boosh'
+  end
+  
+  it "should create ID3v1.1 tags by default" do
+    mp3 = Mp3Info.new(@mp3_filename)
+    mp3.has_id3v1_tag?.should be_false
+    mp3.tag1['tracknumber'] = 1
+    mp3.has_id3v1_tag?.should be_true
+    mp3.tag1.version.should == ID3::VERSION_1_1
+  end
+  
   it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
     create_valid_id3_1_0_file(@mp3_filename)
     
