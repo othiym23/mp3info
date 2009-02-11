@@ -76,4 +76,13 @@ describe ID3, "when working with standalone ID3 tags" do
     
     ID3.new.from_bin(packed_id3_1_1_tag(tag))['genre_s'].should == "Unknown"
   end
+  
+  it "should be able to dump and then read a tag using bare-bones file operations" do
+    filename = "sample_tag.tag"
+    tag = ID3.new
+    tag.update(sample_id3v1_tag)
+    tag.to_file(filename)
+    ID3.from_file(filename).should == sample_id3v1_tag
+    FileUtils.rm_f(filename)
+  end
 end

@@ -2,12 +2,59 @@ require "delegate"
 require 'mp3info/mpeg_utils'
 require "mp3info/id3v2_frames"
 
+class ID3V2Error < StandardError ; end
+class ID3V2ParseError < StandardError ; end
 class ID3V2InternalError < StandardError ; end
 
 # This class can be used directly, as it does no I/O of its own.
 class ID3V2 < DelegateClass(Hash)
+  # write_mpeg_file! lives in the module, need it at the class level
+  class << self
+    include MPEGFile
+  end
+  
   DEFAULT_MAJOR_VERSION = 4
   DEFAULT_MINOR_VERSION = 0
+  
+  def ID3V2.has_id3v2_tag?(filename)
+    File.read(filename, 3) == 'ID3'
+  end
+  
+  def ID3V2.remove_id3v2_tag!(filename)
+    write_mpeg_file!(filename)
+  end
+  
+  def ID3V2.from_file(filename)
+    File.open(filename, "rb") { |file| from_io(file) }
+  end
+  
+  def to_file(filename)
+    File.open(filename, "w") { |file| file.write(to_bin) }
+  end
+  
+  # assumes file.pos is at the beginning of the ID3v2 tag
+  def ID3V2.from_io(io)
+    # read the tag ID (should always be 'ID3') + the 3-byte ID3v2 header
+    raw_tag = io.read(6)
+    
+    tag_length_synchsafe = io.read(4)
+    raw_tag << tag_length_synchsafe
+    
+    tag_length = tag_length_synchsafe.from_synchsafe_string
+    remaining_bytes = io.stat.size - io.pos
+    if remaining_bytes >= tag_length
+      raw_tag << io.read(tag_length)
+      
+      $stderr.puts("File has a weird ID3V2 tag length.") if raw_tag.length != tag_length + 10
+      id3v2 = ID3V2.new
+      id3v2.from_bin(raw_tag)
+      $stderr.puts("ID3v2 tag is [#{id3v2.inspect}]") if $DEBUG
+    else
+      raise(ID3V2Error, "ID3v2 tag found, but not enough bytes in the file to read whole tag (tag length is #{tag_length}, #{remaining_bytes} bytes left in file) [#{raw_tag.inspect}].")
+    end
+    
+    id3v2
+  end
   
   def initialize
     # initialize the delegated hash

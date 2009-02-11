@@ -1,8 +1,8 @@
-# $Id: mp3info.rb,v 7c0f94fd5799 2009/02/09 08:44:25 ogd $
+# $Id: mp3info.rb,v 50d48267738c 2009/02/11 10:02:56 ogd $
 # License:: Ruby
-# Author:: Forrest L Norvell (mailto:ogd_AT_aoaioxxysz_DOT_net)
+# Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
-# Website:: http://ruby-mp3info.rubyforge.org/
+# Website:: http://hg.driftglass.org/
 script_path = __FILE__
 script_path = File.readlink(script_path) if File.symlink?(script_path)
 
@@ -10,7 +10,6 @@ $: << File.join(File.dirname(script_path), '../lib')
 
 require 'delegate'
 require 'fileutils'
-require 'tempfile'
 require 'mp3info/mpeg_header'
 require 'mp3info/xing_header'
 require 'mp3info/lame_header'
@@ -23,6 +22,9 @@ require 'mp3info/id3v2'
 class Mp3InfoError < StandardError ; end
 
 class Mp3Info
+  # source of write_mpeg_file!, find_next_frame and read_next_frame
+  include MPEGFile
+  
   VERSION = "0.7-fln"
   
   V1_V2_TAG_MAPPING = { 
@@ -35,9 +37,6 @@ class Mp3Info
     "genre_s"  => "TCON"
   }
 
-  # number of bytes to read in at once in file scanning operations
-  CHUNK_SIZE = 2 ** 16
-  
   # MPEG header
   attr_reader :mpeg_header
   
@@ -85,32 +84,6 @@ class Mp3Info
   # the original filename
   attr_reader :filename
 
-  def self.has_id3v1_tag?(filename)
-    File.open(filename) { |f|
-      f.seek(-ID3::TAGSIZE, File::SEEK_END)
-      f.read(3) == "TAG"
-    }
-  end
-
-  def self.has_id3v2_tag?(filename)
-    File.open(filename) { |f|
-      f.read(3) == "ID3"
-    }
-  end
-
-  def self.remove_id3v1_tag(filename)
-    if self.has_id3v1_tag?(filename)
-      newsize = File.size(filename) - ID3::TAGSIZE
-      File.open(filename, "rb+") { |f| f.truncate(newsize) }
-    end
-  end
-  
-  def self.remove_id3v2_tag(filename)
-    self.open(filename) do |mp3|
-      mp3.id3v2_tag = nil
-    end
-  end
-  
   def has_universal_tag?
     nil != defined?(@tag)
   end
@@ -136,10 +109,8 @@ class Mp3Info
   end
   
   def remove_id3v1_tag
-    if Mp3Info.has_id3v1_tag?(@filename)
-      newsize = File.size(@filename) - ID3::TAGSIZE
-      $stderr.puts("Mp3Info.remove_id3v1_tag has ID3v1 tag, file will have new size #{newsize}.") if $DEBUG
-      File.truncate(@filename, newsize)
+    if ID3.has_id3v1_tag?(@filename)
+      ID3.remove_id3v1_tag!(@filename)
     end
     
     if has_id3v1_tag?
@@ -166,12 +137,12 @@ class Mp3Info
     when 'TAG' # ID3 tag at the beginning of the file (unusual)
       $stderr.puts("Mp3Info.initialize TAG found at beginning of file") if $DEBUG
       file.seek(-3, IO::SEEK_CUR)
-      @id3v1_tag = load_id3_1_tag(file)
+      @id3v1_tag = ID3.from_io(file)
       $stderr.puts("Mp3Info.initialize ID3 tag is #{@id3v1_tag.inspect}") if $DEBUG
     when 'ID3' # ID3v2 tag
       $stderr.puts("Mp3Info.initialize ID3 found at beginning of file") if $DEBUG
       file.seek(-3, IO::SEEK_CUR)
-      @id3v2_tag = load_id3_2_tag(file)
+      @id3v2_tag = ID3V2.from_io(file)
     else
       $stderr.puts("Mp3Info.initialize no tag found at beginning of file") if $DEBUG
       file.seek(0)
@@ -197,7 +168,7 @@ class Mp3Info
       lame_candidate = LAMEHeader.new(cur_frame)
       @lame_header = lame_candidate if lame_candidate.valid?
       $stderr.puts("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
-    rescue Mp3InfoError
+    rescue MPEGFile::MPEGFileError
       $stderr.puts("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
       file.seek(cur_pos)
     end
@@ -232,9 +203,9 @@ class Mp3Info
       if file.read(3) == 'TAG'
         file.seek(-3, IO::SEEK_CUR)
         if has_id3v1_tag?
-          @id3v1_tag.update(load_id3_1_tag(file))
+          @id3v1_tag.update(ID3.from_io(file))
         else
-          @id3v1_tag = load_id3_1_tag(file)
+          @id3v1_tag = ID3.from_io(file)
         end
       end
     end
@@ -262,12 +233,12 @@ class Mp3Info
   end
 
   # "block version" of Mp3Info::new()
-  def self.open(filename)
+  def Mp3Info.open(filename)
     m = self.new(filename)
     ret = nil
     if block_given?
       begin
-        ret = yield(m)
+        ret = yield m
       ensure
         m.close
       end
@@ -275,45 +246,6 @@ class Mp3Info
       ret = m
     end
     ret
-  end
-  
-  def load_id3_1_tag(io)
-    if io.stat.size >= ID3::TAGSIZE
-      raw_tag = io.read(ID3::TAGSIZE)
-      
-      id3 = ID3.new
-      id3.from_bin(raw_tag)
-    else
-      $stderr.puts("file looks like it has an ID3 tag at the start, but isn't big enough to contain one.")
-      io.seek(0)
-    end
-    
-    id3
-  end
-  
-  def load_id3_2_tag(io)
-    # read the tag ID (should always be 'ID3')
-    raw_tag = io.read(3)
-    # read the ID3 header
-    raw_tag << io.read(3)
-    
-    tag_length_synchsafe = io.read(4)
-    raw_tag << tag_length_synchsafe
-    
-    tag_length = tag_length_synchsafe.from_synchsafe_string
-    remaining_bytes = io.stat.size - io.pos
-    if remaining_bytes >= tag_length
-      raw_tag << io.read(tag_length)
-      
-      $stderr.puts("File has a weird ID3V2 tag length.") if raw_tag.length != tag_length + 10
-      id3v2 = ID3V2.new
-      id3v2.from_bin(raw_tag)
-      $stderr.puts("ID3v2 tag is [#{id3v2.inspect}]") if $DEBUG
-    else
-      raise(Mp3InfoError, "ID3v2 tag found, but not enough bytes in the file to read whole tag (tag length is #{tag_length}, #{remaining_bytes} bytes left in file) [#{raw_tag.inspect}].")
-    end
-    
-    id3v2
   end
   
   # write to another filename at close()
@@ -389,22 +321,7 @@ class Mp3Info
   def save_id3v1_changes!
     if has_id3v1_tag? && @id3v1_tag.changed?
       $stderr.puts("Mp3Info.save_id3v1_changes! #{@id3v1_tag.version} tag has changed") if $DEBUG
-      raise(Mp3InfoError, "file is not writable") unless File.writable?(@filename)
-      
-      File.open(@filename, 'rb+') do |file|
-        file.seek(-ID3::TAGSIZE, File::SEEK_END)
-        t = file.read(3)
-        if t == 'TAG'
-          # replace the current tag
-          file.seek(-3, IO::SEEK_CUR)
-        else
-          # append new tag to end of file
-          file.seek(0, File::SEEK_END)
-        end
-        writable_tag = @id3v1_tag.sync_bin
-        $stderr.puts("Mp3Info.close #{@id3v1_tag.version} [#{writable_tag.inspect}] about to be written at #{file.pos}") if $DEBUG
-        file.write(@id3v1_tag.sync_bin)
-      end
+      @id3v1_tag.to_file(@filename)
     end
   end
 
@@ -412,43 +329,14 @@ class Mp3Info
     if has_id3v2_tag?
       if @id3v2_tag.changed?
         $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag has changed" if $DEBUG
-        write_changed_file! { |file| file.write(@id3v2_tag.to_bin) unless @id3v2_tag.empty? }
+        write_mpeg_file!(@filename) { |file| file.write(@id3v2_tag.to_bin) unless @id3v2_tag.empty? }
       else
         $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag is unchanged, not writing file" if $DEBUG
       end
-    elsif Mp3Info.has_id3v2_tag?(@filename)
+    elsif ID3V2.has_id3v2_tag?(@filename)
       $stderr.puts("Mp3Info.update_file_with_changed_id3v2! ID3v2 tag has been eliminated from previously tagged file.") if $DEBUG
-      write_changed_file!
+      write_mpeg_file!(@filename)
     end
-  end
-  
-  def write_changed_file!(&block)
-    raise(Mp3InfoError, "file is not writable") unless File.writable?(@filename)
-    
-    if $DEBUG
-      $stderr.puts("Mp3Info.write_changed_file! source file length is #{File.size(@filename)}")
-      $stderr.puts("Mp3Info.write_changed_file! source file is [#{File.read(@filename).inspect}]")
-    end
-    
-    tmpfile_path = nil
-    File.open(@filename, 'rb+') do |original|
-      Tempfile.open('mp3info', File.dirname(@filename)) do |temporary|
-        tmpfile_path = temporary.path
-        
-        yield temporary if block
-        
-        $stderr.puts("Mp3Info.write_changed_file! about to call find_next_frame, file.pos=#{original.pos}") if $DEBUG
-        header_pos, header = find_next_frame(original)
-        original.seek(header_pos)
-        $stderr.puts("Mp3Info.write_changed_file! original file is at location #{original.pos}") if $DEBUG
-        bufsize = original.stat.blksize || 4096
-        while buf = original.read(bufsize)
-          temporary.write(buf)
-          $stderr.puts("Mp3Info.write_changed_file! wrote #{bufsize} bytes of the original file to #{tmpfile_path}") if $DEBUG
-        end
-      end
-    end
-    File.rename(tmpfile_path, @filename)
   end
   
   def time_string
@@ -473,69 +361,6 @@ class Mp3Info
     end
     
     time_string
-  end
-  
-  # This method assumes that the file pointer is at the beginning of a frame.
-  #
-  # It returns either the next frame or the remainder of the stream.
-  def read_next_frame(file)
-    cur_pos = file.pos
-    file.seek(1, IO::SEEK_CUR)
-    
-    frame_size = 0
-    
-    begin
-      next_pos, data = find_next_frame(file)
-      frame_size = next_pos - cur_pos
-    rescue Mp3InfoError
-      frame_size = file.stat.size - cur_pos
-    end
-    
-    file.seek(cur_pos)
-    file.read(frame_size)
-  end
-  
-  def find_next_frame(file)
-    header_pos = 0
-    header = nil
-    
-    # make sure we've got the sync pattern, let the MPEGHeader validity check do the rest
-    cur_pos = file.pos
-    loop do
-      header_pos, header = find_sync(file, cur_pos)
-      $stderr.puts("Mp3Info.find_next_frame file.pos is %u, header_pos is %u, header is %#x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
-      break if nil == header || valid_mpeg_header?(header)
-      cur_pos = header_pos + 1
-    end
-    
-    if header
-      return header_pos, header
-    else
-      raise(Mp3InfoError, "cannot find a valid frame after reading #{file.pos} bytes from #{file.path} of size #{file.stat.size}")
-    end
-  end
-  
-  def valid_mpeg_header?(header_string)
-    MPEGHeader.new(header_string).valid?
-  end
-
-  def find_sync(file, start_pos=0)
-    file.seek(start_pos)
-    file_data = file.read(CHUNK_SIZE)
-    
-    while file_data do
-      sync_pos = file_data.index(0xff)
-      if sync_pos
-        header = file_data.slice(sync_pos, 4)
-        if 4 == header.size
-          return start_pos + sync_pos, header
-        end
-      end
-      
-      file_data = file.read(CHUNK_SIZE)
-    end
-    
-    return nil, nil
   end
 end
 

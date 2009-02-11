@@ -39,6 +39,19 @@ class ID3 < DelegateClass(Hash)
   # expose the version of the tag
   attr_reader :version
   
+  def ID3.has_id3v1_tag?(filename)
+    File.open(filename) { |f|
+      f.seek(-TAGSIZE, File::SEEK_END)
+      f.read(3) == 'TAG'
+    }
+  end
+  
+  def ID3.remove_id3v1_tag!(filename)
+    if has_id3v1_tag?(filename)
+      File.truncate(filename, File.size(filename) - TAGSIZE)
+    end
+  end
+  
   def initialize
     # initialize the delegated hash
     @hash = {}
@@ -65,6 +78,58 @@ class ID3 < DelegateClass(Hash)
   
   def valid_major_version?
     [VERSION_1, VERSION_1_1].include?(version)
+  end
+  
+  def ID3.from_file(filename)
+    if has_id3v1_tag?(filename)
+      File.open(filename) do |file|
+        file.seek(-TAGSIZE, IO::SEEK_END)
+        ID3.from_io(file)
+      end
+    else
+      raise(ID3Error, "No ID3 tag found in #{filename}")
+    end
+  end
+  
+  def to_file(filename)
+    if File.exists?(filename)
+      # updating an existing tagged file
+      File.open(filename, 'rb+') do |file|
+        file.seek(-TAGSIZE, IO::SEEK_END)
+        t = file.read(3)
+        if t == 'TAG'
+          # replace the current tag
+          file.seek(-3, IO::SEEK_CUR)
+        else
+          # append new tag to end of file
+          file.seek(0, IO::SEEK_END)
+        end
+        $stderr.puts("ID3.to_file #{version} [#{sync_bin.inspect}] about to be written at #{file.pos}") if $DEBUG
+        file.write(sync_bin)
+      end
+    else
+      # dumping a tag in a random file
+      File.open(filename, 'w') do |file|
+        file.write(sync_bin)
+      end
+    end
+  end
+  
+  # assumes io.pos is at the beginning of the ID3 tag
+  def ID3.from_io(io)
+    remaining_bytes = io.stat.size - io.pos
+    
+    if remaining_bytes >= ID3::TAGSIZE
+      raw_tag = io.read(ID3::TAGSIZE)
+      
+      id3 = ID3.new
+      id3.from_bin(raw_tag)
+    else
+      $stderr.puts("file looks like it has an ID3 tag at the start, but isn't big enough to contain one.")
+      io.seek(0)
+    end
+    
+    id3
   end
   
   def from_bin(string)

@@ -1,8 +1,9 @@
-$:.unshift("lib/")
+$:.unshift("spec/")
 
-require 'mp3info/id3v2'
+require 'mp3info/mp3info_helper'
 
 describe ID3V2, "when creating ID3v2 tags" do
+  include Mp3InfoHelper
   before do
     @tag = ID3V2.new
   end
@@ -46,5 +47,13 @@ describe ID3V2, "when creating ID3v2 tags" do
     @tag.major_version.should == 2
     @tag.minor_version.should == 0
     @tag.version.should == "2.2.0"
+  end
+  
+  it "should be able to dump and then read a tag using bare-bones file operations" do
+    filename = "sample_tag.id3"
+    @tag.update(sample_id3v2_tag)
+    @tag.to_file(filename)
+    ID3V2.from_file(filename).should == sample_id3v2_tag
+    FileUtils.rm_f(filename)
   end
 end

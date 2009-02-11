@@ -27,17 +27,17 @@ describe Mp3Info, "when working with ID3v2 tags" do
     update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag)
     File.stat(@mp3_filename).size.should > file_size
     
-    Mp3Info.has_id3v2_tag?(@mp3_filename).should be_true
-    Mp3Info.remove_id3v2_tag(@mp3_filename)
-    Mp3Info.has_id3v2_tag?(@mp3_filename).should be_false
+    ID3V2.has_id3v2_tag?(@mp3_filename).should be_true
+    ID3V2.remove_id3v2_tag!(@mp3_filename)
+    ID3V2.has_id3v2_tag?(@mp3_filename).should be_false
   end
   
   it "should be able to add the tag and then remove it from within the open() block" do
     update_id3_2_tag(@mp3_filename, @trivial_id3v2_tag)
     
-    Mp3Info.has_id3v2_tag?(@mp3_filename).should be_true
+    ID3V2.has_id3v2_tag?(@mp3_filename).should be_true
     lambda { Mp3Info.open(@mp3_filename) { |info| info.remove_id3v2_tag } }.should_not raise_error(Mp3InfoError)
-    Mp3Info.has_id3v2_tag?(@mp3_filename).should be_false
+    ID3V2.has_id3v2_tag?(@mp3_filename).should be_false
   end
   
   it "should not have a tag until one is automatically created" do

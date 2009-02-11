@@ -1,3 +1,7 @@
+# mutually dependent files do not make me happy.
+require 'mp3info/mpeg_header'
+require 'tempfile'
+
 #
 # Initially ported from eyeD3 by Ryan Finne & Travis Shirk.
 #
@@ -134,5 +138,102 @@ class Bignum
   # encode a decimal back into a string
   def to_binary_string(padding = 0)
     to_binary_array(padding).to_binary_string
+  end
+end
+
+module MPEGFile
+  class MPEGFileError < StandardError ; end
+  
+  # number of bytes to read in at once in file scanning operations
+  CHUNK_SIZE = 2 ** 16
+  
+  # This method assumes that the file pointer is at the beginning of a frame.
+  #
+  # It returns either the next frame or the remainder of the stream.
+  def read_next_frame(file)
+    cur_pos = file.pos
+    file.seek(1, IO::SEEK_CUR)
+    
+    frame_size = 0
+    
+    begin
+      # find_next_frame is defined in MPEGFile
+      next_pos, data = find_next_frame(file)
+      frame_size = next_pos - cur_pos
+    rescue MPEGFile::MPEGFileError
+      frame_size = file.stat.size - cur_pos
+    end
+    
+    file.seek(cur_pos)
+    file.read(frame_size)
+  end
+  
+  def write_mpeg_file!(filename)
+    raise(MPEGFileError, "File is not writable") unless File.writable?(filename)
+    $stderr.puts("MPEGFile::write_mpeg_file! source file length is #{File.size(filename)}") if $DEBUG
+    
+    tmpfile_path = nil
+    File.open(filename, 'rb') do |original|
+      Tempfile.open('mp3info', File.dirname(filename)) do |temporary|
+        tmpfile_path = temporary.path
+        
+        # this would be a good place to invoke code to prepend a tag to the file
+        yield temporary if block_given?
+        
+        $stderr.puts("MPEGFile::write_mpeg_file! about to call find_next_frame, file.pos=#{original.pos}") if $DEBUG
+        header_pos, header = find_next_frame(original)
+        original.seek(header_pos)
+        $stderr.puts("MPEGFile::write_mpeg_file! original file is at location #{original.pos}") if $DEBUG
+        bufsize = original.stat.blksize || 4096
+        while buf = original.read(bufsize)
+          temporary.write(buf)
+          $stderr.puts("MPEGFile::write_mpeg_file! wrote #{bufsize} bytes of the original file to #{tmpfile_path}") if $DEBUG
+        end
+      end
+    end
+    File.rename(tmpfile_path, filename)
+  end
+  
+  def find_next_frame(file)
+    header_pos = 0
+    header = nil
+    
+    # make sure we've got the sync pattern, let the MPEGHeader validity check do the rest
+    cur_pos = file.pos
+    loop do
+      header_pos, header = find_sync(file, cur_pos)
+      $stderr.puts("MPEGFile::find_next_frame file.pos is %u, header_pos is %u, header is %#x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
+      break if nil == header || valid_mpeg_header?(header)
+      cur_pos = header_pos + 1
+    end
+    
+    if header
+      return header_pos, header
+    else
+      raise(MPEGFileError, "cannot find a valid frame after reading #{file.pos} bytes from #{file.path} of size #{file.stat.size}")
+    end
+  end
+  
+  def find_sync(file, start_pos=0)
+    file.seek(start_pos)
+    file_data = file.read(CHUNK_SIZE)
+    
+    while file_data do
+      sync_pos = file_data.index(0xff)
+      if sync_pos
+        header = file_data.slice(sync_pos, 4)
+        if 4 == header.size
+          return start_pos + sync_pos, header
+        end
+      end
+      
+      file_data = file.read(CHUNK_SIZE)
+    end
+    
+    return nil, nil
+  end
+  
+  def valid_mpeg_header?(header_string)
+    MPEGHeader.new(header_string).valid?
   end
 end
