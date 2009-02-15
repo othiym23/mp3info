@@ -30,8 +30,4 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
   it "should fail to find a numeric genre ID for 'Experimental' and use 255 instead" do
     @saved_frame.genre_code.should == 255
   end
-  
-  it "should pretty-print the genre name id3v2 style, as 'Name (255)'" do
-    @saved_frame.to_s_pretty.should == "Experimental (255)"
-  end
 end

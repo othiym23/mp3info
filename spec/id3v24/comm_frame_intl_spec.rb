@@ -29,8 +29,4 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame containing
   it "should retrieve the stored comment value correctly" do
     @saved_frame.value.should == @comment_text
   end
-  
-  it "should default having a pretty format identical to id3v2's, if id3v2 actually supported Unicode" do
-    @saved_frame.to_s_pretty.should == "(Mp3Info Comment)[rus]: Здравствуйте dïáçrìtícs!"
-  end
 end

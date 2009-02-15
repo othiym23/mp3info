@@ -30,8 +30,4 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
   it "should find the numeric genre ID for 'Jungle'" do
     @saved_frame.genre_code.should == 63
   end
-  
-  it "should pretty-print the genre name id3v2 style, as 'Name (id)'" do
-    @saved_frame.to_s_pretty.should == "Jungle (63)"
-  end
 end

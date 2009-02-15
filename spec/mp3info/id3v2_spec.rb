@@ -60,16 +60,6 @@ describe Mp3Info, "when working with ID3v2 tags" do
     update_id3_2_tag(@mp3_filename, sample_id3v2_tag).version.should == "2.4.0"
   end
   
-  # test the tag with the "id3v2" program -- you'll need a version of id3lib
-  # that's been patched to work with ID3v2 2.4.0 tags, which probably means
-  # a version of id3lib above 3.8.3
-  it "should produce results equivalent to those produced by the id3v2 utility" do
-    written_tag = update_id3_2_tag(@mp3_filename, sample_id3v2_tag)
-    written_tag.should == sample_id3v2_tag
-    
-    test_against_id3v2_prog(written_tag).should == prettify_tag(written_tag)
-  end
-  
   it "should handle storing and retrieving tags containing arbitrary binary data" do
     tag = {}
     ["PRIV", "XNBC", "APIC", "XNXT"].each do |k|
