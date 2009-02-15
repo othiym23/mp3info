@@ -23,8 +23,8 @@ describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame 
     @saved_frame.class.should == ID3V24::WXXXFrame
   end
   
-  it "should have a description encoded as UTF-16 Unicode text with a byte-order mark by default" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  it "should have a description encoded as UTF-8 text by default" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
   end
   
   it "should have 'Mp3Info User Link' as its default description (this should be overridden in practice)" do
@@ -37,9 +37,5 @@ describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame 
   
   it "should be directly comparable as a whole frame" do
     @saved_frame.should == @new_tag['WXXX']
-  end
-  
-  it "should pretty-print in the style of id3v2" do
-    @saved_frame.to_s_pretty.should == "(Mp3Info User Link) : http://www.yourmom.gov"
   end
 end

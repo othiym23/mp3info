@@ -3,6 +3,32 @@ require "delegate"
 require 'mp3info/mpeg_utils'
 require "mp3info/id3v2_frames"
 
+# Ruby 1.8<->1.9 compatibility workarounds: should be considered deprecated immediately.
+class String
+  # There is no String method in both Ruby 1.8 and 1.9 that will return the
+  # byte length without resorting to hacks involving regexps. For now,
+  # monkeypatching String is my preferred way of hacking around this.
+  def safe_length
+    if self.respond_to?(:bytesize)
+      bytesize
+    else
+      size
+    end
+  end
+  
+  # Ruby 1.9 goes out of its way to make it difficult to quickly
+  # smoosh together strings of 'incompatible' encodings. I dislike
+  # gratuitous monkeypatching, but this works in both Ruby 1.9 and
+  # previous versions.
+  def to_s_ignore_encoding
+    if self.respond_to?(:force_encoding)
+      self.force_encoding("BINARY")
+    else
+      self
+    end
+  end
+end
+
 class ID3V2Error < StandardError ; end
 class ID3V2ParseError < StandardError ; end
 class ID3V2InternalError < StandardError ; end
@@ -166,23 +192,23 @@ class ID3V2 < DelegateClass(Hash)
     #TODO add CRC
     if changed?
       tag = ""
-      @hash.each do |k, v|
-        next unless v
-        next if v.respond_to?("empty?") and v.empty?
-        if v.is_a?(Array)
-          v.each do |frame|
-            tag << encode_frame(k,frame)
+      @hash.each_value do |value|
+        next unless value
+        next if value.respond_to?("empty?") and value.empty?
+        if value.is_a?(Array)
+          value.each do |frame|
+            tag << encode_frame(frame)
           end
         else
-          tag << encode_frame(k,v)
+          tag << encode_frame(value)
         end
       end
-
+      
       tag_str = "ID3"
-
+      
       #TODO flags: version_maj, version_min, [unsync, ext_header, experimental, footer]
       tag_str << [ DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
-      tag_str << tag.size.to_synchsafe_string
+      tag_str << tag.safe_length.to_synchsafe_string
       tag_str << tag
       $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
       tag_str
@@ -192,31 +218,26 @@ class ID3V2 < DelegateClass(Hash)
       @raw_tag
     end
   end
-
+  
   private
   
-  def encode_frame(type, frame_value)
-    encoded_frame_data =  encode_tag(type, frame_value)
-
-    header = ''
-    header << type[0,4]   #4 character max for a tag's key
-
+  def encode_frame(frame)
+    $stderr.puts("ID3v2.encode_frame(frame=[#{frame.inspect}])") if $DEBUG
+    encoded_frame_data = frame.to_s
+    
+    # 4 characters max for a tag's key
+    header = frame.type[0,4] 
+    
     # ID3v2.4 has synch safe frame headers
     if major_version == 4
-      header << encoded_frame_data.size.to_synchsafe_string
+      header << encoded_frame_data.safe_length.to_synchsafe_string
     else
-      header << encoded_frame_data.size.to_binary_string
+      header << encoded_frame_data.safe_length.to_binary_string
     end
-
-    header << "\x00"*2 #flags
-    header << encoded_frame_data
     
-    header
-  end
-
-  def encode_tag(name, value)
-    $stderr.puts("encode_tag(#{name.inspect}, #{value.inspect})") if $DEBUG
-    value.to_s
+    header << "\x00" * 2 # TODO: frame flags
+    
+    header + encoded_frame_data
   end
   
   def parse_id3v2_frames(version, string)

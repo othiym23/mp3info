@@ -107,7 +107,7 @@ module ID3V24
     attr_accessor :encoding
     
     ENCODING = { :iso => 0, :utf16 => 1, :utf16be => 2, :utf8 => 3 }
-    DEFAULT_ENCODING = ENCODING[:utf16]
+    DEFAULT_ENCODING = ENCODING[:utf8]
   
     def initialize(type, encoding, value)
       super(type, value)
@@ -124,14 +124,7 @@ module ID3V24
     end
     
     def to_s
-      binary_string = @encoding.chr
-      # Ruby 1.9 goes out of its way to make it difficult to quickly
-      # smoosh together strings of 'incompatible' encodings. I know this
-      # is gonna hurt performance, but it works in both Ruby 1.9 and
-      # previous versions.
-      encode_value(@encoding, @value).each_byte { |byte| binary_string << byte }
-      
-      binary_string
+      @encoding.chr << encode_value(@encoding, @value).to_s_ignore_encoding
     end
     
     def to_s_pretty
@@ -242,8 +235,7 @@ module ID3V24
     end
     
     def to_s
-      delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      @encoding.chr << encode_value(@encoding, @description || '') << delimiter << encode_value(@encoding, @value)
+      @encoding.chr << encode_value(@encoding, @description || '').to_s_ignore_encoding << encode_value(@encoding, @value || '').to_s_ignore_encoding
     end
     
     def to_s_pretty
@@ -286,8 +278,7 @@ module ID3V24
     end
     
     def to_s
-      delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      @encoding.chr << encode_value(@encoding, @description || '') << delimiter << @value
+      @encoding.chr << encode_value(@encoding, @description || '').to_s_ignore_encoding << @value
     end
     
     def to_s_pretty
@@ -362,9 +353,8 @@ module ID3V24
     end
     
     def to_s
-      delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
       @encoding.chr << @mime_type << 0.chr << @picture_type << \
-        encode_value(@encoding, @description || '') << delimiter << @value
+        encode_value(@encoding, @description || '').to_s_ignore_encoding << @value
     end
     
     def picture_type_name
@@ -449,9 +439,8 @@ module ID3V24
     end
   
     def to_s
-      delimiter = @encoding == ENCODING[:utf8] ? "\000\000" : ""
-      @encoding.chr << (@language || 'XXX') << encode_value(@encoding, @description || '') << \
-        delimiter << encode_value(@encoding, @value)
+      $stderr.puts("COMMFrame.to_s => [#{encoding}|#{@language || 'XXX'}|#{encode_value(@encoding, @description || '').inspect}|#{encode_value(@encoding, @value).inspect}]") if $DEBUG
+      @encoding.chr << (@language || 'XXX') << encode_value(@encoding, @description || '').to_s_ignore_encoding << encode_value(@encoding, @value || '').to_s_ignore_encoding
     end
   
     def to_s_pretty
@@ -459,7 +448,8 @@ module ID3V24
         (@description && @description != '' ? "(#{@description})" : '') +
         (@language && @language != '' ? "[#{@language}]" : '')
       
-      (prefix && prefix != '' ? "#{prefix}: " : '') << "#{@value}"
+      $stderr.puts("COMMFrame.to_s_pretty => [#{prefix}|#{@value}]") if $DEBUG
+      "#{prefix && prefix != '' ? "#{prefix}: " : ''}#{@value}"
     end
   
     def ==(object)
@@ -625,7 +615,7 @@ module ID3V24
     end
     
     def to_s
-      (@encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d"))) if @value
+      (@encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d")).to_s_ignore_encoding) if @value
     end
     
     def to_s_pretty

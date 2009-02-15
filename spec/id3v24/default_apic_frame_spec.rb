@@ -23,8 +23,8 @@ describe ID3V24::APICFrame, "when creating a new APIC (picture) frame with defau
     @saved_frame.class.should == ID3V24::APICFrame
   end
   
-  it "should choose a default encoding for the description of the image of UTF-16" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  it "should choose a default encoding for the description of the image of UTF-8" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
   end
   
   it "should default to having a blank description" do

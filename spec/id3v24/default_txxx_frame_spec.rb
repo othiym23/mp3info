@@ -23,8 +23,8 @@ describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame 
     @saved_frame.class.should == ID3V24::TXXXFrame
   end
   
-  it "should be saved as UTF-16 Unicode text with a byte-order mark by default" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  it "should be saved as UTF-8 Unicode text by default" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
   end
   
   it "should have 'Mp3Info Comment' as its default description (this should be overridden in practice)" do
@@ -37,9 +37,5 @@ describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame 
   
   it "should be directly comparable as a whole frame" do
     @saved_frame.should == @new_tag['TXXX']
-  end
-  
-  it "should pretty-print in the style of id3v2" do
-    @saved_frame.to_s_pretty.should == "(Mp3Info Comment) : Here is some random user-defined text."
   end
 end

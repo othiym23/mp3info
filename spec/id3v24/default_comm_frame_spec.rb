@@ -23,8 +23,8 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defau
     @saved_frame.class.should == ID3V24::COMMFrame
   end
   
-  it "should choose a default encoding for the description of the image of UTF-16" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
+  it "should choose a default encoding for the description of the image of UTF-8" do
+    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
   end
   
   it "should have a default description of 'Mp3Info Comment'" do
@@ -35,15 +35,19 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defau
     @saved_frame.language.should == 'eng'
   end
   
-  it "should default having a pretty format identical to id3v2's" do
-    @saved_frame.to_s_pretty.should == "(Mp3Info Comment)[eng]: This is a sample comment."
-  end
-  
   it "should retrieve the stored comment value correctly" do
     @saved_frame.value.should == @comment_text
   end
   
-  it "should produce output identical to id3v2's when compared" do
-    test_against_id3v2_prog(@saved_tag).should == prettify_tag(@saved_tag)
+  it "should handle a nil comment value by producing a frame with an empty value" do
+    tag = { "COMM" => ID3V24::Frame.create_frame("COMM", nil) }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    saved_frame = saved_tag['COMM']
+    
+    saved_frame.class.should == ID3V24::COMMFrame
+    saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
+    saved_frame.description.should == 'Mp3Info Comment'
+    saved_frame.language.should == 'eng'
+    saved_frame.value.should == ''
   end
 end

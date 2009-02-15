@@ -21,6 +21,7 @@ describe ID3V24::XDORFrame, "when dealing with the iTunes and ID3v2.3-specific X
   
   it "should convert the release date to a known value captured from an iTunes-created file" do
     xdor = ID3V24::Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
+    xdor.encoding = ID3V24::TextFrame::ENCODING[:utf16]
     xdor.to_s.should == "\001\376\377\0001\0009\0009\0003\000-\0000\0003\000-\0000\0008\000\000"
   end
   
