@@ -103,6 +103,19 @@ describe Mp3Info, "when working with ID3v1 tags" do
     
     Mp3Info.new(@mp3_filename).id3v1_tag['tracknum'].should == nil
   end
+end
+
+describe Mp3Info, "when working with ID3v1.1 tags" do
+  include Mp3InfoHelper
+
+  before do
+    @mp3_filename = "test_mp3info.mp3"
+    create_sample_mp3_file(@mp3_filename)
+  end
+  
+  after do
+    FileUtils.rm_f(@mp3_filename)
+  end
   
   it "should be able to add and then find an ID3v1.1 tag" do
     create_valid_id3_1_1_file(@mp3_filename)
