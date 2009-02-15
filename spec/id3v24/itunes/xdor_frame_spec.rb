@@ -33,6 +33,6 @@ describe ID3V24::XDORFrame, "when dealing with the iTunes and ID3v2.3-specific X
   end
   
   it "should pretty-print the release date as an RFC-compliant date" do
-    @saved_frame.to_s_pretty.should == "Release date: Mon Mar 08 00:00:00 UTC 1993"
+    @saved_frame.to_s_pretty.should == "Release date: Mon, 08 Mar 1993 00:00:00 -0000"
   end
 end

@@ -162,12 +162,12 @@ EOF
   end
   
   def test_against_id3v2_prog(written_tag)
-    return if PLATFORM =~ /win32/
+    return if RUBY_PLATFORM =~ /win32/
     return if `which id3v2`.empty?
     
     start = false
     id3v2_output = {}
-    `id3v2 -l #{@mp3_filename}`.each do |line|
+    `id3v2 -l #{@mp3_filename}`.each_line do |line|
       if line =~ /^id3v2 tag info/
         start = true
         next

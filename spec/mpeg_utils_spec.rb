@@ -1,3 +1,4 @@
+# encoding: binary
 $:.unshift("lib/")
 
 require 'mp3info/mpeg_utils'

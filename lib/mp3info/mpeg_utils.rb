@@ -1,3 +1,4 @@
+# encoding: binary
 # mutually dependent files do not make me happy.
 require 'mp3info/mpeg_header'
 require 'tempfile'
@@ -219,7 +220,7 @@ module MPEGFile
     file_data = file.read(CHUNK_SIZE)
     
     while file_data do
-      sync_pos = file_data.index(0xff)
+      sync_pos = file_data.index("\xff")
       if sync_pos
         header = file_data.slice(sync_pos, 4)
         if 4 == header.size

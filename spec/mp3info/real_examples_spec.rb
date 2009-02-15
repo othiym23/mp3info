@@ -1,3 +1,4 @@
+# encoding: utf-8
 $:.unshift("lib/")
 
 require 'mp3info'

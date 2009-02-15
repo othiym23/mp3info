@@ -1,3 +1,4 @@
+# encoding: binary
 require "delegate"
 
 class ID3Error < StandardError ; end
@@ -140,12 +141,24 @@ class ID3 < DelegateClass(Hash)
     @hash["year"] = year_t unless year_t == 0
     @hash["genre_s"] = GENRES[@hash["genre"]] || "Unknown" # as per spec
     
-    # the sole difference between ID3v1.1 and ID3v1 is that the former has the
-    # track number tucked in as an unsigned byte at the end of the comments field
-    if raw_comments[-2] == 0 && raw_comments[-1] > 0
+    # The sole difference between ID3v1.1 and ID3v1 is that the former has the
+    # track number tucked in as an unsigned byte at the end of the comments field.
+    #
+    # There is probably a better way to make this comparison work in both
+    # ruby 1.9 and previous versions, but for now, this works.
+    if raw_comments[-2].chr == 0.chr && raw_comments[-1].chr > 0.chr
       @version = VERSION_1_1
-      @hash["tracknum"] = raw_comments[-1].to_i
-      raw_comments.chop! # remove the last char. which contains the genre
+      track_char = raw_comments[-1]
+      # In Ruby 1.9, slice is more consistent and returns a single-character
+      # string, so the new String.ord method must be used to produce the
+      # ordinal value of the character. Monkeypatching may be necessary.
+      if track_char.respond_to?(:ord)
+        @hash["tracknum"] = raw_comments[-1].ord
+      else
+        @hash["tracknum"] = raw_comments[-1].to_i
+      end
+      # remove the last character, which contains the track number
+      raw_comments.chop!
     else
       @version = VERSION_1
     end

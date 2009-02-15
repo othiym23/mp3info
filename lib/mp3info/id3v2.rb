@@ -1,3 +1,4 @@
+# encoding: utf-8
 require "delegate"
 require 'mp3info/mpeg_utils'
 require "mp3info/id3v2_frames"
@@ -100,11 +101,23 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def major_version
-    @raw_tag[3]
+    # ruby 1.9
+    if @raw_tag[3].respond_to?(:ord)
+      @raw_tag[3].ord
+    # ruby < 1.9
+    else
+      @raw_tag[3]
+    end
   end
   
   def minor_version
-    @raw_tag[4]
+    # ruby 1.9
+    if @raw_tag[4].respond_to?(:ord)
+      @raw_tag[4].ord
+    # ruby < 1.9
+    else
+      @raw_tag[4]
+    end
   end
   
   def version

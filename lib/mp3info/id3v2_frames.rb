@@ -1,5 +1,7 @@
+# encoding: utf-8
 require 'yaml'
 require 'iconv'
+require 'time'
 
 module ID3V24
   class FrameException < StandardError ; end
@@ -118,11 +120,18 @@ module ID3V24
   
     def self.from_s(value, type = 'XXXX')
       encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
-      TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string).tr("\000",''))
+      TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string))
     end
     
     def to_s
-      @encoding.chr << encode_value(@encoding, @value)
+      binary_string = @encoding.chr
+      # Ruby 1.9 goes out of its way to make it difficult to quickly
+      # smoosh together strings of 'incompatible' encodings. I know this
+      # is gonna hurt performance, but it works in both Ruby 1.9 and
+      # previous versions.
+      encode_value(@encoding, @value).each_byte { |byte| binary_string << byte }
+      
+      binary_string
     end
     
     def to_s_pretty
@@ -139,13 +148,15 @@ module ID3V24
     def self.decode_value(encoding, value)
       case encoding
       when ENCODING[:iso]
-        Iconv.iconv("UTF-8", "ISO-8859-1", value)[0].chomp("\x00")
+        Iconv.iconv("UTF-8", "ISO-8859-1", value).first.strip
       when ENCODING[:utf16]
-        Iconv.iconv("UTF-8", "UTF-16", value)[0].chomp("\x00")
+        Iconv.iconv("UTF-8", "UTF-16", value).first.strip
       when ENCODING[:utf16be]
-        Iconv.iconv("UTF-8", "UTF-16BE", value)[0].chomp("\x00")
+        Iconv.iconv("UTF-8", "UTF-16BE", value).first.strip
       when ENCODING[:utf8]
-        value.chomp("\x00")
+        # probably inefficient way to make sure that strings end up in
+        # UTF-8 in Ruby 1.9 in a backwards-compatible way
+        Iconv.iconv("UTF-8", "UTF-8", value).first.strip
       else
         raise(FrameException, "invalid encoding #{encoding} encountered in tag value #{value.inspect}")
       end
@@ -155,11 +166,11 @@ module ID3V24
       if value
         case encoding
         when ENCODING[:iso]
-          Iconv.iconv("ISO-8859-1", "UTF-8", value.to_s)[0] + "\000"
+          Iconv.iconv("ISO-8859-1", "UTF-8", value.to_s + "\000").first
         when ENCODING[:utf16]
-          Iconv.iconv("UTF-16", "UTF-8", value.to_s)[0] + "\000\000"
+          Iconv.iconv("UTF-16", "UTF-8",     value.to_s + "\000").first
         when ENCODING[:utf16be]
-          Iconv.iconv("UTF-16BE", "UTF-8", value.to_s)[0] + "\000\000"
+          Iconv.iconv("UTF-16BE", "UTF-8",   value.to_s + "\000").first
         when ENCODING[:utf8]
           value.to_s + "\000"
         else
@@ -618,7 +629,7 @@ module ID3V24
     end
     
     def to_s_pretty
-      "Release date: #{@value.to_s}"
+      "Release date: #{@value.rfc2822}"
     end
   end
   

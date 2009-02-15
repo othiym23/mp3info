@@ -1,4 +1,5 @@
-# $Id: mp3info.rb,v 50d48267738c 2009/02/11 10:02:56 ogd $
+# encoding: binary
+# $Id: mp3info.rb,v 2c425da10395 2009/02/15 02:35:28 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
