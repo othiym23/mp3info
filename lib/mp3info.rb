@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 2c425da10395 2009/02/15 02:35:28 ogd $
+# $Id: mp3info.rb,v b5c182e1cf38 2009/02/16 07:56:50 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -14,6 +14,7 @@ require 'fileutils'
 require 'mp3info/mpeg_header'
 require 'mp3info/xing_header'
 require 'mp3info/lame_header'
+require 'mp3info/replaygain_info'
 require 'mp3info/id3'
 require 'mp3info/id3v2'
 
@@ -46,6 +47,11 @@ class Mp3Info
   
   # LAME header
   attr_reader :lame_header
+  
+  # replaygain info object
+  def replaygain_info
+    ReplaygainInfo.new(self)
+  end
   
   # bitrate in kbps
   def bitrate
