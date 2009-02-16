@@ -38,7 +38,7 @@ class LAMEReplayGain
   NAME =
     { 0 => 'Not set',
       1 => 'Radio',
-      2 => 'Audiofile' }
+      2 => 'Audiophile' }
 
   ORIGINATOR =
     {  0 => 'Not set',
@@ -52,7 +52,7 @@ class LAMEReplayGain
   end
   
   def peak
-    if raw_peak > 0
+    if raw_peak != 0
       raw_peak.to_f / (1 << 28).to_f
     else
       nil
@@ -60,7 +60,7 @@ class LAMEReplayGain
   end
   
   def db
-    if raw_peak > 0
+    if raw_peak != 0
       20 * Math::log10(raw_peak)
     else
       nil
