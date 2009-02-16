@@ -13,8 +13,10 @@ module ID3V24
     
     def self.create_frame(type, value)
       klass = find_class(type)
+      $stderr.puts("ID3V24::Frame.create_frame(type='#{type}',value=[#{value.inspect}]) => klass=[#{klass}]") if $DEBUG
 
       if klass
+        $stderr.puts("...klass='#{klass}'") if $DEBUG
         klass.default(value)
       else
         # all the 'T###' frames contain encoded text, all the
@@ -32,7 +34,7 @@ module ID3V24
     
     def self.create_frame_from_string(type, value)
       klass = find_class(type)
-      $stderr.puts("ID3V24.create_frame_from_string(type='#{type}',value=[#{value.inspect}]) =>...") if $DEBUG
+      $stderr.puts("ID3V24::Frame.create_frame_from_string(type='#{type}',value=[#{value.inspect}]) =>...") if $DEBUG
       
       if klass
         $stderr.puts("...klass='#{klass}'") if $DEBUG
@@ -635,6 +637,155 @@ module ID3V24
     def self.from_s(value)
       encoding, string = value.unpack("ca*")
       XSOPFrame.new(encoding, TextFrame.decode_value(encoding, string))
+    end
+  end
+  
+  class RVA2ParseError < StandardError ; end
+  
+  class RVA2Adjustment
+    # as per http://www.id3.org/id3v2.4.0-frames, section 4.11
+    CHANNEL_TYPE = {
+      0x00 => 'Other',
+      0x01 => 'Master volume',
+      0x02 => 'Front right',
+      0x03 => 'Front left',
+      0x04 => 'Back right',
+      0x05 => 'Back left',
+      0x06 => 'Front centre',
+      0x07 => 'Back centre',
+      0x08 => 'Subwoofer'
+    }
+    
+    attr_accessor :channel_code
+    attr_accessor :raw_adjustment
+    
+    def initialize(channel_code, raw_adjustment, peak_gain_width, peak_gain_bits = [])
+      @channel_code = channel_code
+      @raw_adjustment = raw_adjustment
+      @peak_gain_width = peak_gain_width
+      @peak_gain_bits = peak_gain_bits
+    end
+    
+    def channel_type
+      CHANNEL_TYPE[@channel_code] || 'Unknown'
+    end
+    
+    def adjustment
+      @raw_adjustment.to_f / 512.0
+    end
+    
+    def adjustment=(new_adjustment)
+      @raw_adjustment = (new_adjustment * 512).to_i
+    end
+    
+    def peak_gain
+      @peak_gain_bits
+    end
+    
+    def peak_gain_bit_width
+      @peak_gain_width
+    end
+    
+    def to_bin
+      "#{@channel_code.chr}#{encode_raw_adjustment}#{encode_peak_gain_bits}"
+    end
+    
+    private
+    
+    def encode_raw_adjustment
+      [@raw_adjustment >> 8, @raw_adjustment & 0xff].pack("cC")
+    end
+    
+    def encode_peak_gain_bits
+      "#{@peak_gain_width.chr}#{@peak_gain_bits.to_binary_string}"
+    end
+  end
+  
+  class RVA2Frame < Frame
+    attr_accessor :identifier
+    
+    def initialize(id, adjustments = [])
+      super('RVA2', adjustments)
+      @identifier = id
+      @adjustments = adjustments
+    end
+    
+    def self.default(value)
+      default_adjustment = RVA2Adjustment.new(0x01, 0, 0)
+      default_adjustment.adjustment = value
+      rva2 = RVA2Frame.new('track', [default_adjustment])
+    end
+    
+    def self.from_s(value)
+      id, raw_adjustment_list = value.split("\x00", 2)
+      $stderr.puts("RVA2Frame.from_s(value=#{value.inspect}) => id=[#{id.inspect}] raw_adjustment_list=[#{raw_adjustment_list.inspect}]") if $DEBUG
+      RVA2Frame.new(id, parse_adjustments(raw_adjustment_list))
+    end
+    
+    def adjustments
+      @adjustments
+    end
+    
+    def to_s
+      "#{@identifier}\x00#{encode_adjustments}"
+    end
+    
+    private
+    
+    def self.parse_adjustments(raw_value)
+      adjustment_list = []
+      total_bytes = raw_value.safe_length
+      cur_pos = 0
+      $stderr.puts("RVA2Frame.parse_adjustments(raw_value=#{raw_value.inspect}) => total_bytes=[#{total_bytes}]") if $DEBUG
+      
+      while total_bytes - cur_pos > 0 do
+        # get the channel code byte
+        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 >= total_bytes;
+        channel_code = raw_value[cur_pos].respond_to?(:ord) ? raw_value[cur_pos].ord : raw_value[cur_pos]
+        cur_pos += 1
+        $stderr.puts("RVA2Frame.parse_adjustments channel_code=[#{channel_code.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
+        
+        # get the 16-bit signed big-endian value for the gain adjustment
+        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 2 >= total_bytes;
+        adjustment = decode_gain_value(raw_value.slice(cur_pos, 2))
+        cur_pos += 2
+        $stderr.puts("RVA2Frame.parse_adjustments adjustment=[#{adjustment.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
+        
+        # figure out how many bits' worth of peak gain scale adjustment there is
+        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 > total_bytes;
+        peak_gain_bit_size = raw_value[cur_pos].respond_to?(:ord) ? raw_value[cur_pos].ord : raw_value[cur_pos]
+        cur_pos += 1
+        $stderr.puts("RVA2Frame.parse_adjustments peak_gain_bit_size=[#{peak_gain_bit_size.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
+        
+        peak_gain_value = 0
+        # ...and then fetch them if they're there
+        if peak_gain_bit_size > 0
+          peak_gain_byte_width = ((peak_gain_bit_size - 1) / 8) + 1
+          peak_gain_bytes = raw_value.slice(cur_pos, peak_gain_byte_width)
+          peak_gain_value = peak_gain_bytes.to_binary_array[-peak_gain_bit_size..-1].to_binary_decimal
+          cur_pos += peak_gain_byte_width
+          $stderr.puts("RVA2Frame.parse_adjustments peak_gain_bytes=[#{peak_gain_bytes.inspect}] peak_gain_value=[#{peak_gain_value}] cur_pos=[#{cur_pos}]") if $DEBUG
+        end
+        
+        adjustment_list << RVA2Adjustment.new(channel_code, adjustment, peak_gain_bit_size, peak_gain_value)
+      end
+      
+      adjustment_list
+    end
+    
+    def self.decode_gain_value(binary_string)
+      msb, lsb = binary_string.unpack('cC')
+      $stderr.puts("RVA2Frame.decode_gain_value msb=[#{msb.inspect}] lsb=[#{lsb.inspect}]") if $DEBUG
+      (msb << 8) + lsb
+    end
+    
+    def encode_adjustments
+      bin_string = ''
+      @adjustments.each do |adjustment|
+        bin_string << adjustment.to_bin
+      end
+      
+      bin_string
     end
   end
 end
