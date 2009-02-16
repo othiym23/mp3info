@@ -2,6 +2,7 @@
 require 'yaml'
 require 'iconv'
 require 'time'
+require 'mp3info/compatibility_utils'
 
 module ID3V24
   class FrameException < StandardError ; end
@@ -741,7 +742,7 @@ module ID3V24
       while total_bytes - cur_pos > 0 do
         # get the channel code byte
         raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 >= total_bytes;
-        channel_code = raw_value[cur_pos].respond_to?(:ord) ? raw_value[cur_pos].ord : raw_value[cur_pos]
+        channel_code = raw_value[cur_pos].to_ordinal
         cur_pos += 1
         $stderr.puts("RVA2Frame.parse_adjustments channel_code=[#{channel_code.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
         
@@ -753,7 +754,7 @@ module ID3V24
         
         # figure out how many bits' worth of peak gain scale adjustment there is
         raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 > total_bytes;
-        peak_gain_bit_size = raw_value[cur_pos].respond_to?(:ord) ? raw_value[cur_pos].ord : raw_value[cur_pos]
+        peak_gain_bit_size = raw_value[cur_pos].to_ordinal
         cur_pos += 1
         $stderr.puts("RVA2Frame.parse_adjustments peak_gain_bit_size=[#{peak_gain_bit_size.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
         

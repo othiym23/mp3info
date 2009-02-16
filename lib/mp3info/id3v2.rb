@@ -1,5 +1,6 @@
 # encoding: utf-8
-require "delegate"
+require 'delegate'
+require 'mp3info/compatibility_utils'
 require 'mp3info/mpeg_utils'
 require "mp3info/id3v2_frames"
 
@@ -127,23 +128,11 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def major_version
-    # ruby 1.9
-    if @raw_tag[3].respond_to?(:ord)
-      @raw_tag[3].ord
-    # ruby < 1.9
-    else
-      @raw_tag[3]
-    end
+    @raw_tag[3].to_ordinal
   end
   
   def minor_version
-    # ruby 1.9
-    if @raw_tag[4].respond_to?(:ord)
-      @raw_tag[4].ord
-    # ruby < 1.9
-    else
-      @raw_tag[4]
-    end
+    @raw_tag[4].to_ordinal
   end
   
   def version
@@ -286,10 +275,10 @@ class ID3V2 < DelegateClass(Hash)
   def frame_name_invalid?(version, name)
     case version
     when 2
-      0 == (name[0].respond_to?(:ord) ? name[0].ord : name[0])
+      0 == name[0].to_ordinal
     when 3, 4
       #bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
-      0 == (name[0].respond_to?(:ord) ? name[0].ord : name[0]) or name == "MP3e"
+      0 == name[0].to_ordinal or name == "MP3e"
     end
   end
   

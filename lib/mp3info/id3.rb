@@ -1,5 +1,6 @@
 # encoding: binary
-require "delegate"
+require 'delegate'
+require 'mp3info/compatibility_utils'
 
 class ID3Error < StandardError ; end
 
@@ -146,17 +147,9 @@ class ID3 < DelegateClass(Hash)
     #
     # There is probably a better way to make this comparison work in both
     # ruby 1.9 and previous versions, but for now, this works.
-    if raw_comments[-2].chr == 0.chr && raw_comments[-1].chr > 0.chr
+    if raw_comments[-2].to_ordinal == 0 && raw_comments[-1].to_ordinal > 0
       @version = VERSION_1_1
-      track_char = raw_comments[-1]
-      # In Ruby 1.9, slice is more consistent and returns a single-character
-      # string, so the new String.ord method must be used to produce the
-      # ordinal value of the character. Monkeypatching may be necessary.
-      if track_char.respond_to?(:ord)
-        @hash["tracknum"] = raw_comments[-1].ord
-      else
-        @hash["tracknum"] = raw_comments[-1].to_i
-      end
+      @hash["tracknum"] = raw_comments[-1].to_ordinal
       # remove the last character, which contains the track number
       raw_comments.chop!
     else
