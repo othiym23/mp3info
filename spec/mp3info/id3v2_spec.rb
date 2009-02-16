@@ -91,7 +91,7 @@ describe Mp3Info, "when working with ID3v2 tags" do
   end
   
   it "should still read the tag from a truncated MP3 file" do
-    lambda { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/230-unicode.tag')) }.should_not raise_error
+    lambda { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/id3lib/230-unicode.tag')) }.should_not raise_error
   end
   
   it "should default to not exposing the ID3v2 tag for casual use until it's had a frame added" do
