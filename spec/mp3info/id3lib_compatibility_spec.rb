@@ -1,3 +1,4 @@
+# encoding: utf-8
 $:.unshift("spec/")
 
 require 'mp3info/mp3info_helper'
