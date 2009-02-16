@@ -251,12 +251,12 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Keith Fullerton
     @lame_info.replay_gain.radio.to_s.should == 'Radio Replay Gain: -4.2 dB (Set automatically)'
   end
   
-  it "should verify that the LAME replaygain tag has audiofile info the same as eyeD3" do
-    @lame_info.replay_gain.audiofile.should_not be_nil
+  it "should verify that the LAME replaygain tag has audiophile info the same as eyeD3" do
+    @lame_info.replay_gain.audiophile.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain audiofile info is not set the same as eyeD3" do
-    @lame_info.replay_gain.audiofile.set?.should be_false
+  it "should verify that the LAME replaygain audiophile info is not set the same as eyeD3" do
+    @lame_info.replay_gain.audiophile.set?.should be_false
   end
 end
 
@@ -492,8 +492,8 @@ describe Mp3Info, "when reading the MP3 info from an encoding of RAC's 'Distance
     @lame_info.replay_gain.radio.set?.should be_false
   end
   
-  it "should verify that the LAME replaygain tag has audiofile info the same as eyeD3" do
-    @lame_info.replay_gain.audiofile.set?.should be_false
+  it "should verify that the LAME replaygain tag has audiophile info the same as eyeD3" do
+    @lame_info.replay_gain.audiophile.set?.should be_false
   end
 end
 
@@ -745,12 +745,12 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Wire's 'I Feel 
     @lame_info.replay_gain.radio.to_s.should == 'Radio Replay Gain: -6.4 dB (Set automatically)'
   end
   
-  it "should verify that the LAME replaygain tag has audiofile info the same as eyeD3" do
-    @lame_info.replay_gain.audiofile.should_not be_nil
+  it "should verify that the LAME replaygain tag has audiophile info the same as eyeD3" do
+    @lame_info.replay_gain.audiophile.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain audiofile info is not set the same as eyeD3" do
-    @lame_info.replay_gain.audiofile.set?.should be_false
+  it "should verify that the LAME replaygain audiophile info is not set the same as eyeD3" do
+    @lame_info.replay_gain.audiophile.set?.should be_false
   end
 end
 

@@ -71,7 +71,7 @@ class LAMEReplayGain
     LAMEReplayGainType.new(@raw_frame.slice(4,2))
   end
   
-  def audiofile
+  def audiophile
     LAMEReplayGainType.new(@raw_frame.slice(6,2))
   end
   
