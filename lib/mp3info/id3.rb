@@ -42,6 +42,7 @@ class ID3 < DelegateClass(Hash)
   attr_reader :version
   
   def ID3.has_id3v1_tag?(filename)
+    return false if File.size(filename) < TAGSIZE
     File.open(filename) { |f|
       f.seek(-TAGSIZE, File::SEEK_END)
       f.read(3) == 'TAG'
@@ -121,8 +122,8 @@ class ID3 < DelegateClass(Hash)
   def ID3.from_io(io)
     remaining_bytes = io.stat.size - io.pos
     
-    if remaining_bytes >= ID3::TAGSIZE
-      raw_tag = io.read(ID3::TAGSIZE)
+    if remaining_bytes >= TAGSIZE
+      raw_tag = io.read(TAGSIZE)
       
       id3 = ID3.new
       id3.from_bin(raw_tag)
