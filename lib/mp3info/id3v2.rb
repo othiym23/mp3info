@@ -230,7 +230,7 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def parse_id3v2_frames(version, string)
-    $stderr.puts("ID3V2.parse_id3v2_frames(version=#{version},string=[#{string.inspect}])") if $DEBUG
+    $stderr.puts("ID3V2.parse_id3v2_frames(version=#{version},string='#{string[0..255].inspect}...')") if $DEBUG
     frame_hash = {}
     # 3 bytes for 'ID3'
     # 3 bytes for major version, minor version, and header flags
@@ -302,7 +302,7 @@ class ID3V2 < DelegateClass(Hash)
   # ID but only returns them as a list if there's more than 1. For consistency's
   # sake this should return a list every time, so consider that a TODO.
   def add_frame(hash, name, string)
-    $stderr.puts "ID3V2.add_frame(name='#{name}',string=[#{string.inspect}])" if $DEBUG
+    $stderr.puts "ID3V2.add_frame(name='#{name}',string=[#{string[0..255].inspect}...])" if $DEBUG
     frame = ID3V24::Frame.create_frame_from_string(name, string)
     if hash.keys.include?(name)
       unless hash[name].is_a?(Array)

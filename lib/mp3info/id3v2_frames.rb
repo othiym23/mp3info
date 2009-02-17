@@ -35,7 +35,7 @@ module ID3V24
     
     def self.create_frame_from_string(type, value)
       klass = find_class(type)
-      $stderr.puts("ID3V24::Frame.create_frame_from_string(type='#{type}',value=[#{value.inspect}]) =>...") if $DEBUG
+      $stderr.puts("ID3V24::Frame.create_frame_from_string(type='#{type}',value=[#{value[0..255].inspect}...]) =>...") if $DEBUG
       
       if klass
         $stderr.puts("...klass='#{klass}'") if $DEBUG
@@ -60,7 +60,7 @@ module ID3V24
     def initialize(type, value)
       @type = type
       @value = value
-      $stderr.puts("...frame value is [#{value}]") if $DEBUG
+      $stderr.puts("...frame value is [#{value[0..255].inspect}...]") if $DEBUG
       @raw_size = value.respond_to?(:size) ? value.size : 0
     end
     
@@ -197,7 +197,7 @@ module ID3V24
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
       
-      $stderr.puts("ID3V24::TextFrame.split_encoded(encoding=#{encoding},string=[#{string.inspect}]) => [prefix='#{prefix.inspect}',remainder=[#{remainder.inspect}]]") if $DEBUG
+      $stderr.puts("ID3V24::TextFrame.split_encoded(encoding=#{encoding},string=[#{string[0..255].inspect}...]) => [prefix='#{prefix.inspect}',remainder=[#{remainder[0..255].inspect}...]]") if $DEBUG
       [prefix, remainder]
     end
   end
