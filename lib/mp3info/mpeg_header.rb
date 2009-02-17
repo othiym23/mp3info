@@ -56,6 +56,8 @@ class MPEGHeader
                           [   448,      384,      320,      256,      160 ],
                           [   nil,      nil,      nil,      nil,      nil ] ]
   
+  LAYER_STRINGS = ['Invalid', 'I', 'II', 'III']
+  
   def initialize(header_data)
     @raw_data = header_data.to_binary_decimal
     
@@ -115,25 +117,33 @@ class MPEGHeader
     [2.5, nil, 2.0, 1.0][@version]
   end
   
+  def version_string
+    "MPEG#{"%g" % version}, layer #{LAYER_STRINGS[layer]}"
+  end
+  
+  def summary
+    "[ #{bitrate}kbps @ #{sample_rate / 1000.0}kHz - #{mode}#{error_protection ? " +error" : ""} ]"
+  end
+  
   def layer
     raise InvalidMPEGHeader, "Layer code of 0 is reserved by MPEG specification." if 0 == @layer
     4 - @layer
   end
   
   def padded_stream?
-    1 == @padded_stream ? true : false
+    1 == @padded_stream
   end
   
   def private_stream?
-    1 == @private_stream ? true : false
+    1 == @private_stream
   end
   
   def copyrighted_stream?
-    1 == @copyrighted_stream ? true : false
+    1 == @copyrighted_stream
   end
   
   def original_stream?
-    1 == @original_stream ? true : false
+    1 == @original_stream
   end
   
   def error_protection
@@ -167,16 +177,6 @@ class MPEGHeader
     end
     
     bitrate
-  end
-  
-  def frame_length
-    if 1 == layer
-      padding = (padded_stream? ? 1 : 0) * 4;
-      (((12_000 * bitrate) / sample_rate) + padding) * 4
-    else
-      padding = padded_stream? ? 1 : 0;
-      ((144_000 * bitrate) / sample_rate) + padding
-    end
   end
   
   def sample_rate
@@ -261,5 +261,28 @@ class MPEGHeader
     return false if 0x2 == @emphasis
     
     return true
+  end
+  
+  def to_s
+    "MPEG header, #{version_string} #{summary}"
+  end
+  
+  def description
+    <<-DONE
+
+#{version_string} header information:
+  #{summary}
+
+Frame header is #{valid? ? '' : "not "}valid.
+Audio stream is #{private_stream? ? '' : "not "}private.
+Audio stream is #{original_stream? ? '' : "not "}original.
+Audio stream is #{padded_stream? ? '' : "not "}padded.
+Audio stream is #{copyrighted_stream? ? '' : "not "}copyrighted.
+
+Frame size: #{frame_size} bytes
+Emphasis: #{emphasis}
+Mode extension: #{mode_extension}
+
+    DONE
   end
 end

@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 9c6868bad460 2009/02/17 00:07:54 ogd $
+# $Id: mp3info.rb,v 91c455079ea5 2009/02/17 01:05:52 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -168,7 +168,7 @@ class Mp3Info
       
       if mpeg_candidate.valid?
         file.seek(header_pos)
-        cur_frame = read_next_frame(file, mpeg_candidate.frame_length)
+        cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
         $stderr.puts("Current frame is [#{cur_frame.inspect}]") if $DEBUG
         xing_candidate = XingHeader.new(cur_frame)
         @xing_header = xing_candidate if xing_candidate.valid?
@@ -266,8 +266,8 @@ class Mp3Info
   # inspect inside Mp3Info
   def to_s
     time = "Time: #{time_string}"
-    type = "MPEG#{@mpeg_header.version} Layer #{@mpeg_header.layer}"
-    properties = "[ #{vbr? ? "~" : ""}#{bitrate}kbps @ #{@mpeg_header.sample_rate / 1000.0}kHz - #{@mpeg_header.mode} ]#{@mpeg_header.error_protection ? " +error" : ""}"
+    type = @mpeg_header.version_string
+    properties = @mpeg_header.summary
     
     # try to always keep the string representation at 80 characters
     "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"

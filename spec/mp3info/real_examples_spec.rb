@@ -68,7 +68,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Keith Fullerton
   end
   
   it "should verify that the MPEG has a frame length of 417 the same as eyeD3" do
-    @mpeg_info.frame_length.should == 417
+    @mpeg_info.frame_size.should == 417
   end
   
   it "should verify that the Xing header exists the same as eyeD3" do
@@ -325,7 +325,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of RAC's 'Distance
   end
   
   it "should verify that the MPEG has a frame length of 417 the same as eyeD3" do
-    @mpeg_info.frame_length.should == 417
+    @mpeg_info.frame_size.should == 417
   end
   
   it "should verify that the Xing header exists the same as eyeD3" do
@@ -562,7 +562,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Wire's 'I Feel 
   end
   
   it "should verify that the MPEG has a frame length of 417 the same as eyeD3" do
-    @mpeg_info.frame_length.should == 417
+    @mpeg_info.frame_size.should == 417
   end
   
   it "should verify that the Xing header exists the same as eyeD3" do
@@ -817,7 +817,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Jürgen Paape's
   end
   
   it "should verify that the MPEG has a frame length of 1,044 the same as eyeD3" do
-    @mpeg_info.frame_length.should == 1_044
+    @mpeg_info.frame_size.should == 1_044
   end
   
   it "should verify that the Xing header doesn't exist the same as eyeD3" do

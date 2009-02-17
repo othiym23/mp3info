@@ -59,6 +59,6 @@ describe Mp3Info, "when loading a sample MP3 file" do
   end
   
   it "should correctly format the summary info for the sample file" do
-    Mp3Info.open(@mp3_filename) { |info| info.to_s.should == "Time: 0:00        MPEG1.0 Layer 3           [ 128kbps @ 44.1kHz - Joint stereo ]" }
+    Mp3Info.open(@mp3_filename) { |info| info.to_s.should == "Time: 0:00        MPEG1, layer III          [ 128kbps @ 44.1kHz - Joint stereo ]" }
   end
 end
