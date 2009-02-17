@@ -1,3 +1,6 @@
+require 'mp3info/mpeg_utils'
+require 'mp3info/size_utils'
+
 class LAMEReplayGainType
   def initialize(gain_data)
     @raw_frame = gain_data
@@ -73,6 +76,14 @@ class LAMEReplayGain
   
   def audiophile
     LAMEReplayGainType.new(@raw_frame.slice(6,2))
+  end
+  
+  def to_s
+    if radio.set? || audiophile.set?
+      (radio.set? ? "\n#{radio.to_s}" : '') << (audiophile.set? ? "\n#{audiophile.set}" : '')
+    else
+      ''
+    end
   end
   
   private
@@ -350,6 +361,37 @@ class LAMEHeader
   
   def valid_crc?
     check_crc(@raw_frame.slice(0,190)) == lame_tag_crc
+  end
+  
+  def to_s
+    "LAME header, #{music_length.octet_units} #{encoder_version} #{sample_frequency} #{preset} stream"
+  end
+  
+  def description
+    <<-OUT
+LAME information:
+
+Encoder Version  : #{encoder_version}
+LAME Tag Revision: #{tag_version}
+VBR Method       : #{vbr_method}
+Lowpass Filter   : #{lowpass_filter}#{replay_gain.to_s}
+Encoding Flags   : #{encoder_flag_string}#{"\nGapless?            : #{nogap_flag_string}" if nogap_flag_string != ''}
+ATH Type         : #{ath_type}
+Bitrate (#{bitrate_type}): #{bitrate} kbps
+Encoder Delay    : #{encoder_delay} frames
+Encoder Padding  : #{encoder_padding} frames
+Noise Shaping    : #{noise_shaping_type}
+Stereo Mode      : #{stereo_mode}
+Unwise Settings  : #{unwise_settings?}
+Sample Frequency : #{sample_frequency}
+MP3 Gain         : #{mp3_gain} (#{"% #+4.2g" % mp3_gain_db} dB)
+Preset           : #{preset}
+Surround Info    : #{surround_info}
+Music Length     : #{music_length.octet_units}
+Music CRC-16     : #{"%04X" % music_crc}
+LAME Tag CRC-16  : #{"%04X" % lame_tag_crc}
+
+    OUT
   end
   
   private
