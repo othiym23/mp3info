@@ -237,7 +237,7 @@ class MPEGHeader
     # layer type of 0x0 is reserved
     return false if 0 == @layer
     
-    # bitrate code of 0 indicates a bitrate of 0, which makes no sense
+    # bitrate code of 0 indicates a bitrate of 0 (free bitstream), which makes no sense
     # bitrate code of 15 is invalid
     return false if 0xf == @bitrate_code
     
