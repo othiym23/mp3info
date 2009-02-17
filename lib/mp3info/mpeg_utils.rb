@@ -152,7 +152,7 @@ module MPEGFile
   #
   # It returns either the next frame or the remainder of the stream.
   def read_next_frame(file, frame_size = nil)
-    unless frame_size
+    unless frame_size && frame_size > 0
       cur_pos = file.pos
       file.seek(1, IO::SEEK_CUR)
       
@@ -160,7 +160,7 @@ module MPEGFile
       
       begin
         # find_next_frame is defined in MPEGFile
-        next_pos, data = find_next_frame(file)
+        next_pos, data = find_next_frame(file, cur_pos)
         frame_size = next_pos - cur_pos
       rescue MPEGFile::MPEGFileError
         frame_size = file.stat.size - cur_pos
@@ -184,48 +184,47 @@ module MPEGFile
         # this would be a good place to invoke code to prepend a tag to the file
         yield temporary if block_given?
         
-        $stderr.puts("MPEGFile::write_mpeg_file! about to call find_next_frame, file.pos=#{original.pos}") if $DEBUG
-        header_pos, header = find_next_frame(original)
+        $stderr.puts("MPEGFile::write_mpeg_file! about to call find_next_frame at %#010x" % original.pos) if $DEBUG
+        header_pos, header = find_next_frame(original, original.pos)
         original.seek(header_pos)
-        $stderr.puts("MPEGFile::write_mpeg_file! original file is at location #{original.pos}") if $DEBUG
+        $stderr.puts("MPEGFile::write_mpeg_file! original file is at %#010x" % original.pos) if $DEBUG
         bufsize = original.stat.blksize || 4096
         while buf = original.read(bufsize)
           temporary.write(buf)
-          $stderr.puts("MPEGFile::write_mpeg_file! wrote #{bufsize} bytes of the original file to #{tmpfile_path}") if $DEBUG
+          $stderr.puts("MPEGFile::write_mpeg_file! wrote #{"%#010x" % bufsize} bytes of the original file to #{tmpfile_path}") if $DEBUG
         end
       end
     end
     File.rename(tmpfile_path, filename)
   end
   
-  def find_next_frame(file)
-    header_pos = 0
-    header = nil
-    
+  def find_next_frame(file, start_pos = 0)
     # make sure we've got the sync pattern, let the MPEGHeader validity check do the rest
-    cur_pos = file.pos
+    header_pos, header = find_sync(file, start_pos)
     loop do
-      header_pos, header = find_sync(file, cur_pos)
-      $stderr.puts("MPEGFile::find_next_frame file.pos is %u, header_pos is %u, header is %#x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
+      $stderr.puts("MPEGFile::find_next_frame file.pos is %#010x, header_pos is %#010x, header is %#010x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
       break if nil == header || valid_mpeg_header?(header)
-      cur_pos = header_pos + 1
+      header_pos, header = find_sync(file, start_pos + header_pos + 2)
     end
     
     if header
       return header_pos, header
     else
-      raise(MPEGFileError, "cannot find a valid frame after reading #{file.pos} bytes from #{file.path} of size #{file.stat.size}")
+      raise(MPEGFileError, "cannot find a valid frame after reading #{"%#010x" % file.pos} bytes from #{file.path} of size #{"%#010x" % file.stat.size}")
     end
   end
   
   def find_sync(file, start_pos=0)
+    $stderr.puts("find_sync seeking to #{"%#010x" % start_pos}") if $DEBUG
     file.seek(start_pos)
     file_data = file.read(CHUNK_SIZE)
+    $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes") if $DEBUG
     
     while file_data do
       sync_pos = file_data.index("\xff")
       if sync_pos
         header = file_data.slice(sync_pos, 4)
+        $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
         if 4 == header.size
           return start_pos + sync_pos, header
         end

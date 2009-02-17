@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 91c455079ea5 2009/02/17 01:05:52 ogd $
+# $Id: mp3info.rb,v d2fd9128034f 2009/02/17 22:20:46 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -160,16 +160,16 @@ class Mp3Info
     #
     cur_pos = file.pos
     begin
-      $stderr.puts("Mp3Info.initialize about to call find_next_frame, file.pos=#{file.pos}") if $DEBUG
-      header_pos, header_data = find_next_frame(file)
+      $stderr.puts("Mp3Info.initialize about to call find_next_frame at %#010x" % file.pos) if $DEBUG
+      header_pos, header_data = find_next_frame(file, cur_pos)
       mpeg_candidate = MPEGHeader.new(header_data)
       @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
-      $stderr.puts("MPEG header found, is [#{@mpeg_header.inspect}]") if $DEBUG && has_mpeg_header?
       
       if mpeg_candidate.valid?
+        $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.inspect]) if $DEBUG
         file.seek(header_pos)
         cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
-        $stderr.puts("Current frame is [#{cur_frame.inspect}]") if $DEBUG
+        $stderr.puts("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
         xing_candidate = XingHeader.new(cur_frame)
         @xing_header = xing_candidate if xing_candidate.valid?
         $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && has_xing_header?
