@@ -60,6 +60,7 @@ module ID3V24
     def initialize(type, value)
       @type = type
       @value = value
+      $stderr.puts("...frame value is [#{value}]") if $DEBUG
       @raw_size = value.respond_to?(:size) ? value.size : 0
     end
     
@@ -122,8 +123,12 @@ module ID3V24
     end
   
     def self.from_s(value, type = 'XXXX')
-      encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
-      TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string))
+      if value && value.length > 0
+        encoding, string = value.unpack("ca*")  # language encoding bit 0 for iso_8859_1, 1 for unicode
+        TextFrame.new(type, encoding, TextFrame.decode_value(encoding, string))
+      else
+        default('', type)
+      end
     end
     
     def to_s
