@@ -1,5 +1,6 @@
 require 'mp3info/mpeg_utils'
 require 'mp3info/mpeg_header'
+require 'mp3info/size_utils'
 
 class XingHeaderError < StandardError ; end
 
@@ -87,7 +88,7 @@ class XingHeader
   end
   
   def to_s
-    "Xing tag, #{vbr? ? 'VBR' : 'CBR'} encoded with #{frames} frames and a streamsize of #{bytes}."
+    "Xing header, #{vbr? ? 'VBR' : 'CBR'} encoded with #{frames} frames and a stream size of #{bytes.octet_units}."
   end
   
   private
