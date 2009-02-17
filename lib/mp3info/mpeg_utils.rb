@@ -151,21 +151,24 @@ module MPEGFile
   # This method assumes that the file pointer is at the beginning of a frame.
   #
   # It returns either the next frame or the remainder of the stream.
-  def read_next_frame(file)
-    cur_pos = file.pos
-    file.seek(1, IO::SEEK_CUR)
-    
-    frame_size = 0
-    
-    begin
-      # find_next_frame is defined in MPEGFile
-      next_pos, data = find_next_frame(file)
-      frame_size = next_pos - cur_pos
-    rescue MPEGFile::MPEGFileError
-      frame_size = file.stat.size - cur_pos
+  def read_next_frame(file, frame_size = nil)
+    unless frame_size
+      cur_pos = file.pos
+      file.seek(1, IO::SEEK_CUR)
+      
+      frame_size = 0
+      
+      begin
+        # find_next_frame is defined in MPEGFile
+        next_pos, data = find_next_frame(file)
+        frame_size = next_pos - cur_pos
+      rescue MPEGFile::MPEGFileError
+        frame_size = file.stat.size - cur_pos
+      end
+      
+      file.seek(cur_pos)
     end
     
-    file.seek(cur_pos)
     file.read(frame_size)
   end
   
