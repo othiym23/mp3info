@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+script_path = __FILE__
+script_path = File.readlink(script_path) if File.symlink?(script_path)
+
+$: << File.join(File.dirname(script_path), '../../mp3info-eyeD/lib')
+
+require 'yaml'
+require 'mp3info'
+
+# mp3qa - audit mp3s for errors in encoding and tagging
+#
+#
+# KISS at first:
+#
+# 1. Check for valid ID3v2 tag at beginning of file (tag_warning + 3)
+# 2. Verify that file has ID3v2 2.4 tag (tag_warning + 1)
+#
+# AUDIT LEVELS
+#
+# ERROR: File is B0RKED and should be removed from the archive and re-encoded soonest.
+#
+# TAG WARNING LEVEL 4: ID3v2 tag is absent or in a desperately bad state and needs immediate fix.
+# TAG WARNING LEVEL 3: File's a mess and probably needs to be retagged
+# TAG WARNING LEVEL 2: File's not looking so hot and could use some attention
+# TAG WARNING LEVEL 1: File's got some niggling crap wrong with it; deal with it if you have time
+#
+# ENC WARNING LEVEL 4: File definitely needs to be reencoded
+# ENC WARNING LEVEL 3: File probably needs to be reencoded
+# ENC WARNING LEVEL 2: File encoding seriously deviates from standard
+# ENC WARNING LEVEL 1: File encoding deviates from standard
+#
+#
+# TODO: Finish support for reading ID3v2 tags & frames
+# TODO: Add support for reading ID3v1 tags
+# TODO: Add support for parsing MPEG frames
+# TODO: Add support for parsing MP3 frames
+# TODO: Add support for reading the LAME tag
+# TODO: Add support for reading APE v1 & v2 tags (or finding them, at least)
+# TODO: Check for ID3v1 tag at end of file (tag_warning + 2)
+# TODO: Check for APE v2 tag at end of file (tag_warning + 2)
+# TODO: Flag if other noise exists at either end of file (warn_level + 1)
+# TODO: Check for presence of MusicBrainz IDs (artist, album, track) (tag_warning + 1)
+# TODO: Check for 4k padded ID3v2 tag (tag_warning + 1)
+# TODO: Verify that LAME tag is present (enc_warning + 2) 
+# TODO: Verify that file is VBR (enc_warning + 2)
+# TODO: Verify that file is --preset standard or higher (enc_warning + 1)
+# TODO: Verify ID3 tag field contents match their specified encoding (tag_warning + 2)
+# TODO: Verify that file name matches canonicalized tag contents (enc_warning + 1)
+# TODO: If genre is "Classical", check performer / conductor / ensemble tags (tag_warning + 1)
+# TODO: If file has CRC set, verify it
+# TODO: If ID3v2 tag has CRC set, verify it
+
+ARGV.each do |path|
+  puts "Analyzing #{path}:"
+
+  mp3 = Mp3Info.new(File.expand_path(path))
+  puts "#{mp3.description}"
+  puts "\n#{mp3.replaygain_info.to_s}" 
+  puts "\n#{mp3.mpeg_header.description}" if mp3.has_mpeg_header?
+  puts mp3.xing_header.description if mp3.has_xing_header?
+  puts mp3.lame_header.description if mp3.has_lame_header?
+  if mp3.has_id3v2_tag?
+    puts "YAML dump of ID3v2 frame:\n\n"
+    puts YAML.dump(mp3.id3v2_tag)
+  end
+end
