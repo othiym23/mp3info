@@ -65,10 +65,12 @@ class ID3V2 < DelegateClass(Hash)
     # read the tag ID (should always be 'ID3') + the 3-byte ID3v2 header
     raw_tag = io.read(6)
     
-    tag_length_synchsafe = io.read(4)
-    raw_tag << tag_length_synchsafe
+    tag_length_string = io.read(4)
+    raise(ID3V2Error, "Tag length *must* be stored synchsafe.") unless tag_length_string.synchsafe?
     
-    tag_length = tag_length_synchsafe.from_synchsafe_string
+    raw_tag << tag_length_string
+    
+    tag_length = tag_length_string.from_synchsafe_string
     remaining_bytes = io.stat.size - io.pos
     if remaining_bytes >= tag_length
       raw_tag << io.read(tag_length)
@@ -101,11 +103,15 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def valid?
-    valid_major_version?
+    valid_major_version? && valid_frame_sizes?
   end
   
   def valid_major_version?
     [2, 3, 4].include?(major_version)
+  end
+  
+  def valid_frame_sizes?
+    !(4 == major_version && unsynchronized_tag?(@raw_tag))
   end
   
   def []=(key, args)
@@ -170,8 +176,9 @@ class ID3V2 < DelegateClass(Hash)
     # save the tag to get at the versions and flags after the fact
     @raw_tag = string
     
-    raise(ID3V2ParseError, "Can't find version_maj ('#{major_version}')") unless valid_major_version?
+    raise(ID3V2ParseError, "Major version must be one of 2, 3 or 4 (is #{major_version || 'unknown'})") unless valid_major_version?
     
+    $stderr.puts("Parsing ID3v#{version} of length #{tag_length}...") if $DEBUG
     @hash.update(parse_id3v2_frames(major_version, string))
     @hash_orig = @hash.dup
   end
@@ -237,6 +244,11 @@ class ID3V2 < DelegateClass(Hash)
     # 4 bytes for tag size
     cur_pos = 10
     
+    unsynchronized_sizes = true
+    if 4 == version
+      unsynchronized_sizes = unsynchronized_tag?(string)
+    end
+    
     while cur_pos < string.size do
       name = string.slice(cur_pos, default_width(version))
       cur_pos += default_width(version)
@@ -244,7 +256,7 @@ class ID3V2 < DelegateClass(Hash)
       
       break if frame_name_invalid?(version, name)
       
-      size = frame_size(version, cur_pos, string)
+      size = frame_size(string, cur_pos, version, unsynchronized_sizes)
       cur_pos += default_width(version)
       $stderr.puts("parse_id3v2_frames size is #{size}") if $DEBUG
       
@@ -275,24 +287,28 @@ class ID3V2 < DelegateClass(Hash)
   def frame_name_invalid?(version, name)
     case version
     when 2
-      0 == name[0].to_ordinal
+      name.match(/[A-Za-z0-9]{3}/) == nil
     when 3, 4
-      #bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
-      0 == name[0].to_ordinal or name == "MP3e"
+      # bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
+      name == "MP3e" or name.match(/[A-Za-z0-9]{4}/) == nil
     end
   end
   
-  def frame_size(version, cur_pos, string)
+  def frame_size(string, cur_pos, version, unsynchronized = true)
     case version
     when 2
       # 3 bytes for frame size
-      string[cur_pos..(cur_pos + 2)].to_binary_decimal
-    when 3
-      # ID3v2.3 does not have synchsafe sizes
-      string[cur_pos..(cur_pos + 3)].to_binary_decimal
-    when 4
-      # ID3v2.4 has synchsafe frame headers
-      string[cur_pos..(cur_pos + 3)].from_synchsafe_string
+      string.slice(cur_pos, + 3).to_binary_decimal
+    when 3, 4
+      if unsynchronized
+        # ID3v2.3 does not have synchsafe sizes
+        # Also, some badly-written tagging libraries (*cough*) writes ID3v2.4
+        # frames with non-synchsafe sizes
+        string.slice(cur_pos, + 4).to_binary_decimal
+      else
+        # ID3v2.4 has synchsafe frame headers
+        string.slice(cur_pos, + 4).from_synchsafe_string
+      end
     end
   end
 
@@ -312,6 +328,37 @@ class ID3V2 < DelegateClass(Hash)
     else
       hash[name] = frame
     end
+  end
+  
+  # For 2.4.0 tags, try to detect lurking unsynchronized frame size strings
+  #
+  # I used to handle this by silently fixing up non-synchsafe size strings
+  # within mpeg_utils' String.from_synchsafe_string, but this is a per-tag
+  # problem, not a per-frame problem, and so all kinds of wacky brokenness
+  # was happening at the tag level.
+  def unsynchronized_tag?(string)
+    # skip all the headers
+    cur_pos = 10
+    
+    while cur_pos < string.size do
+      # not verifying names for now
+      # name = string.slice(cur_pos, default_width(version))
+      cur_pos += 4
+      
+      size_string = string.slice(cur_pos, 4)
+      
+      break unless size_string && size_string.size == 4
+      
+      unless size_string.synchsafe?
+        $stderr.puts("ID3V2.unsynchronized_tag? found unsynchronized size %#010x at %#08x" % [size_string.to_binary_decimal, cur_pos]) if $DEBUG
+        return true
+      end
+      
+      # increment past the 4-byte size, the 2-byte flags and the tag's content
+      cur_pos += 6 + size_string.from_synchsafe_string
+    end
+    
+    false
   end
 end
  

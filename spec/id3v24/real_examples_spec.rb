@@ -33,6 +33,10 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
     mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
     id3v2_tag = mp3.id3v2_tag
     
+    # we should be able to retrieve the information, but we should rewrite this tag
+    id3v2_tag.valid_frame_sizes?.should be_false
+    # and this should render the whole tag invalid
+    id3v2_tag.valid?.should be_false
     mp3.id3v2_tag.tag_length.should == 35_092
     id3v2_tag['APIC'].raw_size.should == 34_698
     id3v2_tag['APIC'].value.size.should == 34_685

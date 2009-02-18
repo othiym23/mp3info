@@ -186,8 +186,8 @@ module MPEGUtils
       (2 ** 27 - 1).to_synchsafe_string.from_synchsafe_string.should == (2 ** 27 - 1)
     end
     
-    it "should translate \"0x81828384\" to 2,172,814,212, even though the source isn't synchsafe and the result is a Bignum" do
-      "\x81\x82\x83\x84".from_synchsafe_string.should == 2_172_814_212
+    it "should notice \"0x81828384\" isn't synchsafe" do
+      "\x81\x82\x83\x84".synchsafe?.should be_false
     end
   end
   

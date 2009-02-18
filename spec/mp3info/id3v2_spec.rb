@@ -1,5 +1,6 @@
 $:.unshift("spec/")
 
+require 'digest/sha1'
 require 'mp3info/mp3info_helper'
 
 describe Mp3Info, "when working with ID3v2 tags" do
@@ -66,7 +67,7 @@ describe Mp3Info, "when working with ID3v2 tags" do
       tag[k] = ID3V24::Frame.create_frame(k, random_string)
     end
     
-    update_id3_2_tag(@mp3_filename, tag).should == tag
+    lambda { update_id3_2_tag(@mp3_filename, tag).should == tag }.should_not raise_error(RangeError)
   end
   
   it "should handle storing tags via the tag update mechanism in mp3info's open() block" do
@@ -83,7 +84,12 @@ describe Mp3Info, "when working with ID3v2 tags" do
     end
     
     # after update has been saved
-    Mp3Info.open(@mp3_filename) { |m| m.id3v2_tag }.should == tag
+    Mp3Info.open(@mp3_filename) do |saved|
+      ["PRIV", "XNBC", "APIC", "XNXT"].each do |k|
+        saved.id3v2_tag[k].should_not be_nil
+        Digest::SHA1.hexdigest(tag[k].value).should == Digest::SHA1.hexdigest(saved.id3v2_tag[k].value)
+      end
+    end
   end
   
   it "should read an ID3v2 tag from a truncated MP3 file" do

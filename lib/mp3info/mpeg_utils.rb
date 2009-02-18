@@ -31,15 +31,11 @@ class String
   end
   
   def from_synchsafe_string
-    # At first, second and third glance this is an incredible hack,
-    # but mixing and matching ID3v2.4 and non-syncsafe lengths is very common,
-    # including previous builds of this library. Easier to patch it here
-    # than have to special-case it everywhere else.
-    unless (to_binary_decimal & 0x80808080) > 1
-      to_binary_array(7).to_binary_decimal
-    else
-      to_binary_decimal
-    end
+    to_binary_array(7).to_binary_decimal
+  end
+  
+  def synchsafe?
+    (to_binary_decimal & 0x80808080) == 0
   end
 end
 
