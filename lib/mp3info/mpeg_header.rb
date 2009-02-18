@@ -269,19 +269,23 @@ class MPEGHeader
   
   def description
     <<-DONE
+MPEG header information:
 
-#{version_string} header information:
-  #{summary}
+  Frame header is #{valid? ? '' : "not "}valid.
 
-Frame header is #{valid? ? '' : "not "}valid.
-Audio stream is #{private_stream? ? '' : "not "}private.
-Audio stream is #{original_stream? ? '' : "not "}original.
-Audio stream is #{padded_stream? ? '' : "not "}padded.
-Audio stream is #{copyrighted_stream? ? '' : "not "}copyrighted.
+  MPEG version     : #{version}
+  Bitrate          : #{bitrate} kbps
+  Sample frequency : #{sample_rate / 1000.0} kHaz
+  Channel mode     : #{mode}
+  Frame size       : #{frame_size} bytes
+  Emphasis         : #{emphasis}
+  Mode extension   : #{mode_extension}
 
-Frame size: #{frame_size} bytes
-Emphasis: #{emphasis}
-Mode extension: #{mode_extension}
+  Audio stream is #{error_protection ? '' : 'not '}error-protected.
+  Audio stream is #{private_stream? ? '' : "not "}private.
+  Audio stream is #{original_stream? ? '' : "not "}original.
+  Audio stream is #{padded_stream? ? '' : "not "}padded.
+  Audio stream is #{copyrighted_stream? ? '' : "not "}copyrighted.
 
     DONE
   end

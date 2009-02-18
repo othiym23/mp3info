@@ -80,7 +80,7 @@ class LAMEReplayGain
   
   def to_s
     if radio.set? || audiophile.set?
-      (radio.set? ? "\n#{radio.to_s}" : '') << (audiophile.set? ? "\n#{audiophile.set}" : '')
+      (radio.set? ? "\n  #{radio.to_s}" : '') << (audiophile.set? ? "\n  #{audiophile.set}" : '')
     else
       ''
     end
@@ -369,27 +369,29 @@ class LAMEHeader
   
   def description
     <<-OUT
-LAME information:
+LAME tag:
 
-Encoder Version  : #{encoder_version}
-LAME Tag Revision: #{tag_version}
-VBR Method       : #{vbr_method}
-Lowpass Filter   : #{lowpass_filter}#{replay_gain.to_s}
-Encoding Flags   : #{encoder_flag_string}#{"\nGapless?            : #{nogap_flag_string}" if nogap_flag_string != ''}
-ATH Type         : #{ath_type}
-Bitrate (#{bitrate_type}): #{bitrate} kbps
-Encoder Delay    : #{encoder_delay} frames
-Encoder Padding  : #{encoder_padding} frames
-Noise Shaping    : #{noise_shaping_type}
-Stereo Mode      : #{stereo_mode}
-Unwise Settings  : #{unwise_settings?}
-Sample Frequency : #{sample_frequency}
-MP3 Gain         : #{mp3_gain} (#{"% #+4.2g" % mp3_gain_db} dB)
-Preset           : #{preset}
-Surround Info    : #{surround_info}
-Music Length     : #{music_length.octet_units}
-Music CRC-16     : #{"%04X" % music_crc}
-LAME Tag CRC-16  : #{"%04X" % lame_tag_crc}
+  LAME tag is #{valid? ? '' : 'not '}valid.
+
+  Encoder version  : #{encoder_version}
+  LAME tag revision: #{tag_version}
+  VBR method       : #{vbr_method}
+  Lowpass filter   : #{lowpass_filter}#{replay_gain.to_s}
+  Encoding flags   : #{encoder_flag_string}#{"\nGapless?            : #{nogap_flag_string}" if nogap_flag_string != ''}
+  ATH type         : #{ath_type}
+  Bitrate (#{bitrate_type}): #{bitrate} kbps
+  Encoder delay    : #{encoder_delay} frames
+  Encoder padding  : #{encoder_padding} frames
+  Noise shaping    : #{noise_shaping_type}
+  Stereo mode      : #{stereo_mode}
+  Unwise settings  : #{unwise_settings?}
+  Sample frequency : #{sample_frequency}
+  MP3 gain         : #{mp3_gain} (#{"% #+4.2g" % mp3_gain_db} dB)
+  Preset           : #{preset}
+  Surround info    : #{surround_info}
+  Music length     : #{music_length.octet_units}
+  Music CRC-16     : #{"%04X" % music_crc}
+  LAME tag CRC-16  : #{"%04X" % lame_tag_crc}
 
     OUT
   end

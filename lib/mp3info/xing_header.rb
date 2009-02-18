@@ -91,6 +91,19 @@ class XingHeader
     "Xing header, #{vbr? ? 'VBR' : 'CBR'} encoded with #{frames} frames and a stream size of #{bytes.octet_units}."
   end
   
+  def description
+    out_string =  "Xing header:\n\n" 
+    out_string << "  Xing header is #{valid? ? '' : 'not '}valid.\n\n"
+    out_string << "  Encoding type    : #{vbr? ? 'VBR' : 'CBR'}\n"
+    out_string << "  VBR quality      : #{quality}\n" if has_quality_scale?
+    out_string << "  Stream size      : #{bytes.octet_units}\n" if has_bytecount?
+    out_string << "  Frames           : #{frames}\n" if has_framecount?
+    out_string << "\n  Xing header contains a table of contents.\n" if has_toc?
+    out_string << "\n"
+    
+    out_string
+  end
+  
   private
   
   def header_flags_offset

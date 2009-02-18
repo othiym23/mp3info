@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v a8dcc175603f 2009/02/18 07:08:32 ogd $
+# $Id: mp3info.rb,v ac62a3e23d41 2009/02/18 22:33:06 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -272,6 +272,13 @@ class Mp3Info
     # try to always keep the string representation at 80 characters
     "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"
   end
+  
+  def description
+    out_string =  "\n#{File.basename(filename)}     [ #{File.size(filename)} ]\n"
+    out_string << "--------------------------------------------------------------------------------\n"
+    out_string << to_s
+    out_string << "\n--------------------------------------------------------------------------------\n"
+  end
 
   private
   
@@ -371,19 +378,5 @@ class Mp3Info
     end
     
     time_string
-  end
-end
-
-if $0 == __FILE__
-  while filename = ARGV.shift
-    begin
-      info = Mp3Info.new(filename)
-      puts "\n#{File.basename(filename)}     [ #{File.size(filename)} ]"
-      puts "-------------------------------------------------------------------------------- "
-      puts info
-      puts "-------------------------------------------------------------------------------- "
-    rescue Mp3InfoError => e
-      puts "#{filename}\nERROR: #{e}"
-    end
   end
 end
