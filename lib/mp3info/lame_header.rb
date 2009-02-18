@@ -374,22 +374,22 @@ LAME tag:
   LAME tag is #{valid? ? '' : 'not '}valid.
 
   Encoder version  : #{encoder_version}
-  LAME tag revision: #{tag_version}
+  Music length     : #{music_length.octet_units}
+  Preset           : #{preset}
   VBR method       : #{vbr_method}
-  Lowpass filter   : #{lowpass_filter}#{replay_gain.to_s}
+  Stereo mode      : #{stereo_mode}
+  Sample frequency : #{sample_frequency}
+  Lowpass filter   : #{lowpass_filter / 1000} kHz#{replay_gain.to_s}
+  LAME tag revision: #{tag_version}
   Encoding flags   : #{encoder_flag_string}#{"\nGapless?            : #{nogap_flag_string}" if nogap_flag_string != ''}
   ATH type         : #{ath_type}
   Bitrate (#{bitrate_type}): #{bitrate} kbps
+  MP3 gain         : #{mp3_gain} (#{"% #+4.2g" % mp3_gain_db} dB)
   Encoder delay    : #{encoder_delay} frames
   Encoder padding  : #{encoder_padding} frames
   Noise shaping    : #{noise_shaping_type}
-  Stereo mode      : #{stereo_mode}
   Unwise settings  : #{unwise_settings?}
-  Sample frequency : #{sample_frequency}
-  MP3 gain         : #{mp3_gain} (#{"% #+4.2g" % mp3_gain_db} dB)
-  Preset           : #{preset}
   Surround info    : #{surround_info}
-  Music length     : #{music_length.octet_units}
   Music CRC-16     : #{"%04X" % music_crc}
   LAME tag CRC-16  : #{"%04X" % lame_tag_crc}
 

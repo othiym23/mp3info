@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v ac62a3e23d41 2009/02/18 22:33:06 ogd $
+# $Id: mp3info.rb,v e23494843b09 2009/02/18 23:09:58 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -267,14 +267,17 @@ class Mp3Info
   def to_s
     time = "Time: #{time_string}"
     type = @mpeg_header.version_string
-    properties = @mpeg_header.summary
+    properties = "[ #{vbr? ? '~' : ''}#{bitrate}kbps @ #{@mpeg_header.sample_rate / 1000.0}kHz - #{@mpeg_header.mode}#{@mpeg_header.error_protection ? " +error" : ""} ]"
     
     # try to always keep the string representation at 80 characters
     "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"
   end
   
   def description
-    out_string =  "\n#{File.basename(filename)}     [ #{File.size(filename)} ]\n"
+    file_name_string = File.basename(filename)
+    file_size_string= " [ #{File.size(filename).octet_units} ]"
+    
+    out_string =  "\n#{file_name_string}#{' ' * (80 - (file_name_string.size + file_size_string.size))}#{file_size_string}\n"
     out_string << "--------------------------------------------------------------------------------\n"
     out_string << to_s
     out_string << "\n--------------------------------------------------------------------------------\n"

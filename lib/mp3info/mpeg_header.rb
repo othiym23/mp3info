@@ -273,9 +273,10 @@ MPEG header information:
 
   Frame header is #{valid? ? '' : "not "}valid.
 
-  MPEG version     : #{version}
+  MPEG version     : #{"%g" % version}
+  MPEG layer       : #{LAYER_STRINGS[layer]}
   Bitrate          : #{bitrate} kbps
-  Sample frequency : #{sample_rate / 1000.0} kHaz
+  Sample frequency : #{sample_rate / 1000.0} kHz
   Channel mode     : #{mode}
   Frame size       : #{frame_size} bytes
   Emphasis         : #{emphasis}

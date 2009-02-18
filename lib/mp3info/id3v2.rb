@@ -169,6 +169,35 @@ class ID3V2 < DelegateClass(Hash)
     @raw_tag[6..9].from_synchsafe_string
   end
   
+  def description
+    frame_count = 0
+    values.each do |frames|
+      unless frames.is_a?(Array)
+        frame_count += 1
+      else
+        frame_count += frames.size
+      end
+    end
+    
+    <<-DONE
+ID3V#{version} tag:
+
+  Tag is #{valid? ? '' : "not "}valid.
+
+  Major version    : #{major_version}
+  Minor version    : #{minor_version}
+  Tag size         : #{tag_length.octet_units}
+
+  Tag is #{unsynchronized? ? '' : 'not '}unsynchronized.
+  Tag is #{experimental? ? '' : "not "}experimental.
+  Tag #{extended_header? ? 'has' : 'does not have'} an extended header.
+  Tag #{footer? ? 'has' : 'does not have'} have a footer.
+
+  There are #{frame_count} frames in this tag.
+
+    DONE
+  end
+  
   def from_bin(string)
     # let's get serious here
     raise(ID3V2ParseError, "Tag started with '#{string[0...3]}' instead of 'ID3'") unless string.index('ID3') == 0
