@@ -38,6 +38,29 @@ class ID3 < DelegateClass(Hash)
     "Christian Rock", "Merengue", "Salsa", "Thrash Metal", "Anime", "JPop",
     "SynthPop" ]
   
+  ALBUM_KEY        = 'album'
+  ARTIST_KEY       = 'artist'
+  TITLE_KEY        = 'title'
+  YEAR_KEY         = 'year'
+  GENRE_ID_KEY     = 'genre'
+  GENRE_NAME_KEY   = 'genre_s'
+  COMMENTS_KEY     = 'comments'
+  TRACK_NUMBER_KEY = 'tracknum'
+  
+  KEY_PRETTY_NAMES = {
+    ALBUM_KEY        => 'Album',
+    ARTIST_KEY       => 'Artist',
+    TITLE_KEY        => 'Title',
+    YEAR_KEY         => 'Year',
+    GENRE_ID_KEY     => 'Genre ID',
+    GENRE_NAME_KEY   => 'Genre',
+    COMMENTS_KEY     => 'Comments',
+    TRACK_NUMBER_KEY => 'Track #'
+  }
+  
+  ID3_1_ORDER   = [ TITLE_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_NAME_KEY, COMMENTS_KEY ]
+  ID3_1_1_ORDER = [ TITLE_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_NAME_KEY, COMMENTS_KEY, TRACK_NUMBER_KEY ]
+  
   # expose the version of the tag
   attr_reader :version
   
@@ -81,6 +104,26 @@ class ID3 < DelegateClass(Hash)
   
   def valid_major_version?
     [VERSION_1, VERSION_1_1].include?(version)
+  end
+  
+  def description
+    tag_values = ''
+    
+    case version
+    when VERSION_1
+      ID3_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] if @hash[key].size > 0} 
+    when VERSION_1_1
+      ID3_1_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] if @hash[key].size > 0} 
+    end
+
+    <<-DONE
+#{version} tag:
+
+  Tag is #{valid? ? '' : "not "}valid.
+
+#{tag_values}
+
+    DONE
   end
   
   def ID3.from_file(filename)
@@ -137,11 +180,11 @@ class ID3 < DelegateClass(Hash)
   
   def from_bin(string)
     $stderr.puts("ID3.from_bin(string=[#{string.inspect}])") if $DEBUG
-    @hash["title"], @hash["artist"], @hash["album"],
-     year_t, raw_comments, @hash["genre"] = string[3..-1].unpack('A30A30A30A4a30C')
+    @hash[TITLE_KEY], @hash[ARTIST_KEY], @hash[ALBUM_KEY],
+     year_t, raw_comments, @hash[GENRE_ID_KEY] = string[3..-1].unpack('A30A30A30A4a30C')
     
-    @hash["year"] = year_t unless year_t == 0
-    @hash["genre_s"] = GENRES[@hash["genre"]] || "Unknown" # as per spec
+    @hash[YEAR_KEY] = year_t unless year_t == 0
+    @hash[GENRE_NAME_KEY] = GENRES[@hash[GENRE_ID_KEY]] || "Unknown" # as per spec
     
     # The sole difference between ID3v1.1 and ID3v1 is that the former has the
     # track number tucked in as an unsigned byte at the end of the comments field.
@@ -150,13 +193,13 @@ class ID3 < DelegateClass(Hash)
     # ruby 1.9 and previous versions, but for now, this works.
     if raw_comments[-2].to_ordinal == 0 && raw_comments[-1].to_ordinal > 0
       @version = VERSION_1_1
-      @hash["tracknum"] = raw_comments[-1].to_ordinal
+      @hash[TRACK_NUMBER_KEY] = raw_comments[-1].to_ordinal
       # remove the last character, which contains the track number
       raw_comments.chop!
     else
       @version = VERSION_1
     end
-    @hash["comments"] = raw_comments.strip
+    @hash[COMMENTS_KEY] = raw_comments.strip
     
     self
   end
@@ -174,24 +217,24 @@ class ID3 < DelegateClass(Hash)
       when VERSION_1
         attrs = 
           [
-            @hash['title']    || '',
-            @hash['artist']   || '',
-            @hash['album']    || '',
-            @hash['year']     || '',
-            @hash['comments'] || '',
-            @hash['genre']    || 255
+            @hash[TITLE_KEY]    || '',
+            @hash[ARTIST_KEY]   || '',
+            @hash[ALBUM_KEY]    || '',
+            @hash[YEAR_KEY]     || '',
+            @hash[COMMENTS_KEY] || '',
+            @hash[GENRE_ID_KEY] || 255
           ]
         "TAG#{attrs.pack('A30A30A30A4A30C')}"
       when VERSION_1_1
         attrs = 
           [
-            @hash['title']    || '',
-            @hash['artist']   || '',
-            @hash['album']    || '',
-            @hash['year']     || '',
-            @hash['comments'] || '',
-            @hash['tracknum'] || 0,
-            @hash['genre']    || 255
+            @hash[TITLE_KEY]        || '',
+            @hash[ARTIST_KEY]       || '',
+            @hash[ALBUM_KEY]        || '',
+            @hash[YEAR_KEY]         || '',
+            @hash[COMMENTS_KEY]     || '',
+            @hash[TRACK_NUMBER_KEY] || 0,
+            @hash[GENRE_ID_KEY]     || 255
           ]
         "TAG#{attrs.pack('A30A30A30A4a29CC')}"
       else

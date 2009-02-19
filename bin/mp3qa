@@ -59,6 +59,7 @@ ARGV.each do |path|
   puts "\n#{mp3.mpeg_header.description}" if mp3.has_mpeg_header?
   puts mp3.xing_header.description if mp3.has_xing_header?
   puts mp3.lame_header.description if mp3.has_lame_header?
+  puts mp3.id3v1_tag.description if mp3.has_id3v1_tag?
   if mp3.has_id3v2_tag?
     puts mp3.id3v2_tag.description
     puts "YAML dump of ID3v2 tag:\n\n"
