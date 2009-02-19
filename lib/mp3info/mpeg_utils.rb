@@ -217,15 +217,12 @@ module MPEGFile
     $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes") if $DEBUG
     
     while file_data do
-      sync_pos = file_data.index("\xff")
-      if sync_pos
-        
-        next unless file_data[sync_pos + 1] && (file_data[sync_pos + 1].to_ordinal & 0xe0 == 0xe0)
-        
+      while file_data && sync_pos = file_data.index("\xff")
         header = file_data.slice(sync_pos, 4)
-        $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
-        if 4 == header.size
+        if 4 == header.size && (header[1].to_ordinal & 0xe0) == 0xe0 && (header[2].to_ordinal & 0xf0) != 0xf0 
           return start_pos + sync_pos, header
+        else
+          file_data = file_data[(sync_pos + 1)..-1]
         end
       end
       
