@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 385e603d6c7d 2009/02/19 18:17:10 ogd $
+# $Id: mp3info.rb,v 101c5df32f92 2009/02/19 21:01:59 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -266,12 +266,16 @@ class Mp3Info
 
   # inspect inside Mp3Info
   def to_s
-    time = "Time: #{time_string}"
-    type = @mpeg_header.version_string
-    properties = "[ #{vbr? ? '~' : ''}#{bitrate}kbps @ #{"%g" % (@mpeg_header.sample_rate / 1000.0)}kHz - #{@mpeg_header.mode}#{@mpeg_header.error_protected? ? " +error" : ""} ]"
-    
-    # try to always keep the string representation at 80 characters
-    "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"
+    if has_mpeg_header?
+      time = "Time: #{duration_string}"
+      type = has_mpeg_header? ? @mpeg_header.version_string : "NO AUDIO"
+      properties = " [ #{vbr? ? '~' : ''}#{bitrate}kbps @ #{"%g" % (@mpeg_header.sample_rate / 1000.0)}kHz - #{@mpeg_header.mode}#{@mpeg_header.error_protected? ? " +E" : ""} ]"
+      
+      # try to always keep the string representation at 80 characters
+      "#{time}#{" " * [(18 - time.size), 0].max}#{type}#{" " * [(62 - (type.size + properties.size)), 0].max}#{properties}"
+    else
+      "NO AUDIO FOUND"
+    end
   end
   
   def description
@@ -283,7 +287,31 @@ class Mp3Info
     out_string << to_s
     out_string << "\n--------------------------------------------------------------------------------\n"
   end
-
+  
+  def duration_string
+    if has_xing_header?
+      length = @mpeg_header.frame_duration * @xing_header.frames
+      seconds = length.floor % 60
+      minutes = length.floor / 60
+      leftover = (@xing_header.frames % (1 / @mpeg_header.frame_duration)).round
+      "%d:%02d/%02d" % [minutes, seconds, leftover]
+    elsif has_mpeg_header?
+      length = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
+      if has_id3v2_tag? && @id3v2_tag['TLEN'] && @id3v2_tag['TLEN'].value.to_i > 0
+        tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
+        percent_diff = ((length.to_i - tlen) / tlen.to_f)
+        if percent_diff.abs > 0.05
+          length = tlen
+        end
+      end
+      minutes = length.floor / 60
+      seconds = length.round % 60
+      "%d:%02d   " % [minutes, seconds]
+    else
+      "0:00"
+    end
+  end
+  
   private
   
   # Internal semantics are a little different than what is exposed -- casual
@@ -358,29 +386,5 @@ class Mp3Info
       $stderr.puts("Mp3Info.update_file_with_changed_id3v2! ID3v2 tag has been eliminated from previously tagged file.") if $DEBUG
       write_mpeg_file!(@filename)
     end
-  end
-  
-  def time_string
-    if has_xing_header?
-      length = @mpeg_header.frame_duration * @xing_header.frames
-      seconds = length.floor % 60
-      minutes = length.floor / 60
-      leftover = (@xing_header.frames % (1 / @mpeg_header.frame_duration)).round
-      time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
-    else
-      length = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
-      if has_id3v2_tag? && @id3v2_tag['TLEN'] && @id3v2_tag['TLEN'].value.to_i > 0
-        tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
-        percent_diff = ((length.to_i - tlen) / tlen.to_f)
-        if percent_diff.abs > 0.05
-          length = tlen
-        end
-      end
-      minutes = length.floor / 60
-      seconds = length.round % 60
-      time_string = "%d:%02d   " % [minutes, seconds]
-    end
-    
-    time_string
   end
 end
