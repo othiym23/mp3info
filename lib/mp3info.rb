@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 57551c9d1d65 2009/02/19 00:22:03 ogd $
+# $Id: mp3info.rb,v a7ef26a447e0 2009/02/19 06:47:49 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -276,7 +276,7 @@ class Mp3Info
     file_name_string = File.basename(filename)
     file_size_string= " [ #{File.size(filename).octet_units} ]"
     
-    out_string =  "\n#{file_name_string}#{' ' * (80 - (file_name_string.size + file_size_string.size))}#{file_size_string}\n"
+    out_string =  "\n#{file_name_string}#{' ' * [(80 - (file_name_string.size + file_size_string.size)), 0].max}#{file_size_string}\n"
     out_string << "--------------------------------------------------------------------------------\n"
     out_string << to_s
     out_string << "\n--------------------------------------------------------------------------------\n"
