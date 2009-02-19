@@ -21,37 +21,37 @@ class MPEGHeader
   
   MODES = [ MODE_STEREO, MODE_JOINT_STEREO, MODE_DUAL_CHANNEL_STEREO, MODE_MONO ]
   
-  # used by layers 1 & 2
+  # used by Layers 1 & 2
   MODE_EXTENSION_BANDS_4_TO_31  = 0x01
   MODE_EXTENSION_BANDS_8_TO_31  = 0x02
   MODE_EXTENSION_BANDS_12_TO_31 = 0x04
   MODE_EXTENSION_BANDS_16_TO_31 = 0x08
   
-  # used by layer 3
+  # used by Layer 3
   MODE_EXTENSION_M_S_STEREO     = 0x10
   MODE_EXTENSION_INTENSITY      = 0x20
   
   MODE_EXTENSIONS   = [ MODE_EXTENSION_BANDS_4_TO_31,  MODE_EXTENSION_BANDS_8_TO_31,
                         MODE_EXTENSION_BANDS_12_TO_31, MODE_EXTENSION_BANDS_16_TO_31 ]
   
-  #                         MPEG 1    MPEG 2  MPEG 2.5
+  #                       MPEG 1    MPEG 2  MPEG 2.5
   SAMPLE_RATES      = [ [ 44_100,   22_050,   11_025 ],
                         [ 48_000,   24_000,   12_000 ],
                         [ 32_000,   16_000,    8_000 ],
                         [    nil,      nil,      nil ] ]
   
-  #                             Layer 1  Layer 2  Layer 3
+  #                           Layer 1  Layer 2  Layer 3
   SAMPLES_PER_FRAME = [ [ nil,    384,    1152,    1152 ],  # MPEG 1
                         [ nil,    384,    1152,     576 ] ] # MPEG 2, 2.5
   
-  #                             Layer 1  Layer 2  Layer 3
+  #                           Layer 1  Layer 2  Layer 3
   COEFFICIENTS      = [ [ nil,     12,     144,     144 ],  # MPEG 1
                         [ nil,     12,     144,      72 ] ] # MPEG 2, 2.5
   
-  #                             Layer 1  Layer 2  Layer 3
+  #                           Layer 1  Layer 2  Layer 3
   SLOT_SIZES        = [ nil,        4,       1,       1 ]
   
-  #                             Layer 1  Layer 2  Layer 3
+  #                           Layer 1  Layer 2  Layer 3
   FRAME_DURATIONS   = [ nil,      384,    1152,    1152 ]
   
   BITRATES = [ [ # MPEG 1
@@ -62,6 +62,9 @@ class MPEGHeader
                  [ 0, 32, 48, 56,  64,  80,  96, 112, 128, 144, 160, 176, 192, 224, 256 ],    # Layer1
                  [ 0,  8, 16, 24,  32,  40,  48,  56,  64,  80,  96, 112, 128, 144, 160 ],    # Layer2
                  [ 0,  8, 16, 24,  32,  40,  48,  56,  64,  80,  96, 112, 128, 144, 160 ] ] ] # Layer3
+  
+  SIDE_INFO_SIZES   = [ [ 32, 17 ],  # MPEG 1
+                        [ 17,  9 ] ] # MPEG 2/2.5
   
   LAYER_STRINGS = ['Invalid', 'I', 'II', 'III']
   
@@ -216,6 +219,10 @@ class MPEGHeader
   
   def frame_duration
     FRAME_DURATIONS[layer].to_f / sample_rate.to_f
+  end
+  
+  def side_info_size
+    SIDE_INFO_SIZES[lsf][mode == MODE_MONO ? 1 : 0]
   end
   
   def valid?

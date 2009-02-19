@@ -72,19 +72,7 @@ class XingHeader
   end
   
   def self.header_to_offset(header)
-    if 1 == header.version
-      if header.mode_extension == (MPEGHeader::MODE_EXTENSION_BANDS_4_TO_31 | MPEGHeader::MODE_EXTENSION_BANDS_8_TO_31)
-        17 + 4
-      else
-        32 + 4
-      end
-    else
-      if header.mode_extension == (MPEGHeader::MODE_EXTENSION_BANDS_4_TO_31 | MPEGHeader::MODE_EXTENSION_BANDS_8_TO_31)
-        9 + 4
-      else
-        17 + 4
-      end
-    end
+    header.side_info_size + 4
   end
   
   def to_s
