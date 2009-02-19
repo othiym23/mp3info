@@ -47,8 +47,8 @@ describe MPEGHeader, "with valid but unusual headers" do
     MPEGHeader.new(valid_header_array.to_binary_string).bitrate.should == 192
     # verified against eyeD3
     MPEGHeader.new(valid_header_array.to_binary_string).sample_rate.should == 11_025
-    # verified against eyeD3
-    MPEGHeader.new(valid_header_array.to_binary_string).frame_size.should == 848
+    # eyeD3 is in error here
+    MPEGHeader.new(valid_header_array.to_binary_string).frame_size.should == 836
     # verified against eyeD3
     MPEGHeader.new(valid_header_array.to_binary_string).mode.should == MPEGHeader::MODE_JOINT_STEREO
     # verified against eyeD3
@@ -82,8 +82,8 @@ describe MPEGHeader, "with valid but unusual headers" do
     MPEGHeader.new(valid_header_array.to_binary_string).bitrate.should == 192
     # verified against eyeD3
     MPEGHeader.new(valid_header_array.to_binary_string).sample_rate.should == 22_050
-    # verified against eyeD3
-    MPEGHeader.new(valid_header_array.to_binary_string).frame_size.should == 432
+    # eyeD3 does not accurately handle frame sizing for certain layers and versions
+    MPEGHeader.new(valid_header_array.to_binary_string).frame_size.should == 420
     # verified against eyeD3
     MPEGHeader.new(valid_header_array.to_binary_string).mode.should == MPEGHeader::MODE_JOINT_STEREO
     # verified against eyeD3

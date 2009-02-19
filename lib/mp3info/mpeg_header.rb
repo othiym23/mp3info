@@ -5,19 +5,21 @@ class InvalidMPEGHeader < StandardError ; end
 
 # MPEG headers can be altered with this class, but mostly for testing purposes
 class MPEGHeader
+  VERSIONS = [2.5, nil, 2.0, 1.0]
+  
   EMPHASIS_NONE                 = "none"
   EMPHASIS_5015                 = "50/15 ms"
   EMPHASIS_RESERVED             = "RESERVED"
   EMPHASIS_CCIT                 = "CCIT J.17"
   
-  @@emphasis_list = [ EMPHASIS_NONE, EMPHASIS_5015, EMPHASIS_RESERVED, EMPHASIS_CCIT ]
+  EMPHASISES = [ EMPHASIS_NONE, EMPHASIS_5015, EMPHASIS_RESERVED, EMPHASIS_CCIT ]
 
   MODE_STEREO                   = 'Stereo'
   MODE_JOINT_STEREO             = 'Joint stereo'
   MODE_DUAL_CHANNEL_STEREO      = 'Dual channel stereo'
   MODE_MONO                     = 'Mono'
   
-  @@mode_list = [ MODE_STEREO, MODE_JOINT_STEREO, MODE_DUAL_CHANNEL_STEREO, MODE_MONO ]
+  MODES = [ MODE_STEREO, MODE_JOINT_STEREO, MODE_DUAL_CHANNEL_STEREO, MODE_MONO ]
   
   # used by layers 1 & 2
   MODE_EXTENSION_BANDS_4_TO_31  = 0x01
@@ -25,39 +27,41 @@ class MPEGHeader
   MODE_EXTENSION_BANDS_12_TO_31 = 0x04
   MODE_EXTENSION_BANDS_16_TO_31 = 0x08
   
-  @@mode_extension_list = [ MODE_EXTENSION_BANDS_4_TO_31,  MODE_EXTENSION_BANDS_8_TO_31,
-                            MODE_EXTENSION_BANDS_12_TO_31, MODE_EXTENSION_BANDS_16_TO_31 ]
-  
   # used by layer 3
   MODE_EXTENSION_M_S_STEREO     = 0x10
   MODE_EXTENSION_INTENSITY      = 0x20
   
+  MODE_EXTENSIONS   = [ MODE_EXTENSION_BANDS_4_TO_31,  MODE_EXTENSION_BANDS_8_TO_31,
+                        MODE_EXTENSION_BANDS_12_TO_31, MODE_EXTENSION_BANDS_16_TO_31 ]
+  
   #                         MPEG 1    MPEG 2  MPEG 2.5
-  @@sample_rate_table = [ [ 44_100,   22_050,   11_025 ],
-                          [ 48_000,   24_000,   12_000 ],
-                          [ 32_000,   16_000,    8_000 ],
-                          [    nil,      nil,      nil ] ]
+  SAMPLE_RATES      = [ [ 44_100,   22_050,   11_025 ],
+                        [ 48_000,   24_000,   12_000 ],
+                        [ 32_000,   16_000,    8_000 ],
+                        [    nil,      nil,      nil ] ]
   
-  #                             L1    L2    L3
-  @@time_frame_table  = [ nil, 384, 1152, 1152 ]
+  #                             Layer 1  Layer 2  Layer 3
+  SAMPLES_PER_FRAME = [ [ nil,    384,    1152,    1152 ],  # MPEG 1
+                        [ nil,    384,    1152,     576 ] ] # MPEG 2, 2.5
   
-  #                         V1/L1     V1/L2     V1/L3     V2/L1  V2/L2&L3 
-  @@bitrate_table     = [ [     0,        0,        0,        0,        0 ],
-                          [    32,       32,       32,       32,        8 ],
-                          [    64,       48,       40,       48,       16 ],
-                          [    96,       56,       48,       56,       24 ],
-                          [   128,       64,       56,       64,       32 ],
-                          [   160,       80,       64,       80,       40 ],
-                          [   192,       96,       80,       96,       44 ],
-                          [   224,      112,       96,      112,       56 ],
-                          [   256,      128,      112,      128,       64 ],
-                          [   288,      160,      128,      144,       80 ],
-                          [   320,      192,      160,      160,       96 ],
-                          [   352,      224,      192,      176,      112 ],
-                          [   384,      256,      224,      192,      128 ],
-                          [   416,      320,      256,      224,      144 ],
-                          [   448,      384,      320,      256,      160 ],
-                          [   nil,      nil,      nil,      nil,      nil ] ]
+  #                             Layer 1  Layer 2  Layer 3
+  COEFFICIENTS      = [ [ nil,     12,     144,     144 ],  # MPEG 1
+                        [ nil,     12,     144,      72 ] ] # MPEG 2, 2.5
+  
+  #                             Layer 1  Layer 2  Layer 3
+  SLOT_SIZES        = [ nil,        4,       1,       1 ]
+  
+  #                             Layer 1  Layer 2  Layer 3
+  FRAME_DURATIONS   = [ nil,      384,    1152,    1152 ]
+  
+  BITRATES = [ [ # MPEG 1
+                 [ 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 ],    # Layer 1
+                 [ 0, 32, 48, 56,  64,  80,  96, 112, 128, 160, 192, 224, 256, 320, 384 ],    # Layer2
+                 [ 0, 32, 40, 48,  56,  64,  80,  96, 112, 128, 160, 192, 224, 256, 320 ] ],  # Layer3
+               [ # MPEG 2, 2.5    
+                 [ 0, 32, 48, 56,  64,  80,  96, 112, 128, 144, 160, 176, 192, 224, 256 ],    # Layer1
+                 [ 0,  8, 16, 24,  32,  40,  48,  56,  64,  80,  96, 112, 128, 144, 160 ],    # Layer2
+                 [ 0,  8, 16, 24,  32,  40,  48,  56,  64,  80,  96, 112, 128, 144, 160 ] ] ] # Layer3
   
   LAYER_STRINGS = ['Invalid', 'I', 'II', 'III']
   
@@ -117,7 +121,7 @@ class MPEGHeader
   
   def version
     raise InvalidMPEGHeader, "Version code of 1 is reserved by MPEG specification." if 1 == @version
-    [2.5, nil, 2.0, 1.0][@version]
+    VERSIONS[@version]
   end
   
   def version_string
@@ -125,7 +129,7 @@ class MPEGHeader
   end
   
   def summary
-    "[ #{bitrate}kbps @ #{sample_rate / 1000.0}kHz - #{mode}#{error_protection ? " +error" : ""} ]"
+    "[ #{bitrate}kbps @ #{sample_rate / 1000.0}kHz - #{mode}#{error_protected? ? " +error" : ""} ]"
   end
   
   def layer
@@ -149,7 +153,7 @@ class MPEGHeader
     1 == @original_stream
   end
   
-  def error_protection
+  def error_protected?
     @error_protection
   end
   
@@ -158,38 +162,17 @@ class MPEGHeader
   def bitrate
     raise InvalidMPEGHeader, "Bitrate code of 0x0f is invalid by MPEG specification." if 0x0f == @bitrate_code
     
-    case version
-    when 1.0
-      case layer
-      when 1..3
-        bitrate =  @@bitrate_table[@bitrate_code][layer - 1]
-      else
-        raise InvalidMPEGHeader, "There is no such thing as MPEG 1, layer #{layer}."
-      end
-    when 2.0, 2.5
-      case layer
-      when 1
-        bitrate = @@bitrate_table[@bitrate_code][3]
-      when 2, 3
-        bitrate = @@bitrate_table[@bitrate_code][4]
-      else
-        raise InvalidMPEGHeader, "There is no such thing as MPEG 2, layer #{layer}."
-      end
-    else
-      raise InvalidMPEGHeader, "There is no such thing as MPEG #{version}, layer #{layer}."
-    end
-    
-    bitrate
+    BITRATES[lsf][layer - 1][@bitrate_code]
   end
   
   def sample_rate
     case version
     when 2.5
-      sample_rate = @@sample_rate_table[@sample_rate_code][2]
+      sample_rate = SAMPLE_RATES[@sample_rate_code][2]
     when 2.0
-      sample_rate = @@sample_rate_table[@sample_rate_code][1]
+      sample_rate = SAMPLE_RATES[@sample_rate_code][1]
     when 1.0
-      sample_rate = @@sample_rate_table[@sample_rate_code][0]
+      sample_rate = SAMPLE_RATES[@sample_rate_code][0]
     else
       raise InvalidMPEGHeader, "There is no such thing as MPEG #{version}."
     end
@@ -199,18 +182,18 @@ class MPEGHeader
     sample_rate
   end
   
-  def time_per_frame
-    @@time_frame_table[layer].to_f / sample_rate.to_f
+  def samples_per_frame
+    SAMPLES_PER_FRAME[lsf][layer]
   end
   
   def mode
-    @@mode_list[@mode]
+    MODES[@mode]
   end
   
   def mode_extension
     case layer
     when 1..2
-      extension_flags = @@mode_extension_list[@mode_extension]
+      extension_flags = MODE_EXTENSIONS[@mode_extension]
     when 3
       extension_flags = (@mode_extension & 0x1) != 0 ? MODE_EXTENSION_INTENSITY : 0
       extension_flags |= MODE_EXTENSION_M_S_STEREO if (@mode_extension & 0x2) != 0
@@ -223,15 +206,16 @@ class MPEGHeader
   
   def emphasis
     raise InvalidMPEGHeader, "Invalid emphasis code #{@emphasis}" if @emphasis > 2
-    @@emphasis_list[@emphasis]
+    EMPHASISES[@emphasis]
   end
   
+  # ISO prescribed method used for computing frame sizes without rounding errors
   def frame_size
-    if 1 == layer
-      return ((((bitrate * 12_000) / sample_rate) + (@padded_stream * 4)) * 4)
-    else
-      return (((bitrate * 144_000) / sample_rate) + @padded_stream)
-    end
+    ((COEFFICIENTS[lsf][layer] * bitrate * 1000 / sample_rate) + @padded_stream) * SLOT_SIZES[layer]
+  end
+  
+  def frame_duration
+    FRAME_DURATIONS[layer].to_f / sample_rate.to_f
   end
   
   def valid?
@@ -244,7 +228,7 @@ class MPEGHeader
     # layer type of 0x0 is reserved
     return false if 0 == @layer
     
-    # bitrate code of 0 indicates a bitrate of 0 (free bitstream), which makes no sense
+    # bitrate code of 0 indicates a bitrate of 0 (free bitstream), which is supported by almost nothing
     return false if 0x0 == @bitrate_code
     
     # bitrate code of 15 is invalid
@@ -291,12 +275,23 @@ MPEG header information:
   Emphasis         : #{emphasis}
   Mode extension   : #{mode_extension}
 
-  Audio stream is #{error_protection ? '' : 'not '}error-protected.
+  Audio stream is #{error_protected? ? '' : 'not '}error-protected.
   Audio stream is #{private_stream? ? '' : "not "}private.
   Audio stream is #{original_stream? ? '' : "not "}original.
   Audio stream is #{padded_stream? ? '' : "not "}padded.
   Audio stream is #{copyrighted_stream? ? '' : "not "}copyrighted.
 
     DONE
+  end
+  
+  private
+  
+  def lsf
+    case version
+    when 1.0
+      0
+    else
+      1
+    end
   end
 end

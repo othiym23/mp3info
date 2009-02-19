@@ -44,7 +44,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Keith Fullerton
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protection.should be_false
+    @mpeg_info.error_protected?.should be_false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
@@ -301,7 +301,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of RAC's 'Distance
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protection.should be_false
+    @mpeg_info.error_protected?.should be_false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
@@ -538,7 +538,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Wire's 'I Feel 
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protection.should be_false
+    @mpeg_info.error_protected?.should be_false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
@@ -793,7 +793,7 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Jürgen Paape's
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protection.should be_false
+    @mpeg_info.error_protected?.should be_false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do

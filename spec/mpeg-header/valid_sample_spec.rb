@@ -39,7 +39,7 @@ describe MPEGHeader, "parsing a valid sample MPEG header" do
   end
   
   it "should detect that sample header comes from a frame with no error protection" do
-    @sample_header.error_protection.should be_false
+    @sample_header.error_protected?.should be_false
   end
   
   it "should detect that sample header comes from a stream with a frame size of 417" do

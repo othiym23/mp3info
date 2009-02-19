@@ -51,7 +51,7 @@ describe Mp3Info, "when loading a sample MP3 file" do
   end
   
   it "should detect that the sample file is not error-protected" do
-    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.error_protection.should be_false }
+    Mp3Info.open(@mp3_filename) { |info| info.has_mpeg_header?.should be_true ; info.mpeg_header.error_protected?.should be_false }
   end
   
   it "should detect that the sample file has a duration of 0.1305625 seconds" do
