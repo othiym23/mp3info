@@ -155,7 +155,6 @@ module MPEGFile
       frame_size = 0
       
       begin
-        # find_next_frame is defined in MPEGFile
         next_pos, data = find_next_frame(file, cur_pos)
         frame_size = next_pos - cur_pos
       rescue MPEGFile::MPEGFileError
@@ -165,6 +164,7 @@ module MPEGFile
       file.seek(cur_pos)
     end
     
+    $stderr.puts("Reading %#010x bytes starting at %#010x " % [frame_size, file.pos]) if $DEBUG
     file.read(frame_size)
   end
   
@@ -217,12 +217,12 @@ module MPEGFile
     $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes") if $DEBUG
     
     while file_data do
-      while file_data && sync_pos = file_data.index("\xff")
+      sync_pos = file_data.index("\xff")
+      if sync_pos
         header = file_data.slice(sync_pos, 4)
+        $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG 
         if 4 == header.size && (header[1].to_ordinal & 0xe0) == 0xe0 && (header[2].to_ordinal & 0xf0) != 0xf0 
           return start_pos + sync_pos, header
-        else
-          file_data = file_data[(sync_pos + 1)..-1]
         end
       end
       

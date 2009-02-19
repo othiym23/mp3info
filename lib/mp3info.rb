@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 0ededa11ae21 2009/02/19 09:47:07 ogd $
+# $Id: mp3info.rb,v 9b29eea7cfa9 2009/02/19 10:37:25 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -168,7 +168,7 @@ class Mp3Info
       @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
       
       if mpeg_candidate.valid?
-        $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.inspect]) if $DEBUG
+        $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.to_s]) if $DEBUG
         file.seek(header_pos)
         cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
         $stderr.puts("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
