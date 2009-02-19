@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 7db968d2f782 2009/02/19 18:15:15 ogd $
+# $Id: mp3info.rb,v 385e603d6c7d 2009/02/19 18:17:10 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -369,7 +369,7 @@ class Mp3Info
       time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
     else
       length = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
-      if has_id3v2_tag? && @id3v2_tag['TLEN'] && @id3v2_tag['TLEN'].value > 0
+      if has_id3v2_tag? && @id3v2_tag['TLEN'] && @id3v2_tag['TLEN'].value.to_i > 0
         tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
         percent_diff = ((length.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
