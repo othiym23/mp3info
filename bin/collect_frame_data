@@ -15,7 +15,7 @@ require 'mp3info'
 TARGET_DIRECTORY = "./frame_data"
 
 class MP3Excerpter
-  include MPEGFile
+  GRABBINATE_SIZE = 2**16
   
   def initialize(path, output_directory)
     @path = path
@@ -33,7 +33,7 @@ class MP3Excerpter
       id3v2 = grab_id3v2(io)
     end
     
-    frames = grab_10_frames(io)
+    frames = grab_mpeg_data(io)
     io.close
     
     if ID3.has_id3v1_tag?(@path)
@@ -77,33 +77,25 @@ class MP3Excerpter
     raw_tag
   end
   
-  # take no prisoners frame grabbing
-  def grab_10_frames(io)
-    frames = ''
+  # take no prisoners MPEG audio grabbing -- rip the first 64K under the seek position
+  def grab_mpeg_data(io)
+    data = ''
     
     begin
+      remaining_bytes = io.stat.size - io.pos
       if io.stat.size - io.pos > 0
-        cur_pos, header_string = find_next_frame(io)
-        io.seek(cur_pos)
-        
-        header = MPEGHeader.new(header_string)
-        framesize = header.frame_size
-        remaining_bytes = io.stat.size - io.pos
-        size_to_grab = (framesize * 10)
-        $stderr.puts("    Grabbing #{size_to_grab} bytes from #{@path} starting at #{"%06x" % io.pos} (#{remaining_bytes} left).")
-        
         # just in case, don't want to grab ID3 tag twice
-        if size_to_grab <= (remaining_bytes - 128)
-          frames = io.read(size_to_grab)
-        else
-          frames = io.read(remaining_bytes - 128)
-        end
+        remaining_bytes = io.stat.size - io.pos - 128
+        size_to_grab = [GRABBINATE_SIZE, remaining_bytes].min
+        
+        $stderr.puts("    Grabbing #{size_to_grab} bytes from #{@path} starting at #{"%06x" % io.pos} (#{remaining_bytes} left).")
+        data = io.read(size_to_grab)
       end
     rescue Exception => cause
       $stderr.puts("WARN: Exception: #{cause}. Couldn't read frames.")
     end
     
-    frames
+    data
   end
   
   # take no prisoners ID3 copying
