@@ -60,7 +60,7 @@ module ID3V24
     def initialize(type, value)
       @type = type
       @value = value
-      $stderr.puts("...frame value is [#{value[0..255].inspect}...]") if $DEBUG
+      $stderr.puts("...frame value is [#{value.inspect.size > 255 ? "#{value.inspect[0..255]}...\"" : value.inspect}]") if $DEBUG
       @raw_size = value.respond_to?(:size) ? value.size : 0
     end
     
