@@ -182,7 +182,7 @@ class ID3V2 < DelegateClass(Hash)
     <<-DONE
 ID3V#{version} tag:
 
-  Tag is #{valid? ? '' : "not "}valid.
+  Tag is #{valid? ? '' : "not "}valid.#{valid_frame_sizes? ? ' (ID3v2.4.0 tag has non-synchsafe frame sizes.)' : ''}
 
   Major version    : #{major_version}
   Minor version    : #{minor_version}
