@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v e23494843b09 2009/02/18 23:09:58 ogd $
+# $Id: mp3info.rb,v 57551c9d1d65 2009/02/19 00:22:03 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -55,8 +55,10 @@ class Mp3Info
   
   # bitrate in kbps
   def bitrate
-    if has_xing_header?
-      (((@xing_header.bytes / @xing_header.frames) * @mpeg_header.sample_rate) / 144) >> 10
+    if has_xing_header? && xing_header.vbr?
+      (@xing_header.bytes / (@xing_header.frames * @mpeg_header.time_per_frame * 125)).to_i
+    elsif vbr? && defined?(@bitrate) && @bitrate > 0
+      @bitrate
     elsif has_mpeg_header?
       @mpeg_header.bitrate
     else
@@ -196,11 +198,8 @@ class Mp3Info
         tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
         percent_diff = ((@length.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
-          # without the Xing header, this is the best guess without reading
-          #  every single frame
           @vbr = true
-          @length = tlen
-          @bitrate = (@streamsize / bitrate) >> 10
+          @bitrate = (@streamsize / tlen) / 1024
         end
       end
     end
@@ -267,7 +266,7 @@ class Mp3Info
   def to_s
     time = "Time: #{time_string}"
     type = @mpeg_header.version_string
-    properties = "[ #{vbr? ? '~' : ''}#{bitrate}kbps @ #{@mpeg_header.sample_rate / 1000.0}kHz - #{@mpeg_header.mode}#{@mpeg_header.error_protection ? " +error" : ""} ]"
+    properties = "[ #{vbr? ? '~' : ''}#{bitrate}kbps @ #{"%g" % (@mpeg_header.sample_rate / 1000.0)}kHz - #{@mpeg_header.mode}#{@mpeg_header.error_protection ? " +error" : ""} ]"
     
     # try to always keep the string representation at 80 characters
     "#{time}#{" " * (18 - time.size)}#{type}#{" " * (62 - (type.size + properties.size))}#{properties}"
@@ -361,13 +360,13 @@ class Mp3Info
   
   def time_string
     if has_xing_header?
-      length = (26 / 1000.0) * @xing_header.frames
+      length = @mpeg_header.time_per_frame * @xing_header.frames
       seconds = length.floor % 60
       minutes = length.floor / 60
-      leftover = @xing_header.frames % (1000 / 26)
+      leftover = @xing_header.frames % (1 / @mpeg_header.time_per_frame.round)
       time_string = "%d:%02d/%02d" % [minutes, seconds, leftover]
     else
-      length = ((@streamsize << 3) / 1000.0) / bitrate
+      length = (@streamsize * @mpeg_header.time_per_frame) / @mpeg_header.frame_size
       if has_id3v2_tag? && @id3v2_tag['TLEN']
         tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
         percent_diff = ((length.to_i - tlen) / tlen.to_f)
