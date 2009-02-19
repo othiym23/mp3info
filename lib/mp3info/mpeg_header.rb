@@ -37,7 +37,10 @@ class MPEGHeader
                           [ 48_000,   24_000,   12_000 ],
                           [ 32_000,   16_000,    8_000 ],
                           [    nil,      nil,      nil ] ]
-                          
+  
+  #                             L1    L2    L3
+  @@time_frame_table  = [ nil, 384, 1152, 1152 ]
+  
   #                         V1/L1     V1/L2     V1/L3     V2/L1  V2/L2&L3 
   @@bitrate_table     = [ [     0,        0,        0,        0,        0 ],
                           [    32,       32,       32,       32,        8 ],
@@ -194,6 +197,10 @@ class MPEGHeader
     raise InvalidMPEGHeader, "Unable to find sample rate for sample rate code #{@sample_rate_code}, MPEG #{version}." unless sample_rate > 0
     
     sample_rate
+  end
+  
+  def time_per_frame
+    @@time_frame_table[layer].to_f / sample_rate.to_f
   end
   
   def mode
