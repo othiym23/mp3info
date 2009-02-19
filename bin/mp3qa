@@ -2,7 +2,7 @@
 script_path = __FILE__
 script_path = File.readlink(script_path) if File.symlink?(script_path)
 
-$: << File.join(File.dirname(script_path), '../../mp3info-eyeD/lib')
+$: << File.join(File.dirname(script_path), '../lib')
 
 require 'yaml'
 require 'mp3info'
