@@ -211,7 +211,7 @@ module MPEGFile
   end
   
   def find_sync(file, start_pos = 0)
-    $stderr.puts("find_sync seeking to #{"%#010x" % start_pos}") if $DEBUG
+    $stderr.puts("find_sync seeking to %#010x" % start_pos) if $DEBUG
     file.seek(start_pos)
     file_data = file.read(CHUNK_SIZE)
     $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes") if $DEBUG
@@ -226,6 +226,7 @@ module MPEGFile
         end
       end
       
+      start_pos += CHUNK_SIZE
       file_data = file.read(CHUNK_SIZE)
     end
     
