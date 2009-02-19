@@ -210,7 +210,7 @@ module MPEGFile
     end
   end
   
-  def find_sync(file, start_pos=0)
+  def find_sync(file, start_pos = 0)
     $stderr.puts("find_sync seeking to #{"%#010x" % start_pos}") if $DEBUG
     file.seek(start_pos)
     file_data = file.read(CHUNK_SIZE)
@@ -219,6 +219,9 @@ module MPEGFile
     while file_data do
       sync_pos = file_data.index("\xff")
       if sync_pos
+        
+        next unless file_data[sync_pos + 1] && (file_data[sync_pos + 1].to_ordinal & 0xe0 == 0xe0)
+        
         header = file_data.slice(sync_pos, 4)
         $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
         if 4 == header.size
