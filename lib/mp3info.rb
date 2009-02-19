@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 9b29eea7cfa9 2009/02/19 10:37:25 ogd $
+# $Id: mp3info.rb,v 5555f6fd7b84 2009/02/19 18:09:15 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -196,11 +196,13 @@ class Mp3Info
         # but if another duration is given and it isn't close (within 5%)
         #  assume the mp3 is vbr and go with the given duration
         tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
-        percent_diff = ((@length.to_i - tlen) / tlen.to_f)
-        if percent_diff.abs > 0.05
-          @vbr = true
-          @bitrate = (@streamsize / tlen) / 1024
-        end
+        if tlen > 0
+          percent_diff = ((@length.to_i - tlen) / tlen.to_f)
+          if percent_diff.abs > 0.05
+            @vbr = true
+            @bitrate = (@streamsize / tlen) / 1024
+          end
+        else
       end
     end
     
