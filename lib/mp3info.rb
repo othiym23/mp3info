@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 5555f6fd7b84 2009/02/19 18:09:15 ogd $
+# $Id: mp3info.rb,v beec2e6f4566 2009/02/19 18:11:29 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -202,7 +202,7 @@ class Mp3Info
             @vbr = true
             @bitrate = (@streamsize / tlen) / 1024
           end
-        else
+        end
       end
     end
     
