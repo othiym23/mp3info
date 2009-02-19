@@ -160,7 +160,7 @@ describe MPEGHeader, "parsing a variety of invalid MPEG headers" do
         1, 0,                             # channel mode extension: intensity off, MS on
         0,                                # copyrighted: no
         1,                                # original: yes
-        1, 1                              # emphasis: reserved value*
+        1, 0                              # emphasis: reserved value*
         ]
     lambda { MPEGHeader.new(invalid_header_array.to_binary_string).emphasis }.should raise_error(InvalidMPEGHeader)
   end
@@ -384,7 +384,6 @@ describe MPEGHeader, "parsing a variety of invalid MPEG headers" do
         1,                                # original: yes
         1, 0                              # emphasis: reserved
         ]
-    MPEGHeader.new(invalid_header_array.to_binary_string).emphasis.should == MPEGHeader::EMPHASIS_RESERVED
     MPEGHeader.new(invalid_header_array.to_binary_string).valid?.should == false
   end
 end

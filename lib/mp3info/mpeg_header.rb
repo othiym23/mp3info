@@ -208,7 +208,7 @@ class MPEGHeader
   end
   
   def emphasis
-    raise InvalidMPEGHeader, "Invalid emphasis code #{@emphasis}" if @emphasis > 2
+    raise InvalidMPEGHeader, "Emphasis code 0x02 is #{EMPHASIS_RESERVED}" if @emphasis == 0x2
     EMPHASISES[@emphasis]
   end
   
