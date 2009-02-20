@@ -781,9 +781,7 @@ module ID3V24
     end
     
     def self.decode_gain_value(binary_string)
-      msb, lsb = binary_string.unpack('cC')
-      $stderr.puts("RVA2Frame.decode_gain_value msb=[#{msb.inspect}] lsb=[#{lsb.inspect}]") if $DEBUG
-      (msb << 8) + lsb
+      binary_string.unpack("cC*").inject(0) { |res, b| (res << 8) | b } 
     end
     
     def encode_adjustments
