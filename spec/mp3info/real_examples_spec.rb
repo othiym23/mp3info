@@ -836,3 +836,38 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Jürgen Paape's
     @mp3.lame_header.should be_nil
   end
 end
+
+describe Mp3Info, "when reading the MP3 info from an encoding of MIA's \"Bamba Banga\" with multiple ID3 tags" do
+  before :all do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/MIA/Kala/MIA - Kala - 01 - Bamboo Banga.mp3'))
+    @mpeg_info = @mp3.mpeg_header
+  end
+  
+  it "should find an MPEG header" do
+    @mp3.has_mpeg_header?.should be_true
+  end
+  
+  it "should have a Xing tag" do
+    @mp3.has_xing_header?.should be_true
+  end
+  
+  it "should have a LAME tag" do
+    @mp3.has_lame_header?.should be_true
+  end
+  
+  it "should show itself as having been encoded by LAME3.97" do
+    @mp3.lame_header.encoder_version.should == "LAME3.97"
+  end
+  
+  it "should show itself as having been encoded with preset V1" do
+    @mp3.lame_header.preset.should == "V1"
+  end
+  
+  it "should have an ID3v2 tag" do
+    @mp3.has_id3v2_tag?.should be_true
+  end
+  
+  it "should have 33 ID3V2 frames after merging (although some duplicates should be removed)" do
+    @mp3.id3v2_tag.frame_count.should == 33
+  end
+end

@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 101c5df32f92 2009/02/19 21:01:59 ogd $
+# $Id: mp3info.rb,v 0ed46f682107 2009/02/20 05:05:39 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -138,51 +138,55 @@ class Mp3Info
     file = File.new(@filename, "rb")
     
     total_bytes = file.stat.size
-    
-    #
-    # read tags at beginning of file
-    #
-    case file.read(3)
-    when 'TAG' # ID3 tag at the beginning of the file (unusual)
-      $stderr.puts("Mp3Info.initialize TAG found at beginning of file") if $DEBUG
-      file.seek(-3, IO::SEEK_CUR)
-      @id3v1_tag = ID3.from_io(file)
-      $stderr.puts("Mp3Info.initialize ID3 tag is #{@id3v1_tag.inspect}") if $DEBUG
-    when 'ID3' # ID3v2 tag
-      $stderr.puts("Mp3Info.initialize ID3 found at beginning of file") if $DEBUG
-      file.seek(-3, IO::SEEK_CUR)
-      @id3v2_tag = ID3V2.from_io(file)
-    else
-      $stderr.puts("Mp3Info.initialize no tag found at beginning of file") if $DEBUG
-      file.seek(0)
-    end
-    
-    #
-    # if anything is left after reading tags, read MPEG data
-    #
-    cur_pos = file.pos
-    begin
-      $stderr.puts("Mp3Info.initialize about to call find_next_frame at %#010x" % file.pos) if $DEBUG
-      header_pos, header_data = find_next_frame(file, cur_pos)
-      mpeg_candidate = MPEGHeader.new(header_data)
-      @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
-      
-      if mpeg_candidate.valid?
-        $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.to_s]) if $DEBUG
-        file.seek(header_pos)
-        cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
-        $stderr.puts("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
-        xing_candidate = XingHeader.new(cur_frame)
-        @xing_header = xing_candidate if xing_candidate.valid?
-        $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && has_xing_header?
-      
-        lame_candidate = LAMEHeader.new(cur_frame)
-        @lame_header = lame_candidate if lame_candidate.valid?
-        $stderr.puts("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
+
+    while file.pos < total_bytes do
+      # try to read tags first, then read MPEG data
+      case file.read(3)
+      when 'TAG' # ID3 tag at the beginning of the file (unusual)
+        file.seek(-3, IO::SEEK_CUR)
+        $stderr.puts("Mp3Info.initialize TAG found at %#010x" % file.pos) if $DEBUG
+        @id3v1_tag = ID3.from_io(file)
+        $stderr.puts("Mp3Info.initialize ID3 tag is #{@id3v1_tag.inspect}") if $DEBUG
+      when 'ID3' # ID3v2 tag
+        file.seek(-3, IO::SEEK_CUR)
+        $stderr.puts("Mp3Info.initialize ID3 found at %#010x" % file.pos) if $DEBUG
+        if has_id3v2_tag?
+          @id3v2_tag.merge(ID3V2.from_io(file))
+        else
+          @id3v2_tag = ID3V2.from_io(file)
+        end
+      else
+        file.seek(-3, IO::SEEK_CUR)
+        $stderr.puts("Mp3Info.initialize scanning for MPEG data at %#010x" % file.pos) if $DEBUG
+        cur_pos = file.pos
+        begin
+          $stderr.puts("Mp3Info.initialize about to call find_next_frame at %#010x" % file.pos) if $DEBUG
+          header_pos, header_data = find_next_frame(file, cur_pos)
+          # header_pos, header_data = find_next_frame(file, 0x24017)
+          mpeg_candidate = MPEGHeader.new(header_data)
+          @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
+
+          if mpeg_candidate.valid?
+            $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.to_s]) if $DEBUG
+            file.seek(header_pos)
+            cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
+            $stderr.puts("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
+            xing_candidate = XingHeader.new(cur_frame)
+            @xing_header = xing_candidate if xing_candidate.valid?
+            $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && has_xing_header?
+
+            lame_candidate = LAMEHeader.new(cur_frame)
+            @lame_header = lame_candidate if lame_candidate.valid?
+            $stderr.puts("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
+            break # we're done trying to read candidates
+          end
+        rescue MPEGFile::MPEGFileError
+          $stderr.puts("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
+          file.seek(cur_pos)
+          break
+        end
       end
-    rescue MPEGFile::MPEGFileError
-      $stderr.puts("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
-      file.seek(cur_pos)
+      $stderr.puts("File position is #{"%#010x" % file.pos}") if $DEBUG
     end
     
     #
