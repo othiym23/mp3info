@@ -55,7 +55,7 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
   it "should not crash and correctly display a summary for a file containing no MPEG audio data" do
     mp3 = nil
     lambda { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/3aeb9bc1396b9b840c677e161e731908a4a66464.mp3')) }.should_not raise_error(NoMethodError)
-    mp3.duration_string.should == "0:00"
+    mp3.duration_string.should == "-"
     mp3.to_s.should == "NO AUDIO FOUND"
   end
   

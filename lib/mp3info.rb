@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 0ed46f682107 2009/02/20 05:05:39 ogd $
+# $Id: mp3info.rb,v 9dd0f488a20b 2009/02/20 08:17:04 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -294,25 +294,41 @@ class Mp3Info
   
   def duration_string
     if has_xing_header?
-      length = @mpeg_header.frame_duration * @xing_header.frames
-      seconds = length.floor % 60
-      minutes = length.floor / 60
+      time     = (@mpeg_header.frame_duration * @xing_header.frames).floor
+      seconds  = time % 60
+      time    /= 60
+      minutes  = time % 60
+      hours    = time / 60
       leftover = (@xing_header.frames % (1 / @mpeg_header.frame_duration)).round
-      "%d:%02d/%02d" % [minutes, seconds, leftover]
+      
+      if hours > 0
+        "%d:%02d:%02d/%02d" % [hours, minutes, seconds, leftover]
+      else
+        "%d:%02d/%02d" % [minutes, seconds, leftover]
+      end
     elsif has_mpeg_header?
-      length = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
+      time = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
       if has_id3v2_tag? && @id3v2_tag['TLEN'] && @id3v2_tag['TLEN'].value.to_i > 0
         tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
-        percent_diff = ((length.to_i - tlen) / tlen.to_f)
+        percent_diff = ((time.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
-          length = tlen
+          time = tlen
         end
       end
-      minutes = length.floor / 60
-      seconds = length.round % 60
-      "%d:%02d   " % [minutes, seconds]
+      time = time.round
+      
+      seconds  = time % 60
+      time    /= 60
+      minutes  = time % 60
+      hours    = time / 60
+      
+      if hours > 0
+        "%d:%02d:%02d" % [hours, minutes, seconds]
+      else
+        "%d:%02d" % [minutes, seconds]
+      end
     else
-      "0:00"
+      "-"
     end
   end
   
