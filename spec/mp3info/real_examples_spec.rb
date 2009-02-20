@@ -871,3 +871,30 @@ describe Mp3Info, "when reading the MP3 info from an encoding of MIA's \"Bamba B
     @mp3.id3v2_tag.frame_count.should == 33
   end
 end
+
+describe Mp3Info, "when reading the MP3 info from an encoding a short tone (used for replay testing) with unusual headers" do
+  before :all do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Replay Gain RVA2/06-normal-volume.mp3'))
+    @mpeg_info = @mp3.mpeg_header
+  end
+  
+  it "should find an MPEG header" do
+    @mp3.has_mpeg_header?.should be_true
+  end
+  
+  it "should see that the file is an MPEG 1, layer III file" do
+    @mpeg_info.version_string.should == "MPEG1, layer III"
+  end
+  
+  it "should see that the bitrate is 128kbps" do
+    @mp3.bitrate.should == 128
+  end
+  
+  it "should find an ID3 tag on the file" do
+    @mp3.has_id3v1_tag?.should be_true
+  end
+  
+  it "should find an ID3v2 tag on the file" do
+    @mp3.has_id3v2_tag?.should be_true
+  end
+end
