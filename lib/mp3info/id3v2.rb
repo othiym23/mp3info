@@ -165,20 +165,24 @@ class ID3V2 < DelegateClass(Hash)
     flags.to_binary_array[7] == 1
   end
   
+  def frame_count
+    count = 0
+    values.each do |frames|
+      unless frames.is_a?(Array)
+        count += 1
+      else
+        count += frames.size
+      end
+    end
+    
+    count
+  end
+  
   def tag_length
     @raw_tag[6..9].from_synchsafe_string
   end
   
   def description
-    frame_count = 0
-    values.each do |frames|
-      unless frames.is_a?(Array)
-        frame_count += 1
-      else
-        frame_count += frames.size
-      end
-    end
-    
     <<-DONE
 ID3V#{version} tag:
 
@@ -207,7 +211,7 @@ ID3V#{version} tag:
     
     raise(ID3V2ParseError, "Major version must be one of 2, 3 or 4 (is #{major_version || 'unknown'})") unless valid_major_version?
     
-    $stderr.puts("Parsing ID3v#{version} of length #{tag_length}...") if $DEBUG
+    $stderr.puts("Parsing ID3v#{version} of length #{"%#010x" % tag_length}...") if $DEBUG
     @hash.update(parse_id3v2_frames(major_version, string))
     @hash_orig = @hash.dup
   end
@@ -241,6 +245,23 @@ ID3V#{version} tag:
       raise(ID3V2InternalError,"Can't return an uninitialized tag.") unless defined?(@raw_tag) && nil != @raw_tag
       $stderr.puts "ID3V2.to_bin tag unchanged, returning cached raw tag [#{@raw_tag}]." if $DEBUG
       @raw_tag
+    end
+  end
+  
+  def merge(other_id3v2)
+    # just copy all the frames this tag doesn't know about
+    new_frames   = other_id3v2.keys - @hash.keys
+    new_frames.each { |key| @hash[key] = other_id3v2[key].dup }
+    
+    # merge the shared values
+    merge_frames = other_id3v2.keys & @hash.keys
+    merge_frames.each do |key|
+      current_set = self[key].is_a?(Array) ? self[key] : [self[key]]
+      other_set   = other_id3v2[key].is_a?(Array) ? other_id3v2[key] : [other_id3v2[key]]
+      merged_set  = current_set + other_set
+      out = []
+      merged_set.each { |value| out << value if !out.include?(value) }
+      @hash[key] = out.size == 1 ? out.first : out
     end
   end
   
