@@ -140,8 +140,8 @@ module ID3V24
     end
     
     def ==(object)
-      object.respond_to?("value") && @value == object.value &&
-      object.respond_to?("encoding") && @encoding == object.encoding
+      # we don't care if the encodings don't match. Identity for text frames is defined by the value.
+      object.respond_to?("value") && @value == object.value
     end
     
     protected
@@ -537,7 +537,7 @@ module ID3V24
   
     def self.from_s(value)
       encoding, string = value.unpack("ca*")
-      TCONFrame.new(encoding, TextFrame.decode_value(encoding, TCONFrame.from_genre_code(string)))
+      TCONFrame.new(encoding, TCONFrame.from_genre_code(TextFrame.decode_value(encoding, string)))
     end
     
     def genre_code
@@ -551,9 +551,10 @@ module ID3V24
     end
     
     def TCONFrame.from_genre_code(string)
-      hidden_genre = string.match(/\((\d+)\)/)
-      if hidden_genre
+      if hidden_genre = string.match(/\((\d+)\)/)
         ID3::GENRES[hidden_genre[1].to_i]
+      elsif bare_genre = string.match(/\A(\d+)\Z/)
+        ID3::GENRES[bare_genre[1].to_i] || string
       else
         string
       end
@@ -590,7 +591,7 @@ module ID3V24
   
     def ==(object)
       object.respond_to?("value") && @value == object.value &&
-      object.respond_to?("namespace") && @owner == object.namespace
+      object.respond_to?("namespace") && @namespace == object.namespace
     end
   end
   
