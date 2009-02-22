@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v 9dd0f488a20b 2009/02/20 08:17:04 ogd $
+# $Id: mp3info.rb,v cbbf5a87acfc 2009/02/22 05:26:56 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -55,7 +55,7 @@ class Mp3Info
   
   # bitrate in kbps
   def bitrate
-    if has_xing_header? && xing_header.vbr?
+    if has_xing_header? && @xing_header.vbr? && @xing_header.frames > 0 && @mpeg_header.frame_duration > 0
       (@xing_header.bytes / (@xing_header.frames * @mpeg_header.frame_duration * 125)).to_i
     elsif vbr? && defined?(@bitrate) && @bitrate > 0
       @bitrate
