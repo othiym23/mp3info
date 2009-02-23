@@ -898,3 +898,27 @@ describe Mp3Info, "when reading the MP3 info from an encoding a short tone (used
     @mp3.has_id3v2_tag?.should be_true
   end
 end
+
+describe Mp3Info, "when exposing replaygain information from a file with an iTunes / Soundcheck iTunNORM comment" do
+  it "should gracefully handle the case in which there is no iTunes Soundcheck data available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    @mp3.replaygain_info.itunes_replaygain.should be_nil
+  end
+
+  it "should expose iTunes Soundcheck information, if available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/617d88e5f5f95d988cf48bcfba01a810e105882a.mp3'))
+    @mp3.replaygain_info.itunes_replaygain.should_not be_nil
+  end
+  
+  it "should pretty-print the replay gain information (with iTunes information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/617d88e5f5f95d988cf48bcfba01a810e105882a.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+iTunes 1/1000 dB/milliamp adjustment: -4.7 dB
+iTunes 1/2500 dB/milliamp adjustment: -11. dB
+iTunes peak volume (should be ~1):     1.0644
+
+      HERE
+  end
+end

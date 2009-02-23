@@ -1,5 +1,105 @@
 require 'mp3info'
 
+class SoundCheckInfo
+  def initialize(soundcheck_string)
+    @raw_soundcheck = soundcheck_string
+  end
+
+  def SoundCheckInfo.from_id3v2(id3v2)
+    candidates = id3v2.find_frame_by_description('iTunNORM')
+    # TODO: find a way of judging the quality of these things
+    if candidates && candidates.size > 0
+      SoundCheckInfo.new(candidates.first.value)
+    else
+      nil
+    end
+  end
+  
+  def SoundCheckInfo.from_replaygain(gain, peak)
+    soundcheck = []
+    # left and right channel of 1/1000 dB-milliwatt gain
+    soundcheck[0] = soundcheck[1] = db_to_soundcheck(gain, 1000)
+    # left and right channel of 1/2500 dB-milliwatt gain
+    soundcheck[2] = soundcheck[3] = db_to_soundcheck(gain, 2500)
+    # left and right peak volume, 1-32,768 (0-100%) -- seemingly unused
+    soundcheck[6] = soundcheck[7] = replaygain_peak_to_soundcheck_peak(peak)
+    # nobody outside Apple seems to know what these numbers are for.
+    soundcheck[4] = soundcheck[5] = soundcheck[8] = soundcheck[9] = '0000FEEB'
+    
+    SoundCheckInfo.new(soundcheck.join(' '))
+  end
+
+  def to_replaygain
+    soundcheck = to_raw_numbers
+    raise(Exception, "Invalid Soundcheck format") unless soundcheck.size == 10
+    
+    high_gain = soundcheck_to_db(soundcheck[0..1].max, 1000)
+    low_gain  = soundcheck_to_db(soundcheck[2..3].max, 2500)
+    peak      = soundcheck_peak_to_replaygain_peak(soundcheck[6..7].max)
+    [high_gain, low_gain, peak]
+  end
+  
+  def to_s
+    @raw_soundcheck
+  end
+  
+  def to_frame
+    raise(Exception, "Invalid Soundcheck format") unless to_raw_numbers.size == 10
+    
+    ID3V24::COMMFrame.new(ID3V24::TextFrame::DEFAULT_ENCODING, 'eng', 'iTunNORM', @raw_soundcheck)
+  end
+  
+  def valid?
+    valid_raw_value? && valid_gain_value? && valid_peak_value?
+  end
+  
+  def valid_raw_value?
+    to_raw_numbers.size == 10
+  end
+  
+  private
+  
+  def to_raw_numbers
+    @raw_soundcheck.split(' ').map { |element| element.hex }
+  end
+  
+  def db_to_soundcheck(gain, base)
+    value = ((10.0 ** (-gain.to_f / 10.0)) * base.to_f).round
+    value = 65_534 if value > 65_534
+    
+    "%08X" % value
+  end
+  
+  def soundcheck_to_db(soundcheck, base)
+    Math.log10(soundcheck.to_f / base.to_f) * -10
+  end
+  
+  def replaygain_peak_to_soundcheck_peak(peak)
+    "%08X" % (peak * 32_768).round
+  end
+  
+  # FIXME: highly suspect
+  def soundcheck_peak_to_replaygain_peak(peak)
+    peak.to_f / 32_768.to_f
+  end
+  
+  def gain_db
+    to_replaygain[0..1].max
+  end
+  
+  def peak
+    to_replaygain[2]
+  end
+  
+  def valid_gain_value?
+    -60.0 < gain_db && gain_db < 60.0
+  end
+  
+  def valid_peak_value?
+    peak > 0
+  end
+end
+
 class ReplaygainInfo
   def initialize(mp3info)
     @mp3info = mp3info
@@ -29,21 +129,47 @@ class ReplaygainInfo
     end
   end
   
+  def itunes_replaygain
+    if @mp3info.has_id3v2_tag?
+      SoundCheckInfo.from_id3v2(@mp3info.id3v2_tag)
+    else
+      nil
+    end
+  end
+  
   def to_s
-    lame_out = lame_string
-    rva2_out = rva2_string
+    lame_out   = lame_string
+    rva2_out   = rva2_string
+    itunes_out = itunes_string
     
     out_string = ''
-    if (lame_out.size > 0) || (rva2_out.size > 0)
+    if (lame_out.size > 0) || (rva2_out.size > 0) || (itunes_out.size > 0)
       out_string << "MP3 replay gain adjustments:\n\n"
     end
-    out_string << lame_string
-    out_string << rva2_string
+    out_string << itunes_out
+    out_string << lame_out
+    out_string << rva2_out
     
     out_string
   end
   
   private
+  
+  def itunes_string
+    out_string = ''
+    sc = itunes_replaygain
+    
+    if sc
+      high_gain, low_gain, peak = sc.to_replaygain
+      
+      out_string << "iTunes 1/1000 dB/milliamp adjustment: % #-4.2g dB\n" % high_gain
+      out_string << "iTunes 1/2500 dB/milliamp adjustment: % #-4.2g dB\n" % low_gain
+      out_string << "iTunes peak volume (should be ~1):    % #6.5g\n"     % peak
+      out_string << "\n"
+    end
+    
+    out_string
+  end
   
   def lame_string
     out_string = ''
