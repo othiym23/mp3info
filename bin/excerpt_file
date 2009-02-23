@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+script_path = __FILE__
+script_path = File.readlink(script_path) if File.symlink?(script_path)
+
+$: << File.join(File.dirname(script_path), '../lib')
+
+require 'yaml'
+require 'mp3excerpter'
+
+source_path      = File.expand_path(ARGV[0])
+source_directory = File.dirname(source_path)
+target_directory = File.expand_path(ARGV[1])
+
+raise(IOError, "Path #{source_path} does not exist!") unless File.exists?(source_path)
+raise(IOError, "Path #{target_directory} does not exist!") unless File.exists?(target_directory)
+raise(IOError, "Paths for source and destination must differ!") unless source_directory != target_directory
+
+MP3Excerpter.new(source_path, target_directory).dump_excerpt
