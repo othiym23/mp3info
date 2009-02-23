@@ -720,7 +720,7 @@ module ID3V24
     def self.default(value)
       default_adjustment = RVA2Adjustment.new(0x01, 0, 0)
       default_adjustment.adjustment = value
-      rva2 = RVA2Frame.new('track', [default_adjustment])
+      RVA2Frame.new('track', [default_adjustment])
     end
     
     def self.from_s(value)
@@ -791,6 +791,28 @@ module ID3V24
       end
       
       bin_string
+    end
+  end
+  
+  # 2.3 compatibility frame created by normalize; identical to RVA2
+  # TODO: move to ID3V23::Frame when splitting apart 2.2/3/4 frames.
+  # normalize: http://normalize.nongnu.org/
+  class XRVAFrame < RVA2Frame
+    def initialize(identifier, adjustments = [])
+      super(identifier, adjustments)
+      @type = 'XRVA'
+    end
+    
+    def self.default(value)
+      default_adjustment = RVA2Adjustment.new(0x01, 0, 0)
+      default_adjustment.adjustment = value
+      XRVAFrame.new('track', [default_adjustment])
+    end
+    
+    def self.from_s(value)
+      id, raw_adjustment_list = value.split("\x00", 2)
+      $stderr.puts("XRVAFrame.from_s(value=#{value.inspect}) => id=[#{id.inspect}] raw_adjustment_list=[#{raw_adjustment_list.inspect}]") if $DEBUG
+      XRVAFrame.new(id, parse_adjustments(raw_adjustment_list))
     end
   end
 end

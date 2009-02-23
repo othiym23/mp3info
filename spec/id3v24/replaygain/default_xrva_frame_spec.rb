@@ -3,7 +3,7 @@ $:.unshift("spec/")
 
 require 'mp3info/mp3info_helper'
 
-describe ID3V24::RVA2Frame, "when creating a new RVA2 (replay gain) frame with defaults" do
+describe ID3V24::XRVAFrame, "when creating a new XRVA (replay gain) frame with defaults" do
   include Mp3InfoHelper
   
   before :all do
@@ -11,9 +11,9 @@ describe ID3V24::RVA2Frame, "when creating a new RVA2 (replay gain) frame with d
     create_sample_mp3_file(@mp3_filename)
     
     @gain = 4.3
-    tag = { "RVA2" => ID3V24::Frame.create_frame("RVA2", @gain) }
+    tag = { "XRVA" => ID3V24::Frame.create_frame("XRVA", @gain) }
     @saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    @saved_frame = @saved_tag['RVA2']
+    @saved_frame = @saved_tag['XRVA']
   end
   
   after :all do
@@ -21,7 +21,7 @@ describe ID3V24::RVA2Frame, "when creating a new RVA2 (replay gain) frame with d
   end
   
   it "should reconstitute itself as the correct class" do
-    @saved_frame.class.should == ID3V24::RVA2Frame
+    @saved_frame.class.should == ID3V24::XRVAFrame
   end
   
   it "should default to adjusting track-level replay gain" do

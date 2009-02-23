@@ -197,6 +197,10 @@ class ReplaygainInfo
     @mp3info.id3v2_tag['RVA2'] if @mp3info.has_id3v2_tag?
   end
   
+  def xrva_replaygain
+    @mp3info.id3v2_tag['XRVA'] if @mp3info.has_id3v2_tag?
+  end
+  
   def itunes_replaygain
     SoundCheckInfo.from_id3v2(@mp3info.id3v2_tag) if @mp3info.has_id3v2_tag?
   end
@@ -208,17 +212,20 @@ class ReplaygainInfo
   def to_s
     lame_out   = lame_string
     rva2_out   = rva2_string
+    xrva_out   = xrva_string
     itunes_out = itunes_string
     foobar_out = foobar_string
     
     out_string = ''
-    if (lame_out.size > 0) || (rva2_out.size > 0) || (itunes_out.size > 0) || (foobar_out.size > 0)
+    if (lame_out.size > 0) || (rva2_out.size > 0) || (xrva_out.size > 0) ||
+       (itunes_out.size > 0) || (foobar_out.size > 0)
       out_string << "MP3 replay gain adjustments:\n\n"
     end
     out_string << itunes_out
     out_string << lame_out
     out_string << foobar_out
     out_string << rva2_out
+    out_string << xrva_out
     
     out_string
   end
@@ -260,6 +267,24 @@ class ReplaygainInfo
       ensure_list(rva2_replaygain).each do |rva2|
         out_string << "RVA2 #{rva2.identifier} adjustment:\n"
         rva2.adjustments.each do |adjustment|
+          out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
+          if adjustment.peak_gain_bit_width > 0
+            out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
+          end
+        end
+        out_string << "\n"
+      end
+    end
+    
+    out_string
+  end
+  
+  def xrva_string
+    out_string = ''
+    if xrva_replaygain
+      ensure_list(xrva_replaygain).each do |xrva|
+        out_string << "XRVA #{xrva.identifier} adjustment:\n"
+        xrva.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
           if adjustment.peak_gain_bit_width > 0
             out_string << " (peak gain limit: #{adjustment.peak_gain})\n"

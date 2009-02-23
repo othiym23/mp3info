@@ -29,10 +29,26 @@ describe Mp3Info, "when exposing replaygain information" do
     @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
     @mp3.replaygain_info.mp3_gain.should_not be_nil
   end
+
+  it "should expose Foobar2k-generated replaygain information, if available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/b51bc09ef4f8e0a82a4ca0d0781ed0b36bd61f5f.mp3'))
+    @mp3.replaygain_info.foobar_replaygain.should_not be_nil
+    @mp3.replaygain_info.foobar_replaygain.valid?.should be_true
+  end
+
+  it "should expose iTunes Soundcheck information, if available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/617d88e5f5f95d988cf48bcfba01a810e105882a.mp3'))
+    @mp3.replaygain_info.itunes_replaygain.should_not be_nil
+  end
   
   it "should expose RVA2 replaygain information, if available" do
     @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Replay Gain RVA2/09-1000-8dBlouder-trackonly.mp3'))
     @mp3.replaygain_info.rva2_replaygain.should_not be_nil
+  end
+
+  it "should expose XRVA replaygain information, if available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/4f0071e80b472c67ea4d0e1dfc46c547978d5c09.mp3'))
+    @mp3.replaygain_info.xrva_replaygain.should_not be_nil
   end
   
   it "should pretty-print the replay gain information (with LAME information) in an easy-to-read form" do
@@ -55,5 +71,76 @@ RVA2 track adjustment:
   Master volume gain:  8.0 dB (peak gain limit: 6553)
 
     HERE
+  end
+
+  it "should pretty-print the replay gain information (with XRVA information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/4f0071e80b472c67ea4d0e1dfc46c547978d5c09.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+LAME MP3 gain:         0.0 dB
+
+Foobar 2000 track gain: -2.7 dB (0.5716 peak)
+Foobar 2000 track minimum: 136
+Foobar 2000 track maximum: 252
+Foobar 2000 album gain: -3.6 dB (0.5988 peak)
+Foobar 2000 album minimum: 135
+Foobar 2000 album maximum: 252
+Foobar 2000 mp3gain undo string: "+003,+003,N"
+
+XRVA normalize adjustment:
+  Master volume gain:  4.4 dB
+    HERE
+  end
+
+  it "should pretty-print the replay gain information (with iTunes information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/617d88e5f5f95d988cf48bcfba01a810e105882a.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+iTunes adjustment (1.0 milliWatt/dBm basis): -4.7 dB
+iTunes adjustment (2.5 milliWatt/dBm basis): -11. dB
+iTunes peak volume (should be ~1):            1.0644
+
+      HERE
+  end
+
+  it "should pretty-print the replay gain information (with replaygain information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/b51bc09ef4f8e0a82a4ca0d0781ed0b36bd61f5f.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+LAME MP3 gain:         0.0 dB
+
+Foobar 2000 track gain: -3.0 dB (0.5256 peak)
+Foobar 2000 track minimum: 151
+Foobar 2000 track maximum: 233
+Foobar 2000 album gain: -2.6 dB (0.5336 peak)
+Foobar 2000 album minimum: 137
+Foobar 2000 album maximum: 251
+Foobar 2000 mp3gain undo string: "+004,+004,N"
+
+      HERE
+  end
+end
+
+describe Mp3Info, "when exposing replaygain information from a file with an iTunes / Soundcheck iTunNORM comment" do
+  it "should gracefully handle the case in which there is no iTunes Soundcheck data available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    @mp3.replaygain_info.itunes_replaygain.should be_nil
+  end
+end
+
+describe Mp3Info, "when exposing replaygain information from a file with foobar2k-style user text frames" do
+  it "should gracefully handle the case in which there is no textframe-stored replaygain data available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    @mp3.replaygain_info.foobar_replaygain.valid?.should be_false
+  end
+end
+
+describe Mp3Info, "when exposing replaygain information from a file with an ID3v2.3.0 XRVA frame from normalize" do
+  it "should gracefully handle the case in which there is no XRVA replaygain data available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    @mp3.replaygain_info.xrva_replaygain.should be_nil
   end
 end
