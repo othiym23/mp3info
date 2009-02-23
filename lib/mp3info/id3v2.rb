@@ -178,6 +178,20 @@ class ID3V2 < DelegateClass(Hash)
     count
   end
   
+  def find_frame_by_description(description)
+    found_frames = []
+    
+    values.each do |frames|
+      if frames.is_a?(Array)
+        found_frames << frames.select {|frame| frame.respond_to?(:description) && frame.description == description }
+      else
+        found_frames << frames if frames.respond_to?(:description) && frames.description == description
+      end
+    end
+    
+    found_frames.flatten
+  end
+  
   def tag_length
     @raw_tag[6..9].from_synchsafe_string
   end
