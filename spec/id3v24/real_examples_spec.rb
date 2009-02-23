@@ -115,8 +115,8 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
       'RIPT with GRIP' == frame.value
     }.should be_true
     
-    id3v2_tag.find_frame_by_description('ID3v1 Comment').size.should == 1
-    id3v2_tag.find_frame_by_description('ID3v1 Comment').first.value.should == 'RIPT with GRIP'
+    id3v2_tag.find_frames_by_description('ID3v1 Comment').size.should == 1
+    id3v2_tag.find_frames_by_description('ID3v1 Comment').first.value.should == 'RIPT with GRIP'
     
     id3v2_tag['TALB'].size.should == 2
     id3v2_tag['TALB'].detect { |frame|

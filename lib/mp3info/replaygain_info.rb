@@ -1,12 +1,92 @@
 require 'mp3info'
 
+class UserTextReplaygainInfo
+  def initialize(id3v2)
+    @id3v2 = id3v2
+  end
+  
+  def track_db
+    if @id3v2.find_frames_by_description('replaygain_track_gain').size > 0
+      @id3v2.find_frames_by_description('replaygain_track_gain').first.value.to_f
+    end
+  end
+  
+  def track_peak
+    if @id3v2.find_frames_by_description('replaygain_track_peak').size > 0
+      @id3v2.find_frames_by_description('replaygain_track_peak').first.value.to_f
+    end
+  end
+  
+  def track_minimum
+    if track_minmax.size > 0
+      track_minmax.first.value.split(',')[0].to_i
+    end
+  end
+  
+  def track_maximum
+    if track_minmax.size > 0
+      track_minmax.first.value.split(',')[1].to_i
+    end
+  end
+  
+  def album_db
+    if @id3v2.find_frames_by_description('replaygain_album_gain').size > 0
+      @id3v2.find_frames_by_description('replaygain_album_gain').first.value.to_f
+    end
+  end
+  
+  def album_peak
+    if @id3v2.find_frames_by_description('replaygain_album_peak').size > 0
+      @id3v2.find_frames_by_description('replaygain_album_peak').first.value.to_f
+    end
+  end
+  
+  def album_minimum
+    if album_minmax.size > 0
+      album_minmax.first.value.split(',')[0].to_i
+    end
+  end
+  
+  def album_maximum
+    if album_minmax.size > 0
+      album_minmax.first.value.split(',')[1].to_i
+    end
+  end
+  
+  def mp3gain_undo_string
+    if @id3v2.find_frames_by_description('mp3gain_undo').size > 0
+      @id3v2.find_frames_by_description('mp3gain_undo').first.value
+    end
+  end
+  
+  def valid?
+    @id3v2.find_frames_by_description('replaygain_track_gain').size == 1 &&
+    @id3v2.find_frames_by_description('replaygain_track_peak').size == 1 &&
+    @id3v2.find_frames_by_description('replaygain_album_gain').size == 1 &&
+    @id3v2.find_frames_by_description('replaygain_album_peak').size == 1 &&
+    @id3v2.find_frames_by_description('mp3gain_minmax').size == 1 &&
+    @id3v2.find_frames_by_description('mp3gain_album_minmax').size == 1 &&
+    @id3v2.find_frames_by_description('mp3gain_undo').size == 1
+  end
+  
+  private
+  
+  def track_minmax
+    @id3v2.find_frames_by_description('mp3gain_minmax')
+  end
+  
+  def album_minmax
+    @id3v2.find_frames_by_description('mp3gain_album_minmax')
+  end
+end
+
 class SoundCheckInfo
   def initialize(soundcheck_string)
     @raw_soundcheck = soundcheck_string
   end
 
   def SoundCheckInfo.from_id3v2(id3v2)
-    candidates = id3v2.find_frame_by_description('iTunNORM')
+    candidates = id3v2.find_frames_by_description('iTunNORM')
     # TODO: find a way of judging the quality of these things
     if candidates && candidates.size > 0
       SoundCheckInfo.new(candidates.first.value)
@@ -106,48 +186,38 @@ class ReplaygainInfo
   end
   
   def lame_replaygain
-    if @mp3info.lame_header
-      @mp3info.lame_header.replay_gain
-    else
-      nil
-    end
+    @mp3info.lame_header.replay_gain if @mp3info.lame_header
   end
   
   def mp3_gain
-    if @mp3info.lame_header
-      @mp3info.lame_header.mp3_gain_db
-    else
-      nil
-    end
+    @mp3info.lame_header.mp3_gain_db if @mp3info.lame_header
   end
   
   def rva2_replaygain
-    if @mp3info.has_id3v2_tag?
-      @mp3info.id3v2_tag['RVA2']
-    else
-      nil
-    end
+    @mp3info.id3v2_tag['RVA2'] if @mp3info.has_id3v2_tag?
   end
   
   def itunes_replaygain
-    if @mp3info.has_id3v2_tag?
-      SoundCheckInfo.from_id3v2(@mp3info.id3v2_tag)
-    else
-      nil
-    end
+    SoundCheckInfo.from_id3v2(@mp3info.id3v2_tag) if @mp3info.has_id3v2_tag?
+  end
+  
+  def foobar_replaygain
+    UserTextReplaygainInfo.new(@mp3info.id3v2_tag) if @mp3info.has_id3v2_tag?
   end
   
   def to_s
     lame_out   = lame_string
     rva2_out   = rva2_string
     itunes_out = itunes_string
+    foobar_out = foobar_string
     
     out_string = ''
-    if (lame_out.size > 0) || (rva2_out.size > 0) || (itunes_out.size > 0)
+    if (lame_out.size > 0) || (rva2_out.size > 0) || (itunes_out.size > 0) || (foobar_out.size > 0)
       out_string << "MP3 replay gain adjustments:\n\n"
     end
     out_string << itunes_out
     out_string << lame_out
+    out_string << foobar_out
     out_string << rva2_out
     
     out_string
@@ -197,6 +267,23 @@ class ReplaygainInfo
         end
         out_string << "\n"
       end
+    end
+    
+    out_string
+  end
+  
+  def foobar_string
+    out_string = ''
+    fb2krg = foobar_replaygain
+    
+    if fb2krg.valid?
+      out_string << "Foobar 2000 track gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.track_db, fb2krg.track_peak]
+      out_string << "Foobar 2000 track minimum: #{fb2krg.track_minimum}\n" 
+      out_string << "Foobar 2000 track maximum: #{fb2krg.track_maximum}\n"
+      out_string << "Foobar 2000 album gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.album_db, fb2krg.album_peak]
+      out_string << "Foobar 2000 album minimum: #{fb2krg.album_minimum}\n"
+      out_string << "Foobar 2000 album maximum: #{fb2krg.album_maximum}\n"
+      out_string << "Foobar 2000 mp3gain undo string: \"#{fb2krg.mp3gain_undo_string}\"\n\n"
     end
     
     out_string

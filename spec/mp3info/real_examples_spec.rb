@@ -922,3 +922,34 @@ iTunes peak volume (should be ~1):            1.0644
       HERE
   end
 end
+
+describe Mp3Info, "when exposing replaygain information from a file with foobar2k-style user text frames" do
+  it "should gracefully handle the case in which there is no textframe-stored replaygain data available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    @mp3.replaygain_info.foobar_replaygain.valid?.should be_false
+  end
+
+  it "should expose user textframe-stored replaygain information, if available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/b51bc09ef4f8e0a82a4ca0d0781ed0b36bd61f5f.mp3'))
+    @mp3.replaygain_info.foobar_replaygain.should_not be_nil
+    @mp3.replaygain_info.foobar_replaygain.valid?.should be_true
+  end
+  
+  it "should pretty-print the replay gain information (with replaygain information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/b51bc09ef4f8e0a82a4ca0d0781ed0b36bd61f5f.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+LAME MP3 gain:         0.0 dB
+
+Foobar 2000 track gain: -3.0 dB (0.5256 peak)
+Foobar 2000 track minimum: 151
+Foobar 2000 track maximum: 233
+Foobar 2000 album gain: -2.6 dB (0.5336 peak)
+Foobar 2000 album minimum: 137
+Foobar 2000 album maximum: 251
+Foobar 2000 mp3gain undo string: "+004,+004,N"
+
+      HERE
+  end
+end

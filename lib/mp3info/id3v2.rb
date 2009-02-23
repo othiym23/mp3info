@@ -178,7 +178,7 @@ class ID3V2 < DelegateClass(Hash)
     count
   end
   
-  def find_frame_by_description(description)
+  def find_frames_by_description(description)
     found_frames = []
     
     values.each do |frames|
