@@ -162,9 +162,9 @@ class ReplaygainInfo
     if sc
       high_gain, low_gain, peak = sc.to_replaygain
       
-      out_string << "iTunes 1/1000 dB/milliamp adjustment: % #-4.2g dB\n" % high_gain
-      out_string << "iTunes 1/2500 dB/milliamp adjustment: % #-4.2g dB\n" % low_gain
-      out_string << "iTunes peak volume (should be ~1):    % #6.5g\n"     % peak
+      out_string << "iTunes adjustment (1.0 milliWatt/dBm basis): % #-4.2g dB\n" % high_gain
+      out_string << "iTunes adjustment (2.5 milliWatt/dBm basis): % #-4.2g dB\n" % low_gain
+      out_string << "iTunes peak volume (should be ~1):           % #6.5g\n"     % peak
       out_string << "\n"
     end
     

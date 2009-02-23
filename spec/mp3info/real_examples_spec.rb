@@ -915,9 +915,9 @@ describe Mp3Info, "when exposing replaygain information from a file with an iTun
     @mp3.replaygain_info.to_s.should ==<<-HERE
 MP3 replay gain adjustments:
 
-iTunes 1/1000 dB/milliamp adjustment: -4.7 dB
-iTunes 1/2500 dB/milliamp adjustment: -11. dB
-iTunes peak volume (should be ~1):     1.0644
+iTunes adjustment (1.0 milliWatt/dBm basis): -4.7 dB
+iTunes adjustment (2.5 milliWatt/dBm basis): -11. dB
+iTunes peak volume (should be ~1):            1.0644
 
       HERE
   end
