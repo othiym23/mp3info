@@ -714,7 +714,6 @@ module ID3V24
     def initialize(id, adjustments = [])
       super('RVA2', adjustments)
       @identifier = id
-      @adjustments = adjustments
     end
     
     def self.default(value)
@@ -730,7 +729,7 @@ module ID3V24
     end
     
     def adjustments
-      @adjustments
+      @value
     end
     
     def to_s
@@ -786,7 +785,7 @@ module ID3V24
     
     def encode_adjustments
       bin_string = ''
-      @adjustments.each do |adjustment|
+      @value.each do |adjustment|
         bin_string << adjustment.to_bin
       end
       
