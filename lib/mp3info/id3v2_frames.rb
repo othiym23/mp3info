@@ -73,11 +73,11 @@ module ID3V24
     end
     
     def to_s
-      @value
+      @value.to_s
     end
     
     def to_s_pretty
-      @value
+      @value.to_s
     end
     
     def ==(object)
