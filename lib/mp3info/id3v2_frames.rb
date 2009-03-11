@@ -837,6 +837,169 @@ module ID3V24
     end
   end
   
+  # 2.2 legacy replaygain frame type. A simplified version of the totally
+  # insane RVAD frame, below.
+  class RVAFrame < Frame
+    RIGHT  = 0x01
+    LEFT   = 0x02
+    
+    CHANNELS     = [RIGHT, LEFT]
+    
+    TO_RVA2_TYPE = {
+      RIGHT => 0x02,
+      LEFT  => 0x03
+    }
+    
+    def initialize(raw_string)
+      super('RVA', raw_string)
+    end
+    
+    def self.default(value)
+      frame = RVAFrame.new(default_raw_string)
+      frame.set_db(RIGHT, value)
+      frame.set_db(LEFT, value)
+      frame
+    end
+    
+    def self.from_s(raw_string)
+      RVAFrame.new(raw_string)
+    end
+    
+    def bit_width
+      @value[1].to_ordinal
+    end
+    
+    def set_raw(channel, value)
+      @value[channel_to_offset(channel), byte_width] = value.abs.to_binary_array(bit_width).to_binary_string
+    end
+    
+    def get_raw(channel)
+      @value[channel_to_offset(channel), byte_width].to_binary_decimal.to_binary_array(bit_width).to_binary_decimal
+    end
+    
+    def set_db(channel, value)
+      set_channel_sign!(channel, value) 
+      set_raw(channel, db_to_value(value.abs, channel))
+    end
+    
+    def get_db(channel)
+      value_to_db(get_raw(channel), channel)
+    end
+    
+    # get the "default" right channel gain in dB for this adjustment
+    def right_gain
+      get_db(RIGHT)
+    end
+    
+    def right_gain=(value)
+      set_db(RIGHT, value)
+    end
+    
+    # get the "default" left channel gain in dB for this adjustment
+    def left_gain
+      get_db(LEFT)
+    end
+    
+    def left_gain=(value)
+      set_db(LEFT, value)
+    end
+    
+    # It's unclear to me how the peak values are meant to be interpreted:
+    # the logical interpretation would be the absolute peak value for the
+    # specified channel over the duration of the stream, where the maximum
+    # is 2 ** bit_width - 1, but I lack enough data in practice to say with
+    # confidence that's how this field is used in the wild.
+    def get_peak(channel)
+      @value[channel_to_offset(channel) + peak_offset(channel), byte_width].to_binary_decimal
+    end
+    
+    def set_peak(channel, value)
+      @value[channel_to_offset(channel) + peak_offset(channel), byte_width] = value.to_binary_string
+    end
+    
+    def right_peak
+      get_peak(RIGHT)
+    end
+    
+    def right_peak=(value)
+      set_peak(RIGHT, value)
+    end
+    
+    def left_peak
+      get_peak(LEFT)
+    end
+    
+    def left_peak=(value)
+      set_peak(LEFT, value)
+    end
+    
+    def adjustments
+      adjustment_list = []
+      CHANNELS.each do |channel|
+        adjustment_list << RVA2Adjustment.new(TO_RVA2_TYPE[channel], (get_db(channel) * 512).round, bit_width, get_peak(channel))
+      end
+      
+      adjustment_list
+    end
+    
+    def set_channel_sign!(channel, value)
+      @value[0] = ((value < 0) ? (bit_field & ~channel) : (bit_field | channel)).chr
+    end
+    
+    private
+    
+    def byte_width
+      (@value[1].to_ordinal.to_f / 8).ceil
+    end
+    
+    def bit_field
+      @value[0].to_ordinal
+    end
+    
+    def channel_to_offset(channel)
+      # base offset is 1 increment / decrement field byte + 1 bitwidth byte
+      base_offset = 2
+      
+      case channel
+      when RIGHT
+        base_offset
+      when LEFT
+        base_offset + byte_width
+      end
+    end
+    
+    def peak_offset(channel)
+      2 * byte_width
+    end
+    
+    def self.default_raw_string
+      string = ''
+      # 1 byte indicating that the front right and front left channels are adjusted
+      # positively
+      string << (RIGHT | LEFT).chr
+      # 1 byte indicating the width of the field in which we're storing adjustments
+      string << 16.chr
+      # 0.0 dB adjustment for both of the front channels by default
+      string << "\x00\x00\x00\x00"
+      # peak values of 0 for both of the default channels (better safe than sorry)
+      string << "\x00\x00\x00\x00"
+      
+      string
+    end
+    
+    def db_to_value(db, channel)
+      [((2 ** bit_width) * ((10 ** ((decrement?(channel, bit_field) ? -1 : 1) * db.abs.to_f / 20.to_f)) - 1.0)).round, (2 ** bit_width) - 1].min
+    end
+
+    def value_to_db(value, channel)
+      20 * Math.log10(1.0  + ((decrement?(channel, bit_field) ? -1 : 1) * [value.abs, (2 ** bit_width) - 1].min) / (2 ** bit_width).to_f)
+    end
+    
+    def decrement?(channel, bit_field)
+      (bit_field & channel) == 0
+    end
+  end
+  
   # Another 2.3 replaygain frame type, this one with an even more demented
   # structure. At least RVA2 sort of makes sense.
   class RVADFrame < Frame

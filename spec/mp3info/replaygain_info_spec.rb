@@ -78,6 +78,18 @@ RVA2 track adjustment:
     HERE
   end
 
+  it "should pretty-print the replay gain information (with RVA information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/7d4898b04c985c6030ef610e5e95553defa0c2d2.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+RVA adjustment:
+  Front right gain:  6.0 dB
+  Front left gain:  6.0 dB
+
+    HERE
+  end
+
   it "should pretty-print the replay gain information (with RVAD information) in an easy-to-read form" do
     @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/7f97adc6e357e489f4cb621f10e50ac50911967f.mp3'))
     @mp3.replaygain_info.to_s.should ==<<-HERE
