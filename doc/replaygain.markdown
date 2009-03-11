@@ -120,6 +120,8 @@ RGAD
 * [Strawman proposal of the RGAD tag from Hydrogen Audio.](http://replaygain.hydrogenaudio.org/file_format_id3v2.html)
 * [id3.org's codification of Hydrogen Audio's strawman proposal.](http://www.id3.org/Replay_Gain_Adjustment)
 * [Hydrogen Audio thread about real-world support (or lack thereof) for RGAD.](http://www.hydrogenaudio.org/forums/index.php?showtopic=32745)
+* [The home for MADplay, a freeware fixed-point MPEG decoder, which contains logic for decoding RGAD frames.](http://www.underbit.com/products/mad/)
+* [The source for getid3, a PHP ID3v2 parsing library (search for 'RGAD').](http://getid3.sourceforge.net/source/module.tag.id3v2.phps)
 
 iTunNORM
 --------
