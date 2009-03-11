@@ -84,8 +84,8 @@ RVA2 track adjustment:
 MP3 replay gain adjustments:
 
 RVAD adjustment:
-  Front right gain:  6.0 dB (peak gain limit: 0)
-  Front left gain:  6.0 dB (peak gain limit: 0)
+  Front right gain:  6.0 dB
+  Front left gain:  6.0 dB
 
     HERE
   end
@@ -107,6 +107,7 @@ Foobar 2000 mp3gain undo string: "+003,+003,N"
 
 XRVA normalize adjustment:
   Master volume gain:  4.4 dB
+
     HERE
   end
 

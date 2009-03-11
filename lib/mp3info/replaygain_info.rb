@@ -280,9 +280,10 @@ class ReplaygainInfo
         out_string << "RVAD adjustment:\n"
         rvad.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
-          if adjustment.peak_gain_bit_width > 0
-            out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
+          if adjustment.peak_gain > 0
+            out_string << " (peak gain limit: #{adjustment.peak_gain})"
           end
+          out_string << "\n"
         end
         out_string << "\n"
       end
@@ -299,8 +300,9 @@ class ReplaygainInfo
         rva2.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
           if adjustment.peak_gain_bit_width > 0
-            out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
+            out_string << " (peak gain limit: #{adjustment.peak_gain})"
           end
+          out_string << "\n"
         end
         out_string << "\n"
       end
@@ -317,8 +319,9 @@ class ReplaygainInfo
         xrva.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
           if adjustment.peak_gain_bit_width > 0
-            out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
+            out_string << " (peak gain limit: #{adjustment.peak_gain})"
           end
+          out_string << "\n"
         end
         out_string << "\n"
       end
