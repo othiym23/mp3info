@@ -5,6 +5,11 @@ class UserTextReplaygainInfo
     @id3v2 = id3v2
   end
   
+  def track_gain_set?
+    @id3v2.find_frames_by_description('replaygain_track_gain').size > 0 &&
+    @id3v2.find_frames_by_description('replaygain_track_peak').size > 0
+  end
+  
   def track_db
     if @id3v2.find_frames_by_description('replaygain_track_gain').size > 0
       @id3v2.find_frames_by_description('replaygain_track_gain').first.value.to_f
@@ -27,6 +32,11 @@ class UserTextReplaygainInfo
     if track_minmax.size > 0
       track_minmax.first.value.split(',')[1].to_i
     end
+  end
+  
+  def album_gain_set?
+    @id3v2.find_frames_by_description('replaygain_album_gain').size > 0 &&
+    @id3v2.find_frames_by_description('replaygain_album_peak').size > 0
   end
   
   def album_db
@@ -60,13 +70,10 @@ class UserTextReplaygainInfo
   end
   
   def valid?
-    @id3v2.find_frames_by_description('replaygain_track_gain').size == 1 &&
-    @id3v2.find_frames_by_description('replaygain_track_peak').size == 1 &&
-    @id3v2.find_frames_by_description('replaygain_album_gain').size == 1 &&
-    @id3v2.find_frames_by_description('replaygain_album_peak').size == 1 &&
-    @id3v2.find_frames_by_description('mp3gain_minmax').size == 1 &&
-    @id3v2.find_frames_by_description('mp3gain_album_minmax').size == 1 &&
-    @id3v2.find_frames_by_description('mp3gain_undo').size == 1
+    (@id3v2.find_frames_by_description('replaygain_track_gain').size == 1 &&
+     @id3v2.find_frames_by_description('replaygain_track_peak').size == 1) ||
+    (@id3v2.find_frames_by_description('replaygain_album_gain').size == 1 &&
+     @id3v2.find_frames_by_description('replaygain_album_peak').size == 1)
   end
   
   private
@@ -396,13 +403,19 @@ class ReplaygainInfo
     fb2krg = foobar_replaygain
     
     if fb2krg.valid?
-      out_string << "Foobar 2000 track gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.track_db, fb2krg.track_peak]
-      out_string << "Foobar 2000 track minimum: #{fb2krg.track_minimum}\n" 
-      out_string << "Foobar 2000 track maximum: #{fb2krg.track_maximum}\n"
-      out_string << "Foobar 2000 album gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.album_db, fb2krg.album_peak]
-      out_string << "Foobar 2000 album minimum: #{fb2krg.album_minimum}\n"
-      out_string << "Foobar 2000 album maximum: #{fb2krg.album_maximum}\n"
-      out_string << "Foobar 2000 mp3gain undo string: \"#{fb2krg.mp3gain_undo_string}\"\n\n"
+      if fb2krg.track_gain_set?
+        out_string << "Foobar 2000 track gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.track_db, fb2krg.track_peak]
+        out_string << "Foobar 2000 track minimum: #{fb2krg.track_minimum}\n" if fb2krg.track_minimum
+        out_string << "Foobar 2000 track maximum: #{fb2krg.track_maximum}\n" if fb2krg.track_maximum
+      end
+      
+      if fb2krg.album_gain_set?
+        out_string << "Foobar 2000 album gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.album_db, fb2krg.album_peak]
+        out_string << "Foobar 2000 album minimum: #{fb2krg.album_minimum}\n" if fb2krg.album_minimum
+        out_string << "Foobar 2000 album maximum: #{fb2krg.album_maximum}\n" if fb2krg.album_maximum
+      end
+      
+      out_string << "Foobar 2000 mp3gain undo string: \"#{fb2krg.mp3gain_undo_string}\"\n\n" if fb2krg.mp3gain_undo_string
     end
     
     out_string
