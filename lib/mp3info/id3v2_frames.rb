@@ -1214,4 +1214,202 @@ module ID3V24
       (bit_field & channel) == 0
     end
   end
+  
+  class RGADAdjustment
+    ORIGIN_UNSPECIFIED = 0x0
+    ORIGIN_PRESET      = 0x1
+    ORIGIN_USER        = 0x2
+    ORIGIN_AUTOMATIC   = 0x3
+    
+    TYPE_UNSET         = 0x0
+    TYPE_RADIO         = 0x1
+    TYPE_AUDIOPHILE    = 0x2
+    
+    def initialize(raw_string)
+      @raw_string = raw_string
+    end
+    
+    def set?
+      raw_adjustment != 0
+    end
+    
+    def type
+      case type_code
+      when TYPE_UNSET
+        'unset'
+      when TYPE_RADIO
+        'track'
+      when TYPE_AUDIOPHILE
+        'album'
+      end
+    end
+    
+    def origin
+      case origin_code
+      when ORIGIN_UNSPECIFIED
+        'unspecified'
+      when ORIGIN_PRESET
+        'preset'
+      when ORIGIN_USER
+        'user'
+      when ORIGIN_AUTOMATIC
+        'automatic'
+      else
+        'other'
+      end
+    end
+    
+    def adjustment
+      raw_adjustment.to_f / 10.0
+    end
+    
+    def adjustment=(value)
+      self.raw_adjustment = (value * 10).round
+    end
+    
+    def valid? 
+      (TYPE_RADIO == type_code ||
+       TYPE_AUDIOPHILE == type_code) &&
+      ORIGIN_UNSPECIFIED != origin_code
+    end
+    
+    def negative?
+      @raw_string.to_binary_array[6] == 1
+    end
+    
+    def type_code
+      @raw_string.to_binary_array[0, 3].to_binary_decimal
+    end
+    
+    def type_code=(value)
+      # strip out the old type code
+      cleared   = @raw_string[0].to_ordinal & ~(0x7 << 5)
+      # ensure the new value doesn't overflow 3 bits and shift into position
+      new_value = (value & 0x7) << 5
+      # combine the two and store
+      @raw_string[0] = (cleared | new_value).chr
+    end
+    
+    def origin_code
+      @raw_string.to_binary_array[3, 3].to_binary_decimal
+    end
+    
+    def origin_code=(value)
+      # strip out the old origin code
+      cleared   = @raw_string[0].to_ordinal & ~(0x7 << 2)
+      # ensure the new value doesn't overflow 3 bits and shift into position
+      new_value = (value & 0x7) << 2
+      # combine the two and store
+      @raw_string[0] = (cleared | new_value).chr
+    end
+    
+    def raw_adjustment
+      adj = @raw_string.to_binary_array[7, 9].to_binary_decimal
+      (negative? ? -adj : adj)
+    end
+    
+    def raw_adjustment=(value)
+      $stderr.puts("ID3V24::RGADFrame.raw_adjustment= value #{value} raw_string #{@raw_string.inspect}") if $DEBUG
+      new_value = @raw_string.to_binary_array
+      new_value[6] = ((0 > value) ? 1 : 0)
+      new_value[7, 9] = [value.abs, 2 ** 10 - 1].min.to_binary_array(9)
+      $stderr.puts("ID3V24::RGADFrame.raw_adjustment= new_value #{new_value.to_binary_string.inspect}") if $DEBUG
+      @raw_string = new_value.to_binary_string
+    end
+    
+    def to_bin
+      @raw_string
+    end
+  end
+  
+  # http://replaygain.hydrogenaudio.org/file_format_id3v2.html
+  class RGADFrame < Frame
+    def initialize(raw_string)
+      super('RGAD', raw_string)
+    end
+    
+    def self.default(value)
+      frame = RGADFrame.new(default_raw_string)
+      frame.track_gain = value
+      frame.album_gain = value
+      frame
+    end
+    
+    def self.from_s(raw_string)
+      RGADFrame.new(raw_string)
+    end
+    
+    def track_gain
+      RGADAdjustment.new(@value[4, 2])
+    end
+    
+    # This is a little roundabout, but it allows users to directly set the
+    # gain in dB, as well as going low-level and manipulating the adjustment
+    # representation if necessary.
+    def track_gain=(value)
+      case
+      when value.is_a?(Numeric)
+        new_gain = track_gain
+        new_gain.adjustment = value
+        @value[4, 2] = new_gain.to_bin
+      when value.is_a?(RGADAdjustment)
+        @value[4, 2] = value.to_bin
+      else
+        raise(ArgumentError,"track gain doesn't recognize #{value.inspect}")
+      end
+    end
+    
+    def album_gain
+      RGADAdjustment.new(@value[6, 2])
+    end
+    
+    # This is a little roundabout, but it allows users to directly set the
+    # gain in dB, as well as going low-level and manipulating the adjustment
+    # representation if necessary.
+    def album_gain=(value)
+      case
+      when value.is_a?(Numeric)
+        new_gain = album_gain
+        new_gain.adjustment = value
+        @value[6, 2] = new_gain.to_bin
+      when value.is_a?(RGADAdjustment)
+        @value[6, 2] = value.to_bin
+      else
+        raise(ArgumentError,"album gain doesn't recognize #{value.inspect}")
+      end
+    end
+    
+    # For some reason, the Replaygain team decided to use single-precision
+    # IEEE 754 floats instead of a sane, fixed-point format. Accordingly, this
+    # call will not work if run on systems using non-IEEE 754-compatible
+    # floating-point hardware, due to Ruby's reliance on machine implementations.
+    def peak
+      @value[0, 4].unpack("F").first
+    end
+    
+    def peak=(value)
+      @value[0, 4] = [value.to_f].pack("F")
+    end
+    
+    def valid?
+      track_gain.valid? &&
+      album_gain.valid? &&
+      track_gain.type == 'track' &&
+      album_gain.type == 'album'
+    end
+    
+    private
+    
+    def self.default_raw_string
+      string = ''
+      # 0.0 peak amplitude
+      string << "\x00\x00\x00\x00"
+      # 0 dB track replay gain adjustment, set automatically
+      string << "\x2c\x00"
+      # 0 dB album replay gain adjustment, set automatically
+      string << "\x4c\x00"
+      
+      string
+    end
+  end
 end

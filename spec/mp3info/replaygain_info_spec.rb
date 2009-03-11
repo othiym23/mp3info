@@ -67,6 +67,23 @@ LAME MP3 gain:         0.0 dB
       HERE
   end
 
+  it "should pretty-print the replay gain information (with RGAD information) in an easy-to-read form" do
+    Mp3Info.open(@mp3_filename) do |mp3|
+      @rgad = "\x93\x18\x7c\x3f\x2a\x14\x4c\x14"
+      mp3.id3v2_tag['RGAD'] = ID3V24::Frame.create_frame_from_string("RGAD", @rgad)
+    end
+    
+    @mp3 = Mp3Info.new(@mp3_filename)
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+RGAD track gain:      -2.0 dB (user)
+RGAD album gain:       2.0 dB (automatic)
+RGAD peak amplitude:   0.98 dB
+
+      HERE
+  end
+
   it "should pretty-print the replay gain information (with RVA2 information) in an easy-to-read form" do
     @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Replay Gain RVA2/09-1000-8dBlouder-trackonly.mp3'))
     @mp3.replaygain_info.to_s.should ==<<-HERE
