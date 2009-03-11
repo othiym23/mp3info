@@ -193,6 +193,10 @@ class ReplaygainInfo
     @mp3info.lame_header.mp3_gain_db if @mp3info.lame_header
   end
   
+  def rvad_replaygain
+    @mp3info.id3v2_tag['RVAD'] if @mp3info.has_id3v2_tag?
+  end
+  
   def rva2_replaygain
     @mp3info.id3v2_tag['RVA2'] if @mp3info.has_id3v2_tag?
   end
@@ -211,19 +215,21 @@ class ReplaygainInfo
   
   def to_s
     lame_out   = lame_string
+    rvad_out   = rvad_string
     rva2_out   = rva2_string
     xrva_out   = xrva_string
     itunes_out = itunes_string
     foobar_out = foobar_string
     
     out_string = ''
-    if (lame_out.size > 0) || (rva2_out.size > 0) || (xrva_out.size > 0) ||
-       (itunes_out.size > 0) || (foobar_out.size > 0)
+    if (lame_out.size > 0) || (rvad_out.size > 0) || (rva2_out.size > 0) ||
+       (xrva_out.size > 0) || (itunes_out.size > 0) || (foobar_out.size > 0)
       out_string << "MP3 replay gain adjustments:\n\n"
     end
     out_string << itunes_out
     out_string << lame_out
     out_string << foobar_out
+    out_string << rvad_out
     out_string << rva2_out
     out_string << xrva_out
     
@@ -256,6 +262,24 @@ class ReplaygainInfo
       out_string << "LAME MP3 gain:        % #-4.2g dB\n" % [mp3_gain] if mp3_gain
       out_string << "LAME peak volume:     % #-4.2g dB\n" % [lame_replaygain.db] if lame_replaygain.db
       out_string << "\n"
+    end
+    
+    out_string
+  end
+  
+  def rvad_string
+    out_string = ''
+    if rvad_replaygain
+      ensure_list(rvad_replaygain).each do |rvad|
+        out_string << "RVAD adjustment:\n"
+        rvad.adjustments.each do |adjustment|
+          out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
+          if adjustment.peak_gain_bit_width > 0
+            out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
+          end
+        end
+        out_string << "\n"
+      end
     end
     
     out_string

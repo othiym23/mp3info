@@ -51,6 +51,11 @@ describe Mp3Info, "when exposing replaygain information" do
     @mp3.replaygain_info.xrva_replaygain.should_not be_nil
   end
   
+  it "should expose RVAD replaygain information, if available" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/7f97adc6e357e489f4cb621f10e50ac50911967f.mp3'))
+    @mp3.replaygain_info.rvad_replaygain.should_not be_nil
+  end
+  
   it "should pretty-print the replay gain information (with LAME information) in an easy-to-read form" do
     @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
     @mp3.replaygain_info.to_s.should ==<<-HERE
@@ -69,6 +74,18 @@ MP3 replay gain adjustments:
 
 RVA2 track adjustment:
   Master volume gain:  8.0 dB (peak gain limit: 6553)
+
+    HERE
+  end
+
+  it "should pretty-print the replay gain information (with RVAD information) in an easy-to-read form" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/7f97adc6e357e489f4cb621f10e50ac50911967f.mp3'))
+    @mp3.replaygain_info.to_s.should ==<<-HERE
+MP3 replay gain adjustments:
+
+RVAD adjustment:
+  Front right gain:  6.0 dB (peak gain limit: 0)
+  Front left gain:  6.0 dB (peak gain limit: 0)
 
     HERE
   end
