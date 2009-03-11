@@ -205,6 +205,10 @@ class ReplaygainInfo
     @mp3info.id3v2_tag['XRVA'] if @mp3info.has_id3v2_tag?
   end
   
+  def xrv_replaygain
+    @mp3info.id3v2_tag['XRV'] if @mp3info.has_id3v2_tag?
+  end
+  
   def itunes_replaygain
     SoundCheckInfo.from_id3v2(@mp3info.id3v2_tag) if @mp3info.has_id3v2_tag?
   end
@@ -218,12 +222,13 @@ class ReplaygainInfo
     rvad_out   = rvad_string
     rva2_out   = rva2_string
     xrva_out   = xrva_string
+    xrv_out    = xrv_string
     itunes_out = itunes_string
     foobar_out = foobar_string
     
     out_string = ''
     if (lame_out.size > 0) || (rvad_out.size > 0) || (rva2_out.size > 0) ||
-       (xrva_out.size > 0) || (itunes_out.size > 0) || (foobar_out.size > 0)
+       (xrva_out.size > 0) || (xrv_out.size > 0)  || (itunes_out.size > 0) || (foobar_out.size > 0)
       out_string << "MP3 replay gain adjustments:\n\n"
     end
     out_string << itunes_out
@@ -232,6 +237,7 @@ class ReplaygainInfo
     out_string << rvad_out
     out_string << rva2_out
     out_string << xrva_out
+    out_string << xrv_out
     
     out_string
   end
@@ -309,6 +315,24 @@ class ReplaygainInfo
       ensure_list(xrva_replaygain).each do |xrva|
         out_string << "XRVA #{xrva.identifier} adjustment:\n"
         xrva.adjustments.each do |adjustment|
+          out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
+          if adjustment.peak_gain_bit_width > 0
+            out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
+          end
+        end
+        out_string << "\n"
+      end
+    end
+    
+    out_string
+  end
+  
+  def xrv_string
+    out_string = ''
+    if xrv_replaygain
+      ensure_list(xrv_replaygain).each do |xrva|
+        out_string << "XRV #{xrv.identifier} adjustment:\n"
+        xrv.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
           if adjustment.peak_gain_bit_width > 0
             out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
