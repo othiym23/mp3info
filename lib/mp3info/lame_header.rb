@@ -352,7 +352,11 @@ class LAMEHeader
   end
   
   def valid?
-    valid_header? && valid_crc?
+    valid_header? && valid_size? && valid_crc?
+  end
+  
+  def valid_size?
+    @raw_frame.size > LAME_CRC_POSITION
   end
   
   def valid_header?
