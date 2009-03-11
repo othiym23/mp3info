@@ -815,6 +815,28 @@ module ID3V24
     end
   end
   
+  # 2.2 compatibility frame created by normalize (?); identical to RVA2
+  # TODO: move to ID3V22::Frame when splitting apart 2.2/3/4 frames.
+  # normalize: http://normalize.nongnu.org/
+  class XRVFrame < RVA2Frame
+    def initialize(identifier, adjustments = [])
+      super(identifier, adjustments)
+      @type = 'XRV'
+    end
+    
+    def self.default(value)
+      default_adjustment = RVA2Adjustment.new(0x01, 0, 0)
+      default_adjustment.adjustment = value
+      XRVFrame.new('track', [default_adjustment])
+    end
+    
+    def self.from_s(value)
+      id, raw_adjustment_list = value.split("\x00", 2)
+      $stderr.puts("XRVFrame.from_s(value=#{value.inspect}) => id=[#{id.inspect}] raw_adjustment_list=[#{raw_adjustment_list.inspect}]") if $DEBUG
+      XRVFrame.new(id, parse_adjustments(raw_adjustment_list))
+    end
+  end
+  
   # Another 2.3 replaygain frame type, this one with an even more demented
   # structure. At least RVA2 sort of makes sense.
   class RVADFrame < Frame
