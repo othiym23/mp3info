@@ -127,7 +127,7 @@ describe ID3V24::XRVAFrame, "when parsing a simple XRVA (ID3v2.3 replaygain) fra
   end
 end
 
-describe ID3V24::XRVAFrame, "when parsing a simple XRVA (ID3v2.4 replaygain) frame containing one adjustment of 16dB and a peak gain adjustment" do
+describe ID3V24::XRVAFrame, "when parsing a simple XRVA (ID3v2.3 replaygain) frame containing one adjustment of 16dB and a peak gain adjustment" do
   include Mp3InfoHelper
   
   before :all do
