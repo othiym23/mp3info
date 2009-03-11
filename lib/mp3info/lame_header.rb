@@ -10,12 +10,12 @@ class LAMEReplayGainType
     @raw_frame.to_binary_array.slice(3,3).to_binary_decimal != 0
   end
   
-  def name
-    LAMEReplayGain::NAME[@raw_frame.to_binary_array.slice(0,3).to_binary_decimal] || 'Unknown'
+  def type
+    LAMEReplayGain::TYPE[@raw_frame.to_binary_array.slice(0,3).to_binary_decimal] || 'Unknown'
   end
   
-  def originator
-    LAMEReplayGain::ORIGINATOR[@raw_frame.to_binary_array.slice(3,3).to_binary_decimal] || 'Unknown'
+  def origin
+    LAMEReplayGain::ORIGIN[@raw_frame.to_binary_array.slice(3,3).to_binary_decimal] || 'Unknown'
   end
   
   def adjustment
@@ -27,7 +27,7 @@ class LAMEReplayGainType
   end
   
   def to_s
-    '%s Replay Gain: %s dB (%s)' % [name, adjustment, originator]
+    '%s Replay Gain: %s dB (%s)' % [type, adjustment, origin]
   end
   
   private
@@ -38,12 +38,12 @@ class LAMEReplayGainType
 end
 
 class LAMEReplayGain
-  NAME =
+  TYPE =
     { 0 => 'Not set',
-      1 => 'Radio',
-      2 => 'Audiophile' }
+      1 => 'Track',
+      2 => 'Album' }
 
-  ORIGINATOR =
+  ORIGIN =
     {  0 => 'Not set',
        1 => 'Set by artist',
        2 => 'Set by user',
@@ -70,17 +70,17 @@ class LAMEReplayGain
     end
   end
   
-  def radio
+  def track_gain
     LAMEReplayGainType.new(@raw_frame.slice(4,2))
   end
   
-  def audiophile
+  def album_gain
     LAMEReplayGainType.new(@raw_frame.slice(6,2))
   end
   
   def to_s
-    if radio.set? || audiophile.set?
-      (radio.set? ? "\n  #{radio.to_s}" : '') << (audiophile.set? ? "\n  #{audiophile.set}" : '')
+    if track_gain.set? || album_gain.set?
+      (track_gain.set? ? "\n  #{album_gain.to_s}" : '') << (album_gain.set? ? "\n  #{album_gain.to_s}" : '')
     else
       ''
     end

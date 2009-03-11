@@ -227,36 +227,36 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Keith Fullerton
     @lame_info.replay_gain.db.should be_nil
   end
   
-  it "should verify that the LAME replaygain tag has radio info the same as eyeD3" do
-    @lame_info.replay_gain.radio.should_not be_nil
+  it "should verify that the LAME replaygain tag has track gain the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain radio info is set the same as eyeD3" do
-    @lame_info.replay_gain.radio.set?.should be_true
+  it "should verify that the LAME replaygain track gain info is set the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.set?.should be_true
   end
   
-  it "should verify that the LAME replaygain radio info has a name of 'Radio' the same as eyeD3" do
-    @lame_info.replay_gain.radio.name.should == 'Radio'
+  it "should verify that the LAME replaygain track gain info has a name of 'Track' instead of eyeD3's 'Radio'" do
+    @lame_info.replay_gain.track_gain.type.should == 'Track'
   end
   
-  it "should verify that the LAME replaygain radio info has an originator of 'Set automatically' the same as eyeD3" do
-    @lame_info.replay_gain.radio.originator.should == 'Set automatically'
+  it "should verify that the LAME replaygain track gain info has an origin of 'Set automatically' the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.origin.should == 'Set automatically'
   end
   
-  it "should verify that the LAME replaygain radio info has an adjustment of -4.2 the same as eyeD3" do
-    @lame_info.replay_gain.radio.adjustment.should == -4.2
+  it "should verify that the LAME replaygain track gain info has an adjustment of -4.2 the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.adjustment.should == -4.2
   end
   
-  it "should verify that the LAME replaygain radio info has a certain format the same as eyeD3" do
-    @lame_info.replay_gain.radio.to_s.should == 'Radio Replay Gain: -4.2 dB (Set automatically)'
+  it "should verify that the LAME replaygain track gain info is formatted similarly to eyeD3's" do
+    @lame_info.replay_gain.track_gain.to_s.should == 'Track Replay Gain: -4.2 dB (Set automatically)'
   end
   
-  it "should verify that the LAME replaygain tag has audiophile info the same as eyeD3" do
-    @lame_info.replay_gain.audiophile.should_not be_nil
+  it "should verify that the LAME replaygain tag has album gain info the same as eyeD3" do
+    @lame_info.replay_gain.album_gain.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain audiophile info is not set the same as eyeD3" do
-    @lame_info.replay_gain.audiophile.set?.should be_false
+  it "should verify that the LAME replaygain album gain info is not set the same as eyeD3" do
+    @lame_info.replay_gain.album_gain.set?.should be_false
   end
 end
 
@@ -484,16 +484,16 @@ describe Mp3Info, "when reading the MP3 info from an encoding of RAC's 'Distance
     @lame_info.replay_gain.db.should be_nil
   end
   
-  it "should verify that the LAME replaygain tag has radio info the same as eyeD3" do
-    @lame_info.replay_gain.radio.should_not be_nil
+  it "should verify that the LAME replaygain tag has track gain info the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain radio info is not set the same as eyeD3" do
-    @lame_info.replay_gain.radio.set?.should be_false
+  it "should verify that the LAME replaygain track gain info is not set the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.set?.should be_false
   end
   
-  it "should verify that the LAME replaygain tag has audiophile info the same as eyeD3" do
-    @lame_info.replay_gain.audiophile.set?.should be_false
+  it "should verify that the LAME replaygain tag has no album gain info the same as eyeD3" do
+    @lame_info.replay_gain.album_gain.set?.should be_false
   end
 end
 
@@ -721,36 +721,36 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Wire's 'I Feel 
     @lame_info.replay_gain.db.should be_nil
   end
   
-  it "should verify that the LAME replaygain tag has radio info the same as eyeD3" do
-    @lame_info.replay_gain.radio.should_not be_nil
+  it "should verify that the LAME replaygain tag has track gain info the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain radio info is set the same as eyeD3" do
-    @lame_info.replay_gain.radio.set?.should be_true
+  it "should verify that the LAME replaygain track gain info is set the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.set?.should be_true
   end
   
-  it "should verify that the LAME replaygain radio info has a name of 'Radio' the same as eyeD3" do
-    @lame_info.replay_gain.radio.name.should == 'Radio'
+  it "should verify that the LAME replaygain track gain info has a type of 'Track' unlike eyeD3's 'Radio'" do
+    @lame_info.replay_gain.track_gain.type.should == 'Track'
   end
   
-  it "should verify that the LAME replaygain radio info has an originator of 'Set automatically' the same as eyeD3" do
-    @lame_info.replay_gain.radio.originator.should == 'Set automatically'
+  it "should verify that the LAME replaygain track gain info has an originator of 'Set automatically' the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.origin.should == 'Set automatically'
   end
   
-  it "should verify that the LAME replaygain radio info has an adjustment of -6.4 the same as eyeD3" do
-    @lame_info.replay_gain.radio.adjustment.should == -6.4
+  it "should verify that the LAME replaygain track gain info has an adjustment of -6.4 the same as eyeD3" do
+    @lame_info.replay_gain.track_gain.adjustment.should == -6.4
   end
   
-  it "should verify that the LAME replaygain radio info has a certain format the same as eyeD3" do
-    @lame_info.replay_gain.radio.to_s.should == 'Radio Replay Gain: -6.4 dB (Set automatically)'
+  it "should verify that the LAME replaygain track gain info has a format similar to eyeD3's" do
+    @lame_info.replay_gain.track_gain.to_s.should == 'Track Replay Gain: -6.4 dB (Set automatically)'
   end
   
-  it "should verify that the LAME replaygain tag has audiophile info the same as eyeD3" do
-    @lame_info.replay_gain.audiophile.should_not be_nil
+  it "should verify that the LAME replaygain tag has album gain info the same as eyeD3" do
+    @lame_info.replay_gain.album_gain.should_not be_nil
   end
   
-  it "should verify that the LAME replaygain audiophile info is not set the same as eyeD3" do
-    @lame_info.replay_gain.audiophile.set?.should be_false
+  it "should verify that the LAME replaygain album gain info is not set the same as eyeD3" do
+    @lame_info.replay_gain.album_gain.set?.should be_false
   end
 end
 

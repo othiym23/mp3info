@@ -275,10 +275,10 @@ class ReplaygainInfo
   def lame_string
     out_string = ''
     if lame_replaygain
-      out_string << "LAME radio gain:      % #-4.2g dB (#{lame_replaygain.radio.originator})\n" % [lame_replaygain.radio.adjustment] if lame_replaygain.radio.set?
-      out_string << "LAME audiophile gain: % #-4.2g dB (#{lame_replaygain.audiophile.originator})\n" % [lame_replaygain.audiophile.adjustment] if lame_replaygain.audiophile.set?
-      out_string << "LAME MP3 gain:        % #-4.2g dB\n" % [mp3_gain] if mp3_gain
-      out_string << "LAME peak volume:     % #-4.2g dB\n" % [lame_replaygain.db] if lame_replaygain.db
+      out_string << "LAME track gain:     % #-4.2g dB (#{lame_replaygain.track_gain.origin})\n" % [lame_replaygain.track_gain.adjustment] if lame_replaygain.track_gain.set?
+      out_string << "LAME album gain:     % #-4.2g dB (#{lame_replaygain.album_gain.origin})\n" % [lame_replaygain.album_gain.adjustment] if lame_replaygain.album_gain.set?
+      out_string << "LAME MP3 gain:       % #-4.2g dB\n" % [mp3_gain] if mp3_gain
+      out_string << "LAME peak volume:    % #-4.2g dB\n" % [lame_replaygain.db] if lame_replaygain.db
       out_string << "\n"
     end
     
@@ -288,9 +288,9 @@ class ReplaygainInfo
   def rgad_string
     out_string = ''
     if rgad_replaygain
-      out_string << "RGAD track gain:      % #-4.2g dB (#{rgad_replaygain.track_gain.origin})\n" % [rgad_replaygain.track_gain.adjustment] if rgad_replaygain.track_gain.set?
-      out_string << "RGAD album gain:      % #-4.2g dB (#{rgad_replaygain.album_gain.origin})\n" % [rgad_replaygain.album_gain.adjustment] if rgad_replaygain.album_gain.set?
-      out_string << "RGAD peak amplitude:  % #-4.2g dB\n" % [rgad_replaygain.peak]
+      out_string << "RGAD track gain:     % #-4.2g dB (#{rgad_replaygain.track_gain.origin})\n" % [rgad_replaygain.track_gain.adjustment] if rgad_replaygain.track_gain.set?
+      out_string << "RGAD album gain:     % #-4.2g dB (#{rgad_replaygain.album_gain.origin})\n" % [rgad_replaygain.album_gain.adjustment] if rgad_replaygain.album_gain.set?
+      out_string << "RGAD peak amplitude: % #-4.2g dB\n" % [rgad_replaygain.peak]
       out_string << "\n"
     end
     

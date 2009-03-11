@@ -61,8 +61,8 @@ describe Mp3Info, "when exposing replaygain information" do
     @mp3.replaygain_info.to_s.should ==<<-HERE
 MP3 replay gain adjustments:
 
-LAME radio gain:      -6.4 dB (Set automatically)
-LAME MP3 gain:         0.0 dB
+LAME track gain:     -6.4 dB (Set automatically)
+LAME MP3 gain:        0.0 dB
 
       HERE
   end
@@ -77,9 +77,9 @@ LAME MP3 gain:         0.0 dB
     @mp3.replaygain_info.to_s.should ==<<-HERE
 MP3 replay gain adjustments:
 
-RGAD track gain:      -2.0 dB (user)
-RGAD album gain:       2.0 dB (automatic)
-RGAD peak amplitude:   0.98 dB
+RGAD track gain:     -2.0 dB (user)
+RGAD album gain:      2.0 dB (automatic)
+RGAD peak amplitude:  0.98 dB
 
       HERE
   end
@@ -124,7 +124,7 @@ RVAD adjustment:
     @mp3.replaygain_info.to_s.should ==<<-HERE
 MP3 replay gain adjustments:
 
-LAME MP3 gain:         0.0 dB
+LAME MP3 gain:        0.0 dB
 
 Foobar 2000 track gain: -2.7 dB (0.5716 peak)
 Foobar 2000 track minimum: 136
@@ -157,7 +157,7 @@ iTunes peak volume (should be ~1):            1.0644
     @mp3.replaygain_info.to_s.should ==<<-HERE
 MP3 replay gain adjustments:
 
-LAME MP3 gain:         0.0 dB
+LAME MP3 gain:        0.0 dB
 
 Foobar 2000 track gain: -3.0 dB (0.5256 peak)
 Foobar 2000 track minimum: 151
