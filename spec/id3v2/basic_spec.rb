@@ -32,11 +32,11 @@ describe ID3V2, "when creating ID3v2 tags" do
     @tag.extended_header?.should be_false
   end
   
-  it "should create a tag that are not experimental (as if) by default" do
+  it "should create tags that are not experimental (as if) by default" do
     @tag.experimental?.should be_false
   end
   
-  it "should create a tag that do not have footers by default" do
+  it "should create a tag that does not have footers by default" do
     @tag.footer?.should be_false
   end
   
