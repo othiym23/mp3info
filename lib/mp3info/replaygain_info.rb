@@ -402,7 +402,7 @@ class ReplaygainInfo
     out_string = ''
     fb2krg = foobar_replaygain
     
-    if fb2krg.valid?
+    if fb2krg && fb2krg.valid?
       if fb2krg.track_gain_set?
         out_string << "Foobar 2000 track gain: % #-4.2g dB (%#6.4g peak)\n" % [fb2krg.track_db, fb2krg.track_peak]
         out_string << "Foobar 2000 track minimum: #{fb2krg.track_minimum}\n" if fb2krg.track_minimum
