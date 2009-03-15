@@ -47,8 +47,7 @@ class LAMEReplayGain
     {  0 => 'Not set',
        1 => 'Set by artist',
        2 => 'Set by user',
-       3 => 'Set automatically',
-     100 => 'Set by simple RMS average' }
+       3 => 'Set automatically' }
 
   def initialize(replay_data)
     @raw_frame = replay_data
