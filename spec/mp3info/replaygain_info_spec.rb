@@ -145,9 +145,9 @@ XRVA normalize adjustment:
     @mp3.replaygain_info.to_s.should ==<<-HERE
 MP3 replay gain adjustments:
 
-iTunes adjustment (1.0 milliWatt/dBm basis): -4.7 dB
-iTunes adjustment (2.5 milliWatt/dBm basis): -11. dB
-iTunes peak volume (should be ~1):            1.0644
+iTunes adjustment (1.0 milliWatt/dBm basis): -4.7 dB (raw values: 2971, 484)
+iTunes adjustment (2.5 milliWatt/dBm basis): -11. dB (raw values: 31675, 15165)
+iTunes peak volume (should be ~1):            1.0644 (raw values: 34178, 34879)
 
       HERE
   end

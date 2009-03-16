@@ -126,6 +126,16 @@ class SoundCheckInfo
     [high_gain, low_gain, peak]
   end
   
+  def to_raw_values
+    soundcheck = to_raw_numbers
+    raise(Exception, "Invalid Soundcheck format") unless soundcheck.size == 10
+    
+    high_values = soundcheck[0..1]
+    low_values  = soundcheck[2..3]
+    peak_values = soundcheck[6..7]
+    [high_values, low_values, peak_values]
+  end
+  
   def to_s
     @raw_soundcheck
   end
@@ -269,10 +279,11 @@ class ReplaygainInfo
     
     if sc
       high_gain, low_gain, peak = sc.to_replaygain
+      high_values, low_values, peak_values = sc.to_raw_values.map { |list| list.join(", ") }
       
-      out_string << "iTunes adjustment (1.0 milliWatt/dBm basis): % #-4.2g dB\n" % high_gain
-      out_string << "iTunes adjustment (2.5 milliWatt/dBm basis): % #-4.2g dB\n" % low_gain
-      out_string << "iTunes peak volume (should be ~1):           % #6.5g\n"     % peak
+      out_string << "iTunes adjustment (1.0 milliWatt/dBm basis): % #-4.2g dB (raw values: %s)\n" % [high_gain, high_values]
+      out_string << "iTunes adjustment (2.5 milliWatt/dBm basis): % #-4.2g dB (raw values: %s)\n" % [low_gain,  low_values]
+      out_string << "iTunes peak volume (should be ~1):           % #6.5g (raw values: %s)\n"     % [peak,      peak_values]
       out_string << "\n"
     end
     
