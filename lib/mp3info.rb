@@ -1,5 +1,5 @@
 # encoding: binary
-# $Id: mp3info.rb,v cbbf5a87acfc 2009/02/22 05:26:56 ogd $
+# $Id: mp3info.rb,v 37eef5deb369 2009/03/17 23:04:39 ogd $
 # License:: Ruby
 # Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
@@ -162,19 +162,19 @@ class Mp3Info
         begin
           $stderr.puts("Mp3Info.initialize about to call find_next_frame at %#010x" % file.pos) if $DEBUG
           header_pos, header_data = find_next_frame(file, cur_pos)
-          # header_pos, header_data = find_next_frame(file, 0x24017)
           mpeg_candidate = MPEGHeader.new(header_data)
           @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
-
+          
           if mpeg_candidate.valid?
             $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.to_s]) if $DEBUG
             file.seek(header_pos)
             cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
             $stderr.puts("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
+            
             xing_candidate = XingHeader.new(cur_frame)
             @xing_header = xing_candidate if xing_candidate.valid?
             $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && has_xing_header?
-
+            
             lame_candidate = LAMEHeader.new(cur_frame)
             @lame_header = lame_candidate if lame_candidate.valid?
             $stderr.puts("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
