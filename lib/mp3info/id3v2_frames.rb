@@ -265,6 +265,9 @@ module ID3V24
     end
   end
   
+  class TXXFrame < TXXXFrame
+  end
+  
   class WXXXFrame < TextFrame
     attr_accessor :description
     
