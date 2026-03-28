@@ -1,4 +1,7 @@
 require 'mp3info/mpeg_header'
+require 'mp3info/binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 describe MPEGHeader, "parsing a valid sample MPEG header" do
   before do

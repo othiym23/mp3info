@@ -1,4 +1,6 @@
-require_relative 'mpeg_utils'
+require_relative 'binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 # lots of stuff can go wrong with an MPEG header
 class InvalidMPEGHeader < StandardError ; end

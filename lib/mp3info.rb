@@ -11,6 +11,11 @@ require_relative 'mp3info/lame_header'
 require_relative 'mp3info/replaygain_info'
 require_relative 'mp3info/id3'
 require_relative 'mp3info/id3v2'
+require_relative 'mp3info/binary_conversions'
+require_relative 'mp3info/size_units'
+
+using Mp3InfoLib::BinaryConversions
+using Mp3InfoLib::SizeUnits
 
 # ruby -d to display debugging info
 

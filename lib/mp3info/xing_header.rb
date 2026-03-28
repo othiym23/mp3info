@@ -1,6 +1,10 @@
 require_relative 'mpeg_utils'
 require_relative 'mpeg_header'
-require_relative 'size_utils'
+require_relative 'binary_conversions'
+require_relative 'size_units'
+
+using Mp3InfoLib::BinaryConversions
+using Mp3InfoLib::SizeUnits
 
 class XingHeaderError < StandardError ; end
 

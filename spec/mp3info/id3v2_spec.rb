@@ -1,4 +1,7 @@
 require 'digest/sha1'
+require 'mp3info/binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 describe Mp3Info, "when working with ID3v2 tags" do
 

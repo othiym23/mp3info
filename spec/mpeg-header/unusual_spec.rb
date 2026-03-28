@@ -1,4 +1,7 @@
 require 'mp3info/mpeg_header'
+require 'mp3info/binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 describe MPEGHeader, "with valid but unusual headers" do
   it "should detect CBR without errors for MPEG 2.5, layer 3 files" do

@@ -1,6 +1,9 @@
 # encoding: utf-8
 require 'yaml'
 require 'time'
+require_relative 'binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 module ID3V24
   class FrameException < StandardError ; end

@@ -1,6 +1,9 @@
 # encoding: binary
 
 require 'mp3info/mpeg_utils'
+require 'mp3info/binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 module MPEGUtils
   describe String, "when decoding strings into binary arrays" do

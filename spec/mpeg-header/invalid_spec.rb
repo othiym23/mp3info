@@ -1,4 +1,7 @@
 require 'mp3info/mpeg_header'
+require 'mp3info/binary_conversions'
+
+using Mp3InfoLib::BinaryConversions
 
 describe MPEGHeader, "parsing a variety of invalid MPEG headers" do
   it "should detect that '\\x00\\x00\\x00\\x00' is an invalid MPEG header" do

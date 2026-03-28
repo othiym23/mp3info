@@ -2,6 +2,11 @@
 require 'delegate'
 require_relative 'mpeg_utils'
 require_relative 'id3v2_frames'
+require_relative 'binary_conversions'
+require_relative 'size_units'
+
+using Mp3InfoLib::BinaryConversions
+using Mp3InfoLib::SizeUnits
 
 class ID3V2Error < StandardError ; end
 class ID3V2ParseError < StandardError ; end
