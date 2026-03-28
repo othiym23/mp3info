@@ -7,7 +7,10 @@
 require "fileutils"
 require_relative "mp3info/mpeg_header"
 require_relative "mp3info/xing_header"
+require_relative "mp3info/vbri_header"
 require_relative "mp3info/lame_header"
+require_relative "mp3info/ape_tag"
+require_relative "mp3info/lyrics3_tag"
 require_relative "mp3info/replaygain_info"
 require_relative "mp3info/id3"
 require_relative "mp3info/id3v2"
@@ -46,8 +49,17 @@ class Mp3Info
   # Xing header
   attr_reader :xing_header
 
+  # VBRI header
+  attr_reader :vbri_header
+
   # LAME header
   attr_reader :lame_header
+
+  # APE tag
+  attr_reader :ape_tag
+
+  # Lyrics3 tag
+  attr_reader :lyrics3_tag
 
   # replaygain info object
   def replaygain_info
@@ -124,8 +136,20 @@ class Mp3Info
     !@xing_header.nil?
   end
 
+  def has_vbri_header?
+    !@vbri_header.nil?
+  end
+
   def has_lame_header?
     !@lame_header.nil?
+  end
+
+  def has_ape_tag?
+    !@ape_tag.nil?
+  end
+
+  def has_lyrics3_tag?
+    !@lyrics3_tag.nil?
   end
 
   def self.remove_id3v1_tag(filename)
@@ -196,6 +220,10 @@ class Mp3Info
               @xing_header = xing_candidate if xing_candidate.valid?
               warn("Xing header found, is [#{@xing_header}]") if $DEBUG && has_xing_header?
 
+              vbri_candidate = VBRIHeader.new(cur_frame)
+              @vbri_header = vbri_candidate if vbri_candidate.valid?
+              warn("VBRI header found, is [#{@vbri_header}]") if $DEBUG && has_vbri_header?
+
               lame_candidate = LAMEHeader.new(cur_frame)
               @lame_header = lame_candidate if lame_candidate.valid?
               warn("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
@@ -254,6 +282,9 @@ class Mp3Info
     end
 
     load_universal_tag!
+
+    @ape_tag = APETag.detect(@filename)
+    @lyrics3_tag = Lyrics3Tag.detect(@filename)
 
     if !(has_id3v1_tag? || has_id3v2_tag? || has_mpeg_header? || has_xing_header?)
       raise(Mp3InfoError, "There was no useful metadata in #{@filename}, are you sure it's an MP3?")

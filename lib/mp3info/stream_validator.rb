@@ -217,8 +217,29 @@ class StreamValidator
           )
         end
       end
+
+      if mp3.has_vbri_header?
+        warnings << Warning.new(
+          position: nil,
+          message: "VBRI header present: #{mp3.vbri_header}"
+        )
+      end
+
+      if mp3.has_ape_tag?
+        warnings << Warning.new(
+          position: nil,
+          message: "APE tag present: #{mp3.ape_tag}"
+        )
+      end
+
+      if mp3.has_lyrics3_tag?
+        warnings << Warning.new(
+          position: nil,
+          message: "Lyrics3 tag present: #{mp3.lyrics3_tag}"
+        )
+      end
     rescue
-      # Can't read mp3info — skip Xing check
+      # Can't read mp3info — skip metadata checks
     end
 
     is_vbr = bitrates.uniq.size > 1
