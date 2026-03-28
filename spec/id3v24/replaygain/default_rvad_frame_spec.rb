@@ -17,7 +17,7 @@ describe ID3V24::RVADFrame, "when creating a new RVAD (replay gain) frame with d
   end
   
   it "should reconstitute itself as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RVADFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RVADFrame)
   end
   
   it "should have a volume bit width of 16 by default" do

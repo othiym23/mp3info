@@ -15,7 +15,7 @@ describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame 
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::TXXXFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::TXXXFrame)
   end
   
   it "should be saved as UTF-8 Unicode text by default" do

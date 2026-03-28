@@ -99,7 +99,7 @@ describe ID3V24::XRVAFrame, "when parsing a simple XRVA (ID3v2.3 replaygain) fra
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::XRVAFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::XRVAFrame)
   end
   
   it "should have a replaygain ID of 'track'" do
@@ -140,7 +140,7 @@ describe ID3V24::XRVAFrame, "when parsing a simple XRVA (ID3v2.3 replaygain) fra
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::XRVAFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::XRVAFrame)
   end
   
   it "should have a replaygain ID of 'track'" do

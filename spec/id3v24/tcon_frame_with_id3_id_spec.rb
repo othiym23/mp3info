@@ -15,7 +15,7 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::TCONFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::TCONFrame)
   end
   
   it "should retrieve 'Jungle' as the bare genre name" do
@@ -46,7 +46,7 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a bare 
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::TCONFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::TCONFrame)
   end
   
   it "should retrieve 'Jungle' as the bare genre name" do

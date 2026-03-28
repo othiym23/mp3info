@@ -165,7 +165,7 @@ describe ID3V24::RVADFrame, "when parsing a simple RVAD (ID3v2.3 volume adjustme
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RVADFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RVADFrame)
   end
   
   it "should have a channel type of 'Front right'" do
@@ -202,7 +202,7 @@ describe ID3V24::RVADFrame, "when parsing a simple RVAD (ID3v2.3 replaygain) fra
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RVADFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RVADFrame)
   end
   
   it "should have a channel type of 'Front right'" do

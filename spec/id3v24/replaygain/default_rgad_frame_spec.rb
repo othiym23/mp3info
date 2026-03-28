@@ -17,7 +17,7 @@ describe ID3V24::RGADFrame, "when creating a new RGAD (replay gain) frame with d
   end
   
   it "should reconstitute itself as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RGADFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RGADFrame)
   end
   
   it "should be valid" do

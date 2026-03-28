@@ -21,7 +21,7 @@ describe ID3V24::XDORFrame, "when dealing with the iTunes and ID3v2.3-specific X
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::XDORFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::XDORFrame)
   end
   
   it "should reconstitute the release date properly" do

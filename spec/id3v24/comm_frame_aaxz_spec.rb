@@ -19,7 +19,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame customized
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::COMMFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::COMMFrame)
   end
   
   it "should choose a default encoding for the comment (and its description) of UTF-8" do

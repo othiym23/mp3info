@@ -15,7 +15,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defau
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::COMMFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::COMMFrame)
   end
   
   it "should choose a default encoding for the description of the comment of UTF-8" do
@@ -39,7 +39,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defau
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     saved_frame = saved_tag['COMM']
     
-    expect(saved_frame.class).to eq(ID3V24::COMMFrame)
+    expect(saved_frame).to be_an_instance_of(ID3V24::COMMFrame)
     expect(saved_frame.encoding).to eq(ID3V24::TextFrame::ENCODING[:utf8])
     expect(saved_frame.description).to eq('Mp3Info Comment')
     expect(saved_frame.language).to eq('eng')

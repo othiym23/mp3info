@@ -111,7 +111,7 @@ describe ID3V24::RGADFrame, "when parsing a constructed RGAD (nonstandard ID3v2 
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RGADFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RGADFrame)
   end
   
   it "should be valid" do

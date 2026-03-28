@@ -16,7 +16,7 @@ describe ID3V24::PRIVFrame, "when creating a new PRIV (private data) frame with 
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::PRIVFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::PRIVFrame)
   end
   
   it "should default to being owned by me (sure, why not?)" do

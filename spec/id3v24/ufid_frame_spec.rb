@@ -15,7 +15,7 @@ describe ID3V24::UFIDFrame, "when creating a new UFID (unique file identifier) f
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::UFIDFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::UFIDFrame)
   end
   
   it "has no default namespace, but uses 'http://www.id3.org/dummy/ufid.html' instead" do

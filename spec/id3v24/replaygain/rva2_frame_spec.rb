@@ -99,7 +99,7 @@ describe ID3V24::RVA2Frame, "when parsing a simple RVA2 (ID3v2.4 replaygain) fra
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RVA2Frame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RVA2Frame)
   end
   
   it "should have a replaygain ID of 'track'" do
@@ -140,7 +140,7 @@ describe ID3V24::RVA2Frame, "when parsing a simple RVA2 (ID3v2.4 replaygain) fra
   end
   
   it "should be reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::RVA2Frame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::RVA2Frame)
   end
   
   it "should have a replaygain ID of 'track'" do

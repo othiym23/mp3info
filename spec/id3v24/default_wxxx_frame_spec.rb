@@ -15,7 +15,7 @@ describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame 
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::WXXXFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::WXXXFrame)
   end
   
   it "should have a description encoded as UTF-8 text by default" do

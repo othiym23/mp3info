@@ -8,7 +8,7 @@ describe ID3V24::XRVFrame, "when creating a new XRV (ID3v2.2 replay gain) frame 
   end
   
   it "should be the correct class" do
-    expect(@frame.class).to eq(ID3V24::XRVFrame)
+    expect(@frame).to be_an_instance_of(ID3V24::XRVFrame)
   end
   
   it "should default to adjusting track-level replay gain" do

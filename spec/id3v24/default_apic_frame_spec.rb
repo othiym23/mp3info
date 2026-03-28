@@ -16,7 +16,7 @@ describe ID3V24::APICFrame, "when creating a new APIC (picture) frame with defau
   end
   
   it "should have been reconstituted as the correct class" do
-    expect(@saved_frame.class).to eq(ID3V24::APICFrame)
+    expect(@saved_frame).to be_an_instance_of(ID3V24::APICFrame)
   end
   
   it "should choose a default encoding for the description of the image of UTF-8" do
