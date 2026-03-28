@@ -199,6 +199,14 @@ module MPEGUtils
     it "should turn [0] into a null character" do
       expect([0].to_binary_string).to eq("\x00")
     end
+
+    it "should turn [1,1,1,1,1,1,1,1] into 0xFF without raising" do
+      expect([1,1,1,1,1,1,1,1].to_binary_string).to eq("\xFF".b)
+    end
+
+    it "should turn [1,0,0,0,0,0,0,0] into 0x80 without raising" do
+      expect([1,0,0,0,0,0,0,0].to_binary_string).to eq("\x80".b)
+    end
     
     it "should turn [0, 0, 1, 1, 0, 0, 0, 0] back into '0'" do
       eyeD3_version = [ 0, 0, 1, 1, 0, 0, 0, 0 ]
