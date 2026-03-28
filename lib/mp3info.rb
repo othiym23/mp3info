@@ -125,6 +125,10 @@ class Mp3Info
     end
   end
   
+  def self.remove_id3v2_tag(filename)
+    ID3V2.remove_id3v2_tag!(filename)
+  end
+
   def remove_id3v2_tag
     @id3v2_tag.clear
   end
