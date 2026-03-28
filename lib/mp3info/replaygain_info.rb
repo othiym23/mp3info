@@ -94,7 +94,6 @@ class SoundCheckInfo
 
   def self.from_id3v2(id3v2)
     candidates = id3v2.find_frames_by_description("iTunNORM")
-    # TODO: find a way of judging the quality of these things
     if candidates&.any?
       SoundCheckInfo.new(candidates.first.value)
     end
@@ -173,7 +172,7 @@ class SoundCheckInfo
     "%08X" % (peak * 32_768).round
   end
 
-  # FIXME: highly suspect
+  # Inverse of replaygain_peak_to_soundcheck_peak (peak * 32768)
   def soundcheck_peak_to_replaygain_peak(peak)
     peak.to_f / 32_768.to_f
   end

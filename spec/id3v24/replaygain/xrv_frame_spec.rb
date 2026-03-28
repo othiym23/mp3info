@@ -12,7 +12,6 @@ describe ID3V24::XRVFrame, "when strictly interpreting the ID3v2 specification" 
     frame = ID3V24::XRVFrame.default(0)
     frame.adjustments.first.raw_adjustment = -1
     expect(frame.adjustments.first.adjustment).to eq(-0.001953125)
-    # TODO this is not at all synchsafe, but apparently we don't care?
     expect(frame.adjustments.first.to_bin).to eq("\x01\xff\xff\x00")
   end
 

@@ -798,8 +798,7 @@ module ID3V24
     end
   end
 
-  # 2.2 compatibility frame created by normalize (?); identical to RVA2
-  # TODO: move to ID3V22::Frame when splitting apart 2.2/3/4 frames.
+  # 2.2 compatibility frame created by normalize; identical to RVA2
   # normalize: http://normalize.nongnu.org/
   class XRVFrame < RVA2Frame
     def initialize(identifier, adjustments = [])
