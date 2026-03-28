@@ -11,6 +11,9 @@ using Mp3InfoLib::BinaryConversions
 class MPEGStream
   include MPEGFile
 
+  private :write_mpeg_file!, :find_next_frame, :find_sync, :read_next_frame,
+    :skip_id3v2_tag, :valid_mpeg_header?, :frame_follows?
+
   # Information about a single MPEG frame
   FrameInfo = Struct.new(
     :position,     # byte offset in the file

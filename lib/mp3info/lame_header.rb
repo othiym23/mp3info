@@ -221,7 +221,12 @@ class LAMEHeader
      9 => "Average Bitrate (2 pass)",
      15 => "Reserved"}
 
-  # requires a valid MPEG frame from the sample file
+  private_constant :LAME_VERSION_OFFSET, :VBR_MODE_TAG_VERSION_OFFSET,
+    :LOWPASS_FILTER_OFFSET, :REPLAYGAIN_OFFSET, :FLAG_NOGAP_ATH_OFFSET,
+    :BITRATE_OFFSET, :ENCODER_OFFSET, :MISC_OFFSET, :MP3GAIN_OFFSET,
+    :SURROUND_PRESET_OFFSET, :MUSIC_LENGTH_OFFSET, :MUSIC_CRC_OFFSET,
+    :LAME_CRC_POSITION, :CRC16_LOOKUP
+
   def initialize(frame)
     @raw_frame = frame
   end

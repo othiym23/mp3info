@@ -117,7 +117,7 @@ class ID3
 
   def update(other_hash)
     if other_hash.is_a?(ID3)
-      @hash.update(other_hash.instance_variable_get(:@hash))
+      @hash.update(other_hash.internal_hash)
     else
       @hash.update(other_hash)
     end
@@ -130,15 +130,15 @@ class ID3
   end
 
   def initialize_copy(source)
-    @hash = source.instance_variable_get(:@hash).dup
-    @raw_tag = source.instance_variable_get(:@raw_tag).dup
-    @hash_orig = source.instance_variable_get(:@hash_orig).dup
-    @version = source.instance_variable_get(:@version)
+    @hash = source.internal_hash.dup
+    @raw_tag = source.internal_raw_tag.dup
+    @hash_orig = source.internal_hash_orig.dup
+    @version = source.version
   end
 
   def ==(other)
     if other.is_a?(ID3)
-      @hash == other.instance_variable_get(:@hash)
+      @hash == other.internal_hash
     elsif other.is_a?(Hash)
       @hash == other
     else
@@ -261,12 +261,6 @@ class ID3
     self
   end
 
-  def sync_bin
-    @raw_tag = to_bin
-    @hash_orig.update(@hash)
-    @raw_tag
-  end
-
   def to_bin
     if changed?
       @version ||= VERSION_1_1
@@ -300,5 +294,19 @@ class ID3
     else
       @raw_tag
     end
+  end
+
+  protected
+
+  def internal_hash = @hash
+  def internal_raw_tag = @raw_tag
+  def internal_hash_orig = @hash_orig
+
+  private
+
+  def sync_bin
+    @raw_tag = to_bin
+    @hash_orig.update(@hash)
+    @raw_tag
   end
 end

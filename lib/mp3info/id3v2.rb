@@ -12,8 +12,10 @@ class ID3V2InternalError < StandardError; end
 
 # This class can be used directly, as it does no I/O of its own.
 class ID3V2
-  # write_mpeg_file! lives in the module, need it at the class level
   extend MPEGFile
+
+  private_class_method :write_mpeg_file!, :find_next_frame, :find_sync, :read_next_frame,
+    :skip_id3v2_tag, :valid_mpeg_header?, :frame_follows?
 
   DEFAULT_MAJOR_VERSION = 3
   DEFAULT_MINOR_VERSION = 0
@@ -167,10 +169,10 @@ class ID3V2
   end
 
   def initialize_copy(source)
-    @hash = source.instance_variable_get(:@hash).dup
-    @raw_tag = source.instance_variable_get(:@raw_tag).dup
-    @hash_orig = source.instance_variable_get(:@hash_orig).dup
-    @extended_header = source.instance_variable_get(:@extended_header)&.dup
+    @hash = source.internal_hash.dup
+    @raw_tag = source.internal_raw_tag.dup
+    @hash_orig = source.internal_hash_orig.dup
+    @extended_header = source.extended_header&.dup
   end
 
   def major_version
@@ -304,6 +306,13 @@ class ID3V2
       @hash[key] = out
     end
   end
+
+  protected
+
+  # Accessors for initialize_copy to clone internal state
+  def internal_hash = @hash
+  def internal_raw_tag = @raw_tag
+  def internal_hash_orig = @hash_orig
 
   private
 

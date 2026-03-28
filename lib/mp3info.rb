@@ -28,8 +28,10 @@ using Mp3InfoLib::SizeUnits
 class Mp3InfoError < StandardError; end
 
 class Mp3Info
-  # source of write_mpeg_file!, find_next_frame and read_next_frame
   include MPEGFile
+
+  private :write_mpeg_file!, :find_next_frame, :find_sync, :read_next_frame,
+    :skip_id3v2_tag, :valid_mpeg_header?, :frame_follows?
 
   VERSION = "0.7-fln"
 

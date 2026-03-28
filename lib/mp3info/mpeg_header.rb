@@ -70,6 +70,9 @@ class MPEGHeader
   SIDE_INFO_SIZES = [[32, 17],  # MPEG 1
     [17, 9]] # MPEG 2/2.5
 
+  private_constant :VERSIONS, :COEFFICIENTS, :SLOT_SIZES, :FRAME_DURATIONS,
+    :BITRATES, :SIDE_INFO_SIZES
+
   LAYER_STRINGS = ["Invalid", "I", "II", "III"]
 
   def initialize(header_data)
