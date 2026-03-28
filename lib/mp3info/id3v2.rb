@@ -10,9 +10,7 @@ class ID3V2InternalError < StandardError ; end
 # This class can be used directly, as it does no I/O of its own.
 class ID3V2 < DelegateClass(Hash)
   # write_mpeg_file! lives in the module, need it at the class level
-  class << self
-    include MPEGFile
-  end
+  extend MPEGFile
   
   DEFAULT_MAJOR_VERSION = 4
   DEFAULT_MINOR_VERSION = 0
