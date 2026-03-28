@@ -1,12 +1,12 @@
-require 'mp3info/mpeg_header'
-require 'mp3info/binary_conversions'
+require "mp3info/mpeg_header"
+require "mp3info/binary_conversions"
 
 using Mp3InfoLib::BinaryConversions
 
 describe MPEGHeader, "with valid but unusual headers" do
   it "should detect CBR without errors for MPEG 2.5, layer 3 files" do
     valid_header_array =
-      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
         0, 0,                             # version: 2.5
         0, 1,                             # layer: 3
         1,                                # protected: has no CRC
@@ -18,15 +18,14 @@ describe MPEGHeader, "with valid but unusual headers" do
         1, 0,                             # channel mode extension: intensity off, MS on
         0,                                # copyrighted: no
         1,                                # original: yes
-        0, 0                              # emphasis: none
-        ]
+        0, 0]                              # emphasis: none
     expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(128)
   end
-  
+
   it "should detect settings without errors for MPEG 2.5, layer 1 files" do
     valid_header_array =
-      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
         0, 0,                             # version: 2.5
         1, 1,                             # layer: 1
         1,                                # protected: has no CRC
@@ -38,8 +37,7 @@ describe MPEGHeader, "with valid but unusual headers" do
         1, 0,                             # channel mode extension: bands 12 to 31
         0,                                # copyrighted: no
         1,                                # original: yes
-        0, 0                              # emphasis: none
-        ]
+        0, 0]                              # emphasis: none
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(2.5)
     # verified against eyeD3
@@ -61,7 +59,7 @@ describe MPEGHeader, "with valid but unusual headers" do
 
   it "should detect settings without errors for MPEG 2, layer 1 files" do
     valid_header_array =
-      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
         1, 0,                             # version: 2
         1, 1,                             # layer: 1
         1,                                # protected: has no CRC
@@ -73,8 +71,7 @@ describe MPEGHeader, "with valid but unusual headers" do
         1, 0,                             # channel mode extension: bands 12 to 31
         0,                                # copyrighted: no
         1,                                # original: yes
-        0, 0                              # emphasis: none
-        ]
+        0, 0]                              # emphasis: none
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(2)
     # verified against eyeD3
@@ -96,7 +93,7 @@ describe MPEGHeader, "with valid but unusual headers" do
 
   it "should detect settings without errors for MPEG 2.5, layer 2 files" do
     valid_header_array =
-      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
         0, 0,                             # version: 2.5
         1, 0,                             # layer: 2
         1,                                # protected: has no CRC
@@ -108,8 +105,7 @@ describe MPEGHeader, "with valid but unusual headers" do
         1, 0,                             # channel mode extension: bands 12 to 31
         1,                                # copyrighted: yes
         1,                                # original: yes
-        0, 0                              # emphasis: none
-        ]
+        0, 0]                              # emphasis: none
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(2.5)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).layer).to eq(2)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(128)
@@ -127,7 +123,7 @@ describe MPEGHeader, "with valid but unusual headers" do
 
   it "should handle a bitrate of 80 and a mode of mono" do
     valid_header_array =
-      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync bitstream: CONSTANT
         1, 1,                             # version: 1.0
         1, 0,                             # layer: 2
         1,                                # protected: has no CRC
@@ -139,8 +135,7 @@ describe MPEGHeader, "with valid but unusual headers" do
         1, 0,                             # channel mode extension: intensity off, MS on
         0,                                # copyrighted: no
         0,                                # original: no
-        0, 0                              # emphasis: none
-        ]
+        0, 0]                              # emphasis: none
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(1.0)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).layer).to eq(2)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true

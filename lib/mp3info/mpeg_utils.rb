@@ -1,16 +1,17 @@
 # encoding: binary
-require_relative 'binary_conversions'
-require_relative 'mpeg_header'
-require 'tempfile'
+
+require_relative "binary_conversions"
+require_relative "mpeg_header"
+require "tempfile"
 
 using Mp3InfoLib::BinaryConversions
 
 module MPEGFile
-  class MPEGFileError < StandardError ; end
-  
+  class MPEGFileError < StandardError; end
+
   # number of bytes to read in at once in file scanning operations
-  CHUNK_SIZE = 2 ** 16
-  
+  CHUNK_SIZE = 2**16
+
   # This method assumes that the file pointer is at the beginning of a frame.
   #
   # It returns either the next frame or the remainder of the stream.
@@ -18,31 +19,31 @@ module MPEGFile
     unless frame_size && frame_size > 0
       cur_pos = file.pos
       file.seek(1, IO::SEEK_CUR)
-      
+
       frame_size = 0
-      
+
       begin
-        next_pos, data = find_next_frame(file, cur_pos)
+        next_pos, _ = find_next_frame(file, cur_pos)
         frame_size = next_pos - cur_pos
       rescue MPEGFile::MPEGFileError
         frame_size = file.stat.size - cur_pos
       end
-      
+
       file.seek(cur_pos)
     end
-    
-    $stderr.puts("Reading %#010x bytes starting at %#010x " % [frame_size, file.pos]) if $DEBUG
+
+    warn("Reading %#010x bytes starting at %#010x " % [frame_size, file.pos]) if $DEBUG
     file.read(frame_size)
   end
-  
+
   def write_mpeg_file!(filename)
     raise(MPEGFileError, "File is not writable") unless File.writable?(filename)
-    $stderr.puts("MPEGFile::write_mpeg_file! source file length is #{File.size(filename)}") if $DEBUG
+    warn("MPEGFile::write_mpeg_file! source file length is #{File.size(filename)}") if $DEBUG
 
-    temporary = Tempfile.new('mp3info', File.dirname(filename))
+    temporary = Tempfile.new("mp3info", File.dirname(filename))
     begin
       tmpfile_path = temporary.path
-      File.open(filename, 'rb') do |original|
+      File.open(filename, "rb") do |original|
         # this would be a good place to invoke code to prepend a tag to the file
         yield temporary if block_given?
 
@@ -52,10 +53,10 @@ module MPEGFile
         # first frame that passes frame-following validation.
         audio_start = skip_id3v2_tag(original)
         original.seek(audio_start)
-        $stderr.puts("MPEGFile::write_mpeg_file! copying audio from %#010x" % audio_start) if $DEBUG
+        warn("MPEGFile::write_mpeg_file! copying audio from %#010x" % audio_start) if $DEBUG
 
         bufsize = original.stat.blksize || 4096
-        while buf = original.read(bufsize)
+        while (buf = original.read(bufsize))
           temporary.write(buf)
         end
       end
@@ -73,7 +74,7 @@ module MPEGFile
   def skip_id3v2_tag(file)
     file.seek(0)
     header = file.read(3)
-    if header == 'ID3'
+    if header == "ID3"
       file.read(2) # version bytes
       file.read(1) # flags
       size_bytes = file.read(4)
@@ -83,7 +84,7 @@ module MPEGFile
       0
     end
   end
-  
+
   def find_next_frame(file, start_pos = 0)
     # make sure we've got the sync pattern, let the MPEGHeader validity check do the rest
     first_valid_pos = nil
@@ -91,7 +92,7 @@ module MPEGFile
 
     header_pos, header = find_sync(file, start_pos)
     loop do
-      $stderr.puts("MPEGFile::find_next_frame file.pos is %#010x, header_pos is %#010x, header is %#010x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
+      warn("MPEGFile::find_next_frame file.pos is %#010x, header_pos is %#010x, header is %#010x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
       break if header.nil?
 
       if valid_mpeg_header?(header)
@@ -110,25 +111,25 @@ module MPEGFile
 
     # Use the verified frame, or fall back to the first valid-looking candidate
     if header && valid_mpeg_header?(header)
-      return header_pos, header
+      [header_pos, header]
     elsif first_valid_header
-      return first_valid_pos, first_valid_header
+      [first_valid_pos, first_valid_header]
     else
       raise(MPEGFileError, "cannot find a valid frame after reading #{"%#010x" % file.pos} bytes from #{file.path} of size #{"%#010x" % file.stat.size}")
     end
   end
-  
+
   def find_sync(file, start_pos = 0)
-    $stderr.puts("find_sync seeking to %#010x" % start_pos) if $DEBUG
+    warn("find_sync seeking to %#010x" % start_pos) if $DEBUG
     file.seek(start_pos)
     file_data = file.read(CHUNK_SIZE)
 
-    while file_data && file_data.size > 0 do
-      $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes at %#010x" % start_pos) if $DEBUG
+    while file_data && file_data.size > 0
+      warn("find_sync file data is #{"%#010x" % file_data.size} bytes at %#010x" % start_pos) if $DEBUG
 
-      if sync_pos = file_data.index("\xff")
+      if (sync_pos = file_data.index("\xff"))
         header = file_data[sync_pos, 4]
-        $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
+        warn("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
         if header.size == 4
           return start_pos + sync_pos, header
         end
@@ -136,16 +137,15 @@ module MPEGFile
         # so the full 4-byte header can be checked in the next iteration
         start_pos += sync_pos
         file.seek(start_pos)
-        file_data = file.read(CHUNK_SIZE)
       else
         start_pos += file_data.size
-        file_data = file.read(CHUNK_SIZE)
       end
+      file_data = file.read(CHUNK_SIZE)
     end
 
-    return nil, nil
+    [nil, nil]
   end
-  
+
   def valid_mpeg_header?(header_string)
     MPEGHeader.new(header_string).valid?
   end

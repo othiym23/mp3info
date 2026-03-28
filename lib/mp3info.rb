@@ -1,17 +1,18 @@
 # encoding: binary
+
 # License:: Ruby
 # Author:: Rei Moribito (mailto:othiym23_AT_gmail_DOT_com)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Website:: http://hg.driftglass.org/
-require 'fileutils'
-require_relative 'mp3info/mpeg_header'
-require_relative 'mp3info/xing_header'
-require_relative 'mp3info/lame_header'
-require_relative 'mp3info/replaygain_info'
-require_relative 'mp3info/id3'
-require_relative 'mp3info/id3v2'
-require_relative 'mp3info/binary_conversions'
-require_relative 'mp3info/size_units'
+require "fileutils"
+require_relative "mp3info/mpeg_header"
+require_relative "mp3info/xing_header"
+require_relative "mp3info/lame_header"
+require_relative "mp3info/replaygain_info"
+require_relative "mp3info/id3"
+require_relative "mp3info/id3v2"
+require_relative "mp3info/binary_conversions"
+require_relative "mp3info/size_units"
 
 using Mp3InfoLib::BinaryConversions
 using Mp3InfoLib::SizeUnits
@@ -19,38 +20,38 @@ using Mp3InfoLib::SizeUnits
 # ruby -d to display debugging info
 
 # Raised on any kind of error related to ruby-mp3info
-class Mp3InfoError < StandardError ; end
+class Mp3InfoError < StandardError; end
 
 class Mp3Info
   # source of write_mpeg_file!, find_next_frame and read_next_frame
   include MPEGFile
-  
+
   VERSION = "0.7-fln"
-  
-  V1_V2_TAG_MAPPING = { 
-    "title"    => "TIT2",
-    "artist"   => "TPE1", 
-    "album"    => "TALB",
-    "year"     => "TYER",
+
+  V1_V2_TAG_MAPPING = {
+    "title" => "TIT2",
+    "artist" => "TPE1",
+    "album" => "TALB",
+    "year" => "TYER",
     "tracknum" => "TRCK",
     "comments" => "COMM",
-    "genre_s"  => "TCON"
+    "genre_s" => "TCON"
   }
 
   # MPEG header
   attr_reader :mpeg_header
-  
+
   # Xing header
   attr_reader :xing_header
-  
+
   # LAME header
   attr_reader :lame_header
-  
+
   # replaygain info object
   def replaygain_info
     @replaygain_info ||= ReplaygainInfo.new(self)
   end
-  
+
   # bitrate in kbps
   def bitrate
     if has_xing_header? && @xing_header.vbr? && @xing_header.frames > 0 && @mpeg_header.frame_duration > 0
@@ -79,11 +80,11 @@ class Mp3Info
   # The ID3 tag is a class that acts as a hash. You can update it and it will
   # be written out when the file is closed.
   attr_reader :id3v1_tag
-  
+
   def id3v1_tag=(new_hash)
     @id3v1_tag.update(new_hash)
   end
-  
+
   # id3v2 tag attribute as an ID3V2 object. You can modify it, it will be written when calling
   # "close" method.
   attr_accessor :id3v2_tag
@@ -102,19 +103,19 @@ class Mp3Info
   def has_id3v2_tag?
     actually_has_id3v2_tag? && !@id3v2_tag.empty?
   end
-  
+
   def has_mpeg_header?
     !@mpeg_header.nil?
   end
-  
+
   def has_xing_header?
     !@xing_header.nil?
   end
-  
+
   def has_lame_header?
     !@lame_header.nil?
   end
-  
+
   def self.remove_id3v1_tag(filename)
     ID3.remove_id3v1_tag!(filename)
   end
@@ -123,12 +124,12 @@ class Mp3Info
     if ID3.has_id3v1_tag?(@filename)
       ID3.remove_id3v1_tag!(@filename)
     end
-    
+
     if has_id3v1_tag?
       @id3v1_tag = nil
     end
   end
-  
+
   def self.remove_id3v2_tag(filename)
     ID3V2.remove_id3v2_tag!(filename)
   end
@@ -144,118 +145,117 @@ class Mp3Info
     File.open(@filename, "rb") do |file|
       total_bytes = file.stat.size
 
-    while file.pos < total_bytes do
-      # try to read tags first, then read MPEG data
-      case file.read(3)
-      when 'TAG' # ID3 tag at the beginning of the file (unusual)
+      while file.pos < total_bytes
+        # try to read tags first, then read MPEG data
+        header_peek = file.read(3)
         file.seek(-3, IO::SEEK_CUR)
-        $stderr.puts("Mp3Info.initialize TAG found at %#010x" % file.pos) if $DEBUG
-        @id3v1_tag = ID3.from_io(file)
-        $stderr.puts("Mp3Info.initialize ID3 tag is #{@id3v1_tag.inspect}") if $DEBUG
-      when 'ID3' # ID3v2 tag
-        file.seek(-3, IO::SEEK_CUR)
-        $stderr.puts("Mp3Info.initialize ID3 found at %#010x" % file.pos) if $DEBUG
-        begin
-          if has_id3v2_tag?
-            @id3v2_tag.merge(ID3V2.from_io(file))
-          else
-            @id3v2_tag = ID3V2.from_io(file)
-          end
-        rescue ID3V2ParseError, ID3V2Error => e
-          $stderr.puts("Warning: could not parse ID3v2 tag: #{e.message}") if $DEBUG
-        end
-      else
-        file.seek(-3, IO::SEEK_CUR)
-        $stderr.puts("Mp3Info.initialize scanning for MPEG data at %#010x" % file.pos) if $DEBUG
-        cur_pos = file.pos
-        begin
-          $stderr.puts("Mp3Info.initialize about to call find_next_frame at %#010x" % file.pos) if $DEBUG
-          header_pos, header_data = find_next_frame(file, cur_pos)
-          mpeg_candidate = MPEGHeader.new(header_data)
-          @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
-          
-          if mpeg_candidate.valid?
-            $stderr.puts("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.to_s]) if $DEBUG
-            file.seek(header_pos)
-            cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
-            $stderr.puts("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
-            
-            xing_candidate = XingHeader.new(cur_frame)
-            @xing_header = xing_candidate if xing_candidate.valid?
-            $stderr.puts("Xing header found, is [#{@xing_header.to_s}]") if $DEBUG && has_xing_header?
-            
-            lame_candidate = LAMEHeader.new(cur_frame)
-            @lame_header = lame_candidate if lame_candidate.valid?
-            $stderr.puts("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
-            break # we're done trying to read candidates
-          end
-        rescue MPEGFile::MPEGFileError
-          $stderr.puts("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
-          file.seek(cur_pos)
-          break
-        end
-      end
-      $stderr.puts("File position is #{"%#010x" % file.pos}") if $DEBUG
-    end
-    
-    #
-    # calculate the CBR bitrate, streamsize, length
-    #
-    if has_mpeg_header? && !has_xing_header?
-      # for cbr, calculate duration with the given bitrate
-      @streamsize = file.stat.size - (has_id3v1_tag? ? ID3::TAGSIZE : 0) - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
-      @length = ((@streamsize << 3) / 1000.0) / bitrate
-      if has_id3v2_tag? && @id3v2_tag['TLEN']
-        # but if another duration is given and it isn't close (within 5%)
-        #  assume the mp3 is vbr and go with the given duration
-        tlen = @id3v2_tag.frames('TLEN').last.value.to_i / 1000
-        if tlen > 0
-          percent_diff = ((@length.to_i - tlen) / tlen.to_f)
-          if percent_diff.abs > 0.05
-            @vbr = true
-            @bitrate = (@streamsize / tlen) / 1024
-          end
-        end
-      end
-    end
-    
-    #
-    # check for an ID3 tag at the end
-    #
-    if (total_bytes >= ID3::TAGSIZE)
-      file.seek(-ID3::TAGSIZE, IO::SEEK_END)
-      if file.read(3) == 'TAG'
-        file.seek(-3, IO::SEEK_CUR)
-        if has_id3v1_tag?
-          @id3v1_tag.update(ID3.from_io(file))
-        else
+        case header_peek
+        when "TAG" # ID3 tag at the beginning of the file (unusual)
+          warn("Mp3Info.initialize TAG found at %#010x" % file.pos) if $DEBUG
           @id3v1_tag = ID3.from_io(file)
+          warn("Mp3Info.initialize ID3 tag is #{@id3v1_tag.inspect}") if $DEBUG
+        when "ID3" # ID3v2 tag
+          warn("Mp3Info.initialize ID3 found at %#010x" % file.pos) if $DEBUG
+          begin
+            if has_id3v2_tag?
+              @id3v2_tag.merge(ID3V2.from_io(file))
+            else
+              @id3v2_tag = ID3V2.from_io(file)
+            end
+          rescue ID3V2ParseError, ID3V2Error => e
+            warn("Warning: could not parse ID3v2 tag: #{e.message}") if $DEBUG
+          end
+        else
+          warn("Mp3Info.initialize scanning for MPEG data at %#010x" % file.pos) if $DEBUG
+          cur_pos = file.pos
+          begin
+            warn("Mp3Info.initialize about to call find_next_frame at %#010x" % file.pos) if $DEBUG
+            header_pos, header_data = find_next_frame(file, cur_pos)
+            mpeg_candidate = MPEGHeader.new(header_data)
+            @mpeg_header = mpeg_candidate if mpeg_candidate.valid?
+
+            if mpeg_candidate.valid?
+              warn("mpeg header %#010x found at position %#010x (%s)" % [header_data.to_binary_decimal, header_pos, mpeg_candidate.to_s]) if $DEBUG
+              file.seek(header_pos)
+              cur_frame = read_next_frame(file, mpeg_candidate.frame_size)
+              warn("Current frame is %#06x bytes (requested %#06x)" % [cur_frame.size, mpeg_candidate.frame_size]) if $DEBUG
+
+              xing_candidate = XingHeader.new(cur_frame)
+              @xing_header = xing_candidate if xing_candidate.valid?
+              warn("Xing header found, is [#{@xing_header}]") if $DEBUG && has_xing_header?
+
+              lame_candidate = LAMEHeader.new(cur_frame)
+              @lame_header = lame_candidate if lame_candidate.valid?
+              warn("LAME header found, is [#{@lame_header.inspect}]") if $DEBUG && has_lame_header?
+              break # we're done trying to read candidates
+            end
+          rescue MPEGFile::MPEGFileError
+            warn("Mp3Info.initialize guesses there's no MPEG frames in this file.") if $DEBUG
+            file.seek(cur_pos)
+            break
+          end
+        end
+        warn("File position is #{"%#010x" % file.pos}") if $DEBUG
+      end
+
+      #
+      # calculate the CBR bitrate, streamsize, length
+      #
+      if has_mpeg_header? && !has_xing_header?
+        # for cbr, calculate duration with the given bitrate
+        @streamsize = file.stat.size - (has_id3v1_tag? ? ID3::TAGSIZE : 0) - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
+        @length = ((@streamsize << 3) / 1000.0) / bitrate
+        if has_id3v2_tag? && @id3v2_tag["TLEN"]
+          # but if another duration is given and it isn't close (within 5%)
+          #  assume the mp3 is vbr and go with the given duration
+          tlen = @id3v2_tag.frames("TLEN").last.value.to_i / 1000
+          if tlen > 0
+            percent_diff = ((@length.to_i - tlen) / tlen.to_f)
+            if percent_diff.abs > 0.05
+              @vbr = true
+              @bitrate = (@streamsize / tlen) / 1024
+            end
+          end
         end
       end
-    end
-    
-    # Recalculate streamsize now that we know about the trailing ID3v1 tag
-    if has_mpeg_header? && !has_xing_header? && has_id3v1_tag?
-      @streamsize = file.stat.size - ID3::TAGSIZE - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
-      @length = ((@streamsize << 3) / 1000.0) / bitrate
-    end
+
+      #
+      # check for an ID3 tag at the end
+      #
+      if total_bytes >= ID3::TAGSIZE
+        file.seek(-ID3::TAGSIZE, IO::SEEK_END)
+        if file.read(3) == "TAG"
+          file.seek(-3, IO::SEEK_CUR)
+          if has_id3v1_tag?
+            @id3v1_tag.update(ID3.from_io(file))
+          else
+            @id3v1_tag = ID3.from_io(file)
+          end
+        end
+      end
+
+      # Recalculate streamsize now that we know about the trailing ID3v1 tag
+      if has_mpeg_header? && !has_xing_header? && has_id3v1_tag?
+        @streamsize = file.stat.size - ID3::TAGSIZE - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
+        @length = ((@streamsize << 3) / 1000.0) / bitrate
+      end
     end
 
     load_universal_tag!
-    
+
     if !(has_id3v1_tag? || has_id3v2_tag? || has_mpeg_header? || has_xing_header?)
       raise(Mp3InfoError, "There was no useful metadata in #{@filename}, are you sure it's an MP3?")
     end
-    
+
     # there should always be tags available for convenience
     @id3v1_tag = ID3.new if @id3v1_tag.nil?
     @id3v2_tag = ID3V2.new if @id3v2_tag.nil?
   end
-  
+
   # Flush pending modifications to tags and close the file
   def close
-    $stderr.puts("Mp3Info.close") if $DEBUG
-    
+    warn("Mp3Info.close") if $DEBUG
+
     prepare_universal_tag!
     save_id3v1_changes!
     update_file_with_changed_id3v2!
@@ -263,7 +263,7 @@ class Mp3Info
 
   # "block version" of Mp3Info::new()
   def self.open(filename)
-    m = self.new(filename)
+    m = new(filename)
     ret = nil
     if block_given?
       begin
@@ -276,7 +276,7 @@ class Mp3Info
     end
     ret
   end
-  
+
   # write to another filename at close()
   def rename(new_filename)
     @filename = new_filename
@@ -287,34 +287,34 @@ class Mp3Info
     if has_mpeg_header?
       time = "Time: #{duration_string}"
       type = has_mpeg_header? ? @mpeg_header.version_string : "NO AUDIO"
-      properties = " [ #{vbr? ? '~' : ''}#{bitrate}kbps @ #{"%g" % (@mpeg_header.sample_rate / 1000.0)}kHz - #{@mpeg_header.mode}#{@mpeg_header.error_protected? ? " +E" : ""} ]"
-      
+      properties = " [ #{"~" if vbr?}#{bitrate}kbps @ #{"%g" % (@mpeg_header.sample_rate / 1000.0)}kHz - #{@mpeg_header.mode}#{" +E" if @mpeg_header.error_protected?} ]"
+
       # try to always keep the string representation at 80 characters
       "#{time}#{" " * [(18 - time.size), 0].max}#{type}#{" " * [(62 - (type.size + properties.size)), 0].max}#{properties}"
     else
       "NO AUDIO FOUND"
     end
   end
-  
+
   def description
     file_name_string = File.basename(filename)
-    file_size_string= " [ #{File.size(filename).octet_units} ]"
-    
-    out_string =  "\n#{file_name_string}#{' ' * [(80 - (file_name_string.size + file_size_string.size)), 0].max}#{file_size_string}\n"
+    file_size_string = " [ #{File.size(filename).octet_units} ]"
+
+    out_string = "\n#{file_name_string}#{" " * [(80 - (file_name_string.size + file_size_string.size)), 0].max}#{file_size_string}\n"
     out_string << "--------------------------------------------------------------------------------\n"
     out_string << to_s
     out_string << "\n--------------------------------------------------------------------------------\n"
   end
-  
+
   def duration_string
     if has_xing_header?
-      time     = (@mpeg_header.frame_duration * @xing_header.frames).floor
-      seconds  = time % 60
-      time    /= 60
-      minutes  = time % 60
-      hours    = time / 60
+      time = (@mpeg_header.frame_duration * @xing_header.frames).floor
+      seconds = time % 60
+      time /= 60
+      minutes = time % 60
+      hours = time / 60
       leftover = (@xing_header.frames % (1 / @mpeg_header.frame_duration)).round
-      
+
       if hours > 0
         "%d:%02d:%02d/%02d" % [hours, minutes, seconds, leftover]
       else
@@ -322,20 +322,20 @@ class Mp3Info
       end
     elsif has_mpeg_header?
       time = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
-      if has_id3v2_tag? && @id3v2_tag.frames('TLEN')&.any? && @id3v2_tag.frames('TLEN').last.value.to_i > 0
-        tlen = @id3v2_tag.frames('TLEN').last.value.to_i / 1000
+      if has_id3v2_tag? && @id3v2_tag.frames("TLEN")&.any? && @id3v2_tag.frames("TLEN").last.value.to_i > 0
+        tlen = @id3v2_tag.frames("TLEN").last.value.to_i / 1000
         percent_diff = ((time.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
           time = tlen
         end
       end
       time = time.round
-      
-      seconds  = time % 60
-      time    /= 60
-      minutes  = time % 60
-      hours    = time / 60
-      
+
+      seconds = time % 60
+      time /= 60
+      minutes = time % 60
+      hours = time / 60
+
       if hours > 0
         "%d:%02d:%02d" % [hours, minutes, seconds]
       else
@@ -345,9 +345,9 @@ class Mp3Info
       "-"
     end
   end
-  
+
   private
-  
+
   # Internal semantics are a little different than what is exposed -- casual
   # users should only think the file has an MP3 tag when the tag has contents,
   # but the universal tag relies upon not stomping on the empty tag if it
@@ -358,12 +358,12 @@ class Mp3Info
 
   def load_universal_tag!
     @tag = {}
-    
+
     if has_id3v1_tag?
       @tag = {}
       @id3v1_tag.each { |k, v| @tag[k] = v }
     end
-    
+
     if actually_has_id3v2_tag?
       @tag = {}
       V1_V2_TAG_MAPPING.each do |key1, key2|
@@ -373,23 +373,23 @@ class Mp3Info
         @tag[key1] = frames.first.value.to_i if key1 == "tracknum"
       end
     end
-    
+
     @tag_orig = @tag.dup
   end
-  
+
   def prepare_universal_tag!
     if has_universal_tag? && @tag != @tag_orig
-      $stderr.puts("Mp3Info.prepare_universal_tag! universal tag has changed") if $DEBUG
+      warn("Mp3Info.prepare_universal_tag! universal tag has changed") if $DEBUG
       if !(has_id3v1_tag? || actually_has_id3v2_tag?)
         @id3v2_tag = ID3V2.new
       end
-      
+
       if has_id3v1_tag?
         @tag.each do |k, v|
           @id3v1_tag[k] = v
         end
       end
-      
+
       if actually_has_id3v2_tag?
         V1_V2_TAG_MAPPING.each do |key1, key2|
           @id3v2_tag[key2] = @tag[key1] if @tag[key1]
@@ -397,10 +397,10 @@ class Mp3Info
       end
     end
   end
-  
+
   def save_id3v1_changes!
     if has_id3v1_tag? && @id3v1_tag.changed?
-      $stderr.puts("Mp3Info.save_id3v1_changes! #{@id3v1_tag.version} tag has changed") if $DEBUG
+      warn("Mp3Info.save_id3v1_changes! #{@id3v1_tag.version} tag has changed") if $DEBUG
       @id3v1_tag.to_file(@filename)
     end
   end
@@ -408,13 +408,13 @@ class Mp3Info
   def update_file_with_changed_id3v2!
     if has_id3v2_tag?
       if @id3v2_tag.changed?
-        $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag has changed" if $DEBUG
+        warn "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag has changed" if $DEBUG
         write_mpeg_file!(@filename) { |file| file.write(@id3v2_tag.to_bin) unless @id3v2_tag.empty? }
-      else
-        $stderr.puts "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag is unchanged, not writing file" if $DEBUG
+      elsif $DEBUG
+        warn "Mp3Info.update_file_with_changed_id3v2! ID3V#{@id3v2_tag.version} tag is unchanged, not writing file"
       end
     elsif ID3V2.has_id3v2_tag?(@filename)
-      $stderr.puts("Mp3Info.update_file_with_changed_id3v2! ID3v2 tag has been eliminated from previously tagged file.") if $DEBUG
+      warn("Mp3Info.update_file_with_changed_id3v2! ID3v2 tag has been eliminated from previously tagged file.") if $DEBUG
       write_mpeg_file!(@filename)
     end
   end

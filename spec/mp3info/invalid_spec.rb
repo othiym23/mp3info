@@ -1,14 +1,14 @@
-require 'mp3info'
+require "mp3info"
 
 describe Mp3Info, "when loading an invalid MP3 file" do
   before do
     @mp3_filename = "test_mp3info.mp3"
   end
-  
+
   after do
     FileUtils.rm_f(@mp3_filename)
   end
-  
+
   it "should recognize when it's passed total garbage" do
     File.open(@mp3_filename, "w") do |f|
       str = "0" * 32 * 1024

@@ -1,9 +1,9 @@
-require 'digest/sha1'
-require 'fileutils'
+require "digest/sha1"
+require "fileutils"
 
 describe Mp3Info, "round-trip integrity" do
-  sample_dir = File.join(__dir__, '../../sample-metadata')
-  mp3_files = Dir.glob(File.join(sample_dir, '**/*.mp3')).sort
+  sample_dir = File.join(__dir__, "../../sample-metadata")
+  mp3_files = Dir.glob(File.join(sample_dir, "**/*.mp3")).sort
 
   # Files known to have no useful MPEG audio data
   no_audio_files = %w[
@@ -12,7 +12,7 @@ describe Mp3Info, "round-trip integrity" do
   ]
 
   mp3_files.each do |path|
-    relative = path.sub("#{sample_dir}/", '')
+    relative = path.sub("#{sample_dir}/", "")
     next if no_audio_files.any? { |s| relative.include?(s) }
 
     context "with #{File.basename(path)}" do
@@ -33,7 +33,7 @@ describe Mp3Info, "round-trip integrity" do
 
         begin
           Mp3Info.open(tmp) do |mp3|
-            mp3.id3v2_tag['TXXX'] = 'round-trip test marker'
+            mp3.id3v2_tag["TXXX"] = "round-trip test marker"
           end
         rescue Mp3InfoError, ID3V24::FrameException, ID3V2ParseError, ID3V2Error => e
           skip "write failed: #{e.class}: #{e.message}"
@@ -54,13 +54,13 @@ describe Mp3Info, "round-trip integrity" do
     end_offset = data.size
 
     # Skip ID3v2 tag at the start
-    if data[0, 3] == 'ID3' && data.size >= 10
+    if data[0, 3] == "ID3" && data.size >= 10
       tag_size = data[6, 4].bytes.inject(0) { |sum, b| (sum << 7) | b }
       start_offset = 10 + tag_size
     end
 
     # Skip ID3v1 tag at the end
-    if data.size >= 128 && data[-128, 3] == 'TAG'
+    if data.size >= 128 && data[-128, 3] == "TAG"
       end_offset = data.size - 128
     end
 

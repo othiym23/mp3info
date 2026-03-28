@@ -1,13 +1,13 @@
 # encoding: binary
 
-class ID3Error < StandardError ; end
+class ID3Error < StandardError; end
 
 class ID3
-  VERSION_1   = "ID3"
+  VERSION_1 = "ID3"
   VERSION_1_1 = "ID3v1.1"
-  
+
   TAGSIZE = 128
-  
+
   GENRES = [
     "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk",
     "Grunge", "Hip-Hop", "Jazz", "Metal", "New Age", "Oldies",
@@ -34,53 +34,54 @@ class ID3
     "Indie", "BritPop", "NegerPunk", "Polsk Punk", "Beat",
     "Christian Gangsta", "Heavy Metal", "Black Metal", "Crossover", "Contemporary C",
     "Christian Rock", "Merengue", "Salsa", "Thrash Metal", "Anime", "JPop",
-    "SynthPop" ]
-  
-  ALBUM_KEY        = 'album'
-  ARTIST_KEY       = 'artist'
-  TITLE_KEY        = 'title'
-  YEAR_KEY         = 'year'
-  GENRE_ID_KEY     = 'genre'
-  GENRE_NAME_KEY   = 'genre_s'
-  COMMENTS_KEY     = 'comments'
-  TRACK_NUMBER_KEY = 'tracknum'
-  
+    "SynthPop"
+  ]
+
+  ALBUM_KEY = "album"
+  ARTIST_KEY = "artist"
+  TITLE_KEY = "title"
+  YEAR_KEY = "year"
+  GENRE_ID_KEY = "genre"
+  GENRE_NAME_KEY = "genre_s"
+  COMMENTS_KEY = "comments"
+  TRACK_NUMBER_KEY = "tracknum"
+
   KEY_PRETTY_NAMES = {
-    ALBUM_KEY        => 'Album',
-    ARTIST_KEY       => 'Artist',
-    TITLE_KEY        => 'Title',
-    YEAR_KEY         => 'Year',
-    GENRE_ID_KEY     => 'Genre ID',
-    GENRE_NAME_KEY   => 'Genre',
-    COMMENTS_KEY     => 'Comments',
-    TRACK_NUMBER_KEY => 'Track #'
+    ALBUM_KEY => "Album",
+    ARTIST_KEY => "Artist",
+    TITLE_KEY => "Title",
+    YEAR_KEY => "Year",
+    GENRE_ID_KEY => "Genre ID",
+    GENRE_NAME_KEY => "Genre",
+    COMMENTS_KEY => "Comments",
+    TRACK_NUMBER_KEY => "Track #"
   }
-  
-  ID3_1_ORDER   = [ TITLE_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_NAME_KEY, COMMENTS_KEY ]
-  ID3_1_1_ORDER = [ TITLE_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_NAME_KEY, COMMENTS_KEY, TRACK_NUMBER_KEY ]
-  
+
+  ID3_1_ORDER = [TITLE_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_NAME_KEY, COMMENTS_KEY]
+  ID3_1_1_ORDER = [TITLE_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_NAME_KEY, COMMENTS_KEY, TRACK_NUMBER_KEY]
+
   # expose the version of the tag
   attr_reader :version
-  
+
   def self.has_id3v1_tag?(filename)
     return false if File.size(filename) < TAGSIZE
     File.open(filename) { |f|
       f.seek(-TAGSIZE, File::SEEK_END)
-      f.read(3) == 'TAG'
+      f.read(3) == "TAG"
     }
   end
-  
+
   def self.remove_id3v1_tag!(filename)
     if has_id3v1_tag?(filename)
       File.truncate(filename, File.size(filename) - TAGSIZE)
     end
   end
-  
+
   def initialize
     @hash = {}
 
     # set defaults for everything
-    @raw_tag = self.to_bin
+    @raw_tag = to_bin
 
     # hash to identify if tag is changed after creation
     @hash_orig = {}
@@ -122,11 +123,10 @@ class ID3
     end
     self
   end
-  alias merge! update
+  alias_method :merge!, :update
 
   def dup
-    copy = super
-    copy
+    super
   end
 
   def initialize_copy(source)
@@ -149,43 +149,43 @@ class ID3
   def inspect
     "#<ID3(#{@hash.inspect})>"
   end
-  
+
   def changed?
     @hash_orig.nil? || @hash_orig != @hash
   end
-  
+
   def valid?
     valid_header? && valid_major_version?
   end
-  
+
   def valid_header?
-    @raw_tag[0..2] == 'TAG'
+    @raw_tag[0..2] == "TAG"
   end
-  
+
   def valid_major_version?
     [VERSION_1, VERSION_1_1].include?(version)
   end
-  
+
   def description
-    tag_values = ''
-    
+    tag_values = ""
+
     case version
     when VERSION_1
-      ID3_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] unless @hash[key].empty?}
+      ID3_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] unless @hash[key].empty? }
     when VERSION_1_1
-      ID3_1_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] unless @hash[key].empty?} 
+      ID3_1_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] unless @hash[key].empty? }
     end
 
-    <<-DONE
-#{version} tag:
-
-  Tag is #{valid? ? '' : "not "}valid.
-
-#{tag_values}
-
+    <<~DONE
+      #{version} tag:
+      
+        Tag is #{"not " unless valid?}valid.
+      
+      #{tag_values}
+      
     DONE
   end
-  
+
   def self.from_file(filename)
     if has_id3v1_tag?(filename)
       File.open(filename) do |file|
@@ -196,31 +196,29 @@ class ID3
       raise(ID3Error, "No ID3 tag found in #{filename}")
     end
   end
-  
+
   def to_file(filename)
     if File.exist?(filename)
       # updating an existing tagged file
-      File.open(filename, 'rb+') do |file|
+      File.open(filename, "rb+") do |file|
         file.seek(-TAGSIZE, IO::SEEK_END)
         t = file.read(3)
-        if t == 'TAG'
+        if t == "TAG"
           # replace the current tag
           file.seek(-3, IO::SEEK_CUR)
         else
           # append new tag to end of file
           file.seek(0, IO::SEEK_END)
         end
-        $stderr.puts("ID3.to_file #{version} [#{sync_bin.inspect}] about to be written at #{file.pos}") if $DEBUG
+        warn("ID3.to_file #{version} [#{sync_bin.inspect}] about to be written at #{file.pos}") if $DEBUG
         file.write(sync_bin)
       end
     else
       # dumping a tag in a random file
-      File.open(filename, 'w') do |file|
-        file.write(sync_bin)
-      end
+      File.write(filename, sync_bin)
     end
   end
-  
+
   # assumes io.pos is at the beginning of the ID3 tag
   def self.from_io(io)
     id3 = nil
@@ -228,25 +226,25 @@ class ID3
 
     if remaining_bytes >= TAGSIZE
       raw_tag = io.read(TAGSIZE)
-      
+
       id3 = ID3.new
       id3.from_bin(raw_tag)
     else
-      $stderr.puts("file looks like it has an ID3 tag at the start, but isn't big enough to contain one.")
+      warn("file looks like it has an ID3 tag at the start, but isn't big enough to contain one.")
       io.seek(0)
     end
-    
+
     id3
   end
-  
+
   def from_bin(string)
-    $stderr.puts("ID3.from_bin(string=[#{string.inspect}])") if $DEBUG
+    warn("ID3.from_bin(string=[#{string.inspect}])") if $DEBUG
     @hash[TITLE_KEY], @hash[ARTIST_KEY], @hash[ALBUM_KEY],
-     year_t, raw_comments, @hash[GENRE_ID_KEY] = string[3..-1].unpack('A30A30A30A4a30C')
-    
+     year_t, raw_comments, @hash[GENRE_ID_KEY] = string[3..].unpack("A30A30A30A4a30C")
+
     @hash[YEAR_KEY] = year_t unless year_t == 0
     @hash[GENRE_NAME_KEY] = GENRES[@hash[GENRE_ID_KEY]] || "Unknown" # as per spec
-    
+
     # The sole difference between ID3v1.1 and ID3v1 is that the former has the
     # track number tucked in as an unsigned byte at the end of the comments field.
     #
@@ -259,43 +257,43 @@ class ID3
       @version = VERSION_1
     end
     @hash[COMMENTS_KEY] = raw_comments.strip
-    
+
     self
   end
-  
+
   def sync_bin
     @raw_tag = to_bin
     @hash_orig.update(@hash)
     @raw_tag
   end
-  
+
   def to_bin
     if changed?
-      @version = VERSION_1_1 unless @version
+      @version ||= VERSION_1_1
       case @version
       when VERSION_1
-        attrs = 
+        attrs =
           [
-            @hash[TITLE_KEY]    || '',
-            @hash[ARTIST_KEY]   || '',
-            @hash[ALBUM_KEY]    || '',
-            @hash[YEAR_KEY]     || '',
-            @hash[COMMENTS_KEY] || '',
+            @hash[TITLE_KEY] || "",
+            @hash[ARTIST_KEY] || "",
+            @hash[ALBUM_KEY] || "",
+            @hash[YEAR_KEY] || "",
+            @hash[COMMENTS_KEY] || "",
             @hash[GENRE_ID_KEY] || 255
           ]
-        "TAG#{attrs.pack('A30A30A30A4A30C')}"
+        "TAG#{attrs.pack("A30A30A30A4A30C")}"
       when VERSION_1_1
-        attrs = 
+        attrs =
           [
-            @hash[TITLE_KEY]        || '',
-            @hash[ARTIST_KEY]       || '',
-            @hash[ALBUM_KEY]        || '',
-            @hash[YEAR_KEY]         || '',
-            @hash[COMMENTS_KEY]     || '',
+            @hash[TITLE_KEY] || "",
+            @hash[ARTIST_KEY] || "",
+            @hash[ALBUM_KEY] || "",
+            @hash[YEAR_KEY] || "",
+            @hash[COMMENTS_KEY] || "",
             @hash[TRACK_NUMBER_KEY] || 0,
-            @hash[GENRE_ID_KEY]     || 255
+            @hash[GENRE_ID_KEY] || 255
           ]
-        "TAG#{attrs.pack('A30A30A30A4a28xCC')}"
+        "TAG#{attrs.pack("A30A30A30A4a28xCC")}"
       else
         raise(ID3Error, "Unrecognized version #{@version}")
       end

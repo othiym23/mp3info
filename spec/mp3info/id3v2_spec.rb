@@ -1,15 +1,14 @@
-require 'digest/sha1'
-require 'mp3info/binary_conversions'
+require "digest/sha1"
+require "mp3info/binary_conversions"
 
 using Mp3InfoLib::BinaryConversions
 
 describe Mp3Info, "when working with ID3v2 tags" do
-
   before do
     @mp3_filename = "test_mp3info.mp3"
     create_sample_mp3_file(@mp3_filename)
 
-    @trivial_id3v2_tag = {"TIT2" => ID3V24::Frame.create_frame('TIT2', "sdfqdsf")}
+    @trivial_id3v2_tag = {"TIT2" => ID3V24::Frame.create_frame("TIT2", "sdfqdsf")}
   end
 
   after do
@@ -43,15 +42,15 @@ describe Mp3Info, "when working with ID3v2 tags" do
   it "should not have a tag until one is automatically created" do
     mp3 = Mp3Info.new(@mp3_filename)
     expect(mp3.has_id3v2_tag?).to be false
-    mp3.id3v2_tag['TPE1'] = 'The Mighty Boosh'
+    mp3.id3v2_tag["TPE1"] = "The Mighty Boosh"
     expect(mp3.has_id3v2_tag?).to be true
-    expect(mp3.id3v2_tag['TPE1'].value).to eq('The Mighty Boosh')
+    expect(mp3.id3v2_tag["TPE1"].value).to eq("The Mighty Boosh")
   end
 
   it "should create ID3v2.3.0 tags by default" do
     mp3 = Mp3Info.new(@mp3_filename)
     expect(mp3.has_id3v2_tag?).to be false
-    mp3.id3v2_tag['TRCK'] = "1/8"
+    mp3.id3v2_tag["TRCK"] = "1/8"
     expect(mp3.has_id3v2_tag?).to be true
     expect(mp3.id3v2_tag.version).to eq("2.3.0")
   end
@@ -92,11 +91,11 @@ describe Mp3Info, "when working with ID3v2 tags" do
   end
 
   it "should read an ID3v2 tag from a truncated MP3 file" do
-    expect { mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3')) }.not_to raise_error
+    expect { Mp3Info.new(File.join(__dir__, "../../sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3")) }.not_to raise_error
   end
 
   it "should still read the tag from a truncated MP3 file" do
-    expect { mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/id3lib/230-unicode.tag')) }.not_to raise_error
+    expect { Mp3Info.new(File.join(__dir__, "../../sample-metadata/id3lib/230-unicode.tag")) }.not_to raise_error
   end
 
   it "should default to not exposing the ID3v2 tag for casual use until it's had a frame added" do
@@ -113,31 +112,31 @@ describe Mp3Info, "when working with ID3v2 tags" do
     frame << [frame_data.bytesize].pack("N")
     frame << "\x00\x00"
     frame << frame_data
-    v23_tag << (frame.bytesize).to_synchsafe_string
+    v23_tag << frame.bytesize.to_synchsafe_string
     v23_tag << frame
 
-    File.open(@mp3_filename, 'wb') do |f|
+    File.open(@mp3_filename, "wb") do |f|
       f.write(v23_tag)
       f.write(get_valid_mp3)
     end
 
     Mp3Info.open(@mp3_filename) do |mp3|
-      mp3.id3v2_tag['TPE1'] = 'Test Artist'
+      mp3.id3v2_tag["TPE1"] = "Test Artist"
     end
 
     raw = File.binread(@mp3_filename)
-    expect(raw[0, 3]).to eq('ID3')
+    expect(raw[0, 3]).to eq("ID3")
     expect(raw[3].ord).to eq(3)  # should stay v2.3
   end
 
   it "should write synchsafe frame sizes when write_version is set to 4" do
     Mp3Info.open(@mp3_filename) do |mp3|
       mp3.id3v2_tag.write_version = 4
-      mp3.id3v2_tag['TIT2'] = 'Test Title'
+      mp3.id3v2_tag["TIT2"] = "Test Title"
     end
 
     raw = File.binread(@mp3_filename)
-    expect(raw[0, 3]).to eq('ID3')
+    expect(raw[0, 3]).to eq("ID3")
     expect(raw[3].ord).to eq(4)
 
     tag_size = raw[6, 4].from_synchsafe_string
@@ -156,14 +155,14 @@ describe Mp3Info, "when working with ID3v2 tags" do
   it "should make it easy to casually use ID3v2 tags" do
     Mp3Info.open(@mp3_filename) do |mp3|
       mp3.id3v2_tag = ID3V2.new
-      mp3.id3v2_tag['WCOM'] = "http://www.riaa.org/"
-      mp3.id3v2_tag['TXXX'] = "A sample comment"
+      mp3.id3v2_tag["WCOM"] = "http://www.riaa.org/"
+      mp3.id3v2_tag["TXXX"] = "A sample comment"
     end
 
     mp3 = Mp3Info.new(@mp3_filename)
     saved_tag = mp3.id3v2_tag
 
-    expect(saved_tag['WCOM'].value).to eq("http://www.riaa.org/")
-    expect(saved_tag['TXXX'].value).to eq("A sample comment")
+    expect(saved_tag["WCOM"].value).to eq("http://www.riaa.org/")
+    expect(saved_tag["TXXX"].value).to eq("A sample comment")
   end
 end

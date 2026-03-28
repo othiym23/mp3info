@@ -1,69 +1,68 @@
-# encoding: utf-8
-require_relative 'mpeg_utils'
-require_relative 'id3v2_frames'
-require_relative 'binary_conversions'
-require_relative 'size_units'
+require_relative "mpeg_utils"
+require_relative "id3v2_frames"
+require_relative "binary_conversions"
+require_relative "size_units"
 
 using Mp3InfoLib::BinaryConversions
 using Mp3InfoLib::SizeUnits
 
-class ID3V2Error < StandardError ; end
-class ID3V2ParseError < StandardError ; end
-class ID3V2InternalError < StandardError ; end
+class ID3V2Error < StandardError; end
+class ID3V2ParseError < StandardError; end
+class ID3V2InternalError < StandardError; end
 
 # This class can be used directly, as it does no I/O of its own.
 class ID3V2
   # write_mpeg_file! lives in the module, need it at the class level
   extend MPEGFile
-  
+
   DEFAULT_MAJOR_VERSION = 3
   DEFAULT_MINOR_VERSION = 0
 
   attr_accessor :write_version
   attr_reader :extended_header
-  
+
   def self.has_id3v2_tag?(filename)
-    File.read(filename, 3) == 'ID3'
+    File.read(filename, 3) == "ID3"
   end
-  
+
   def self.remove_id3v2_tag!(filename)
     write_mpeg_file!(filename)
   end
-  
+
   def self.from_file(filename)
     File.open(filename, "rb") { |file| from_io(file) }
   end
-  
+
   def to_file(filename)
-    File.open(filename, "wb") { |file| file.write(to_bin) }
+    File.binwrite(filename, to_bin)
   end
-  
+
   # assumes file.pos is at the beginning of the ID3v2 tag
   def self.from_io(io)
     # read the tag ID (should always be 'ID3') + the 3-byte ID3v2 header
     raw_tag = io.read(6)
-    
+
     tag_length_string = io.read(4)
     raise(ID3V2Error, "Tag length *must* be stored synchsafe.") unless tag_length_string.synchsafe?
-    
+
     raw_tag << tag_length_string
-    
+
     tag_length = tag_length_string.from_synchsafe_string
     remaining_bytes = io.stat.size - io.pos
     if remaining_bytes >= tag_length
       raw_tag << io.read(tag_length)
-      
-      $stderr.puts("File has a weird ID3V2 tag length.") if raw_tag.length != tag_length + 10
+
+      warn("File has a weird ID3V2 tag length.") if raw_tag.length != tag_length + 10
       id3v2 = ID3V2.new
       id3v2.from_bin(raw_tag)
-      $stderr.puts("ID3v2 tag is [#{id3v2.inspect}]") if $DEBUG
+      warn("ID3v2 tag is [#{id3v2.inspect}]") if $DEBUG
     else
       raise(ID3V2Error, "ID3v2 tag found, but not enough bytes in the file to read whole tag (tag length is #{tag_length}, #{remaining_bytes} bytes left in file) [#{raw_tag.inspect}].")
     end
-    
+
     id3v2
   end
-  
+
   def initialize
     @hash = {}
 
@@ -71,34 +70,34 @@ class ID3V2
     @extended_header = nil
 
     # set defaults for everything
-    @raw_tag = self.to_bin
+    @raw_tag = to_bin
 
     # hash to identify if tag is changed after creation
     @hash_orig = {}
   end
-  
+
   def changed?
     @hash_orig.nil? || @hash_orig != @hash
   end
-  
+
   def valid?
     valid_major_version? && valid_frame_sizes?
   end
-  
+
   def valid_major_version?
     [2, 3, 4].include?(major_version)
   end
-  
+
   def valid_frame_sizes?
     !(major_version == 4 && unsynchronized_tag?(@raw_tag))
   end
-  
+
   # Retrieve a frame by key. Returns the single frame object when there is
   # only one frame for a key, or an array when there are multiple.
   def [](key)
     value = @hash[key]
     return nil if value.nil?
-    value.size == 1 ? value.first : value
+    (value.size == 1) ? value.first : value
   end
 
   # Access the raw array of frames for a key, always as an Array.
@@ -108,11 +107,11 @@ class ID3V2
 
   # Iteration and comparison unwrap single-element arrays for backward compat
   def each
-    @hash.each { |k, v| yield k, (v.size == 1 ? v.first : v) }
+    @hash.each { |k, v| yield k, ((v.size == 1) ? v.first : v) }
   end
 
   def values
-    @hash.values.map { |v| v.size == 1 ? v.first : v }
+    @hash.values.map { |v| (v.size == 1) ? v.first : v }
   end
 
   def ==(other)
@@ -122,17 +121,17 @@ class ID3V2
   end
 
   def to_unwrapped_hash
-    @hash.transform_values { |v| v.size == 1 ? v.first : v }
+    @hash.transform_values { |v| (v.size == 1) ? v.first : v }
   end
 
   def []=(key, args)
     value = args
-    if value.is_a? ID3V24::Frame
-      @hash[key] = [value]
+    @hash[key] = if value.is_a? ID3V24::Frame
+      [value]
     elsif value.is_a? Array
-      @hash[key] = value.map { |t| t.is_a?(ID3V24::Frame) ? t : ID3V24::Frame.create_frame(key, t.to_s) }
+      value.map { |t| t.is_a?(ID3V24::Frame) ? t : ID3V24::Frame.create_frame(key, t.to_s) }
     else
-      @hash[key] = [ID3V24::Frame.create_frame(key, value.to_s)]
+      [ID3V24::Frame.create_frame(key, value.to_s)]
     end
   end
 
@@ -161,7 +160,7 @@ class ID3V2
   def key?(k)
     @hash.key?(k)
   end
-  alias include? key?
+  alias_method :include?, :key?
 
   def inspect
     "#<ID3V2(#{to_unwrapped_hash.inspect})>"
@@ -177,35 +176,35 @@ class ID3V2
   def major_version
     @raw_tag[3].ord
   end
-  
+
   def minor_version
     @raw_tag[4].ord
   end
-  
+
   def version
     "2.#{major_version}.#{minor_version}"
   end
-  
+
   def flags
     @raw_tag[5]
   end
-  
+
   def unsynchronized?
     flags.to_binary_array[4] == 1
   end
-  
+
   def extended_header?
     flags.to_binary_array[5] == 1
   end
-  
+
   def experimental?
     flags.to_binary_array[6] == 1
   end
-  
+
   def footer?
     flags.to_binary_array[7] == 1
   end
-  
+
   def frame_count
     @hash.values.sum(&:size)
   end
@@ -215,39 +214,39 @@ class ID3V2
       frames.select { |frame| frame.respond_to?(:description) && frame.description == description }
     end
   end
-  
+
   def tag_length
     @raw_tag[6..9].from_synchsafe_string
   end
-  
+
   def description
-    <<-DONE
-ID3V#{version} tag:
-
-  Tag is #{valid? ? '' : "not "}valid.#{valid_frame_sizes? ? '' : ' (ID3v2.4.0 tag has non-synchsafe frame sizes.)' }
-
-  Major version    : #{major_version}
-  Minor version    : #{minor_version}
-  Tag size         : #{tag_length.octet_units}
-
-  Tag is #{unsynchronized? ? '' : 'not '}unsynchronized.
-  Tag is #{experimental? ? '' : "not "}experimental.
-  Tag #{extended_header? ? 'has' : 'does not have'} an extended header.
-  Tag #{footer? ? 'has' : 'does not have'} have a footer.
-
-  There are #{frame_count} frames in this tag.
-
+    <<~DONE
+      ID3V#{version} tag:
+      
+        Tag is #{"not " unless valid?}valid.#{" (ID3v2.4.0 tag has non-synchsafe frame sizes.)" unless valid_frame_sizes?}
+      
+        Major version    : #{major_version}
+        Minor version    : #{minor_version}
+        Tag size         : #{tag_length.octet_units}
+      
+        Tag is #{"not " unless unsynchronized?}unsynchronized.
+        Tag is #{"not " unless experimental?}experimental.
+        Tag #{extended_header? ? "has" : "does not have"} an extended header.
+        Tag #{footer? ? "has" : "does not have"} have a footer.
+      
+        There are #{frame_count} frames in this tag.
+      
     DONE
   end
-  
+
   def from_bin(string)
     # let's get serious here
-    raise(ID3V2ParseError, "Tag started with '#{string[0...3]}' instead of 'ID3'") unless string.index('ID3') == 0
-    
+    raise(ID3V2ParseError, "Tag started with '#{string[0...3]}' instead of 'ID3'") unless string.index("ID3") == 0
+
     # save the tag to get at the versions and flags after the fact
     @raw_tag = string
-    
-    raise(ID3V2ParseError, "Major version must be one of 2, 3 or 4 (is #{major_version || 'unknown'})") unless valid_major_version?
+
+    raise(ID3V2ParseError, "Major version must be one of 2, 3 or 4 (is #{major_version || "unknown"})") unless valid_major_version?
 
     # Preserve the source version for output unless explicitly overridden
     @write_version = major_version
@@ -257,16 +256,16 @@ ID3V#{version} tag:
     if unsynchronized?
       # De-unsynchronize: replace \xFF\x00 back to \xFF in the frame data (after 10-byte header)
       header = string[0, 10]
-      body = string[10..-1]
+      body = string[10..]
       body = body.gsub("\xFF\x00".b, "\xFF".b)
       tag_data = header + body
     end
 
-    $stderr.puts("Parsing ID3v#{version} of length #{"%#010x" % tag_length}...") if $DEBUG
+    warn("Parsing ID3v#{version} of length #{"%#010x" % tag_length}...") if $DEBUG
     @hash.update(parse_id3v2_frames(major_version, tag_data))
     @hash_orig = @hash.dup
   end
-  
+
   def to_bin
     if changed?
       tag = ""
@@ -280,15 +279,15 @@ ID3V#{version} tag:
       tag_str << "\x00"  # tag flags (no tag-level unsync — per-frame in v2.4)
       tag_str << tag.bytesize.to_synchsafe_string
       tag_str << tag
-      $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
+      warn "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
       tag_str
     else
-      raise(ID3V2InternalError,"Can't return an uninitialized tag.") unless defined?(@raw_tag) && !@raw_tag.nil?
-      $stderr.puts "ID3V2.to_bin tag unchanged, returning cached raw tag [#{@raw_tag}]." if $DEBUG
+      raise(ID3V2InternalError, "Can't return an uninitialized tag.") unless defined?(@raw_tag) && !@raw_tag.nil?
+      warn "ID3V2.to_bin tag unchanged, returning cached raw tag [#{@raw_tag}]." if $DEBUG
       @raw_tag
     end
   end
-  
+
   def merge(other_id3v2)
     # copy frames this tag doesn't know about
     new_frames = other_id3v2.keys - @hash.keys
@@ -298,16 +297,16 @@ ID3V#{version} tag:
     merge_frames = other_id3v2.keys & @hash.keys
     merge_frames.each do |key|
       current_set = @hash[key]
-      other_set   = Array(other_id3v2[key])
+      other_set = Array(other_id3v2[key])
       merged = current_set + other_set
       out = []
       merged.each { |v| out << v unless out.include?(v) }
       @hash[key] = out
     end
   end
-  
+
   private
-  
+
   # Check if binary data contains byte sequences that could be mistaken for
   # MPEG sync patterns. Returns true if unsynchronization is needed.
   def needs_unsynchronization?(data)
@@ -370,7 +369,7 @@ ID3V#{version} tag:
         if ext[:has_restrictions]
           pos += 1  # skip $01 length byte
           ext[:restrictions] = string[pos].ord
-          pos += 1
+          pos + 1
         end
       end
     else  # v2.3
@@ -387,10 +386,10 @@ ID3V#{version} tag:
   end
 
   def encode_frame(frame)
-    $stderr.puts("ID3v2.encode_frame(frame=[#{frame.inspect}])") if $DEBUG
+    warn("ID3v2.encode_frame(frame=[#{frame.inspect}])") if $DEBUG
     encoded_frame_data = frame.to_s
 
-    header = frame.type[0,4]
+    header = frame.type[0, 4]
 
     if @write_version >= 4
       # v2.4: per-frame unsynchronization applied to frame data only.
@@ -414,9 +413,9 @@ ID3V#{version} tag:
 
     header + encoded_frame_data
   end
-  
+
   def parse_id3v2_frames(version, string)
-    $stderr.puts("ID3V2.parse_id3v2_frames(version=#{version},string='#{string[0..255].inspect}...')") if $DEBUG
+    warn("ID3V2.parse_id3v2_frames(version=#{version},string='#{string[0..255].inspect}...')") if $DEBUG
     frame_hash = {}
     # 3 bytes for 'ID3'
     # 3 bytes for major version, minor version, and header flags
@@ -434,20 +433,20 @@ ID3V#{version} tag:
     if version == 4
       unsynchronized_sizes = unsynchronized_tag?(string)
     end
-    
-    while cur_pos < string.size do
+
+    while cur_pos < string.size
       name = string.slice(cur_pos, default_width(version))
       cur_pos += default_width(version)
-      $stderr.puts("parse_id3v2_frames name is #{name}") if $DEBUG
-      
+      warn("parse_id3v2_frames name is #{name}") if $DEBUG
+
       break if frame_name_invalid?(version, name)
 
       break if cur_pos + default_width(version) > string.size  # not enough bytes for size
 
       size = frame_size(string, cur_pos, version, unsynchronized_sizes)
       cur_pos += default_width(version)
-      $stderr.puts("parse_id3v2_frames size is #{size}") if $DEBUG
-      
+      warn("parse_id3v2_frames size is #{size}") if $DEBUG
+
       # ID3v2.2 has no frame flags
       frame_flags_raw = nil
       extra_header_bytes = 0
@@ -467,11 +466,6 @@ ID3V#{version} tag:
           extra_header_bytes += 1 if has_group      # group identifier byte
           extra_header_bytes += 1 if encrypted       # encryption method byte
           extra_header_bytes += 4 if has_data_length # synchsafe data length
-
-          if encrypted
-            cur_pos += size
-            next
-          end
         else  # v2.3
           compressed = (frame_flags_raw[1].ord & 0x80) != 0
           encrypted = (frame_flags_raw[1].ord & 0x40) != 0
@@ -482,11 +476,11 @@ ID3V#{version} tag:
           extra_header_bytes += 4 if compressed  # decompressed size
           extra_header_bytes += 1 if encrypted   # encryption method
           extra_header_bytes += 1 if has_group   # group identifier
+        end
 
-          if encrypted
-            cur_pos += size
-            next
-          end
+        if encrypted
+          cur_pos += size
+          next
         end
       else
         compressed = false
@@ -506,11 +500,11 @@ ID3V#{version} tag:
 
       # Decompress zlib-compressed frames
       if compressed && frame_body
-        require 'zlib'
+        require "zlib"
         begin
           frame_body = Zlib::Inflate.inflate(frame_body)
         rescue Zlib::DataError => e
-          $stderr.puts("Warning: failed to decompress frame '#{name}': #{e.message}") if $DEBUG
+          warn("Warning: failed to decompress frame '#{name}': #{e.message}") if $DEBUG
           cur_pos += size
           next
         end
@@ -519,14 +513,14 @@ ID3V#{version} tag:
       begin
         add_frame(frame_hash, name, frame_body)
       rescue => e
-        $stderr.puts("Warning: skipping frame '#{name}' at offset #{cur_pos}: #{e.message}") if $DEBUG
+        warn("Warning: skipping frame '#{name}' at offset #{cur_pos}: #{e.message}") if $DEBUG
       end
       cur_pos += size
     end
-    
+
     frame_hash
   end
-  
+
   def default_width(version)
     case version
     when 2
@@ -535,7 +529,7 @@ ID3V#{version} tag:
       4
     end
   end
-  
+
   def frame_name_invalid?(version, name)
     case version
     when 2
@@ -545,7 +539,7 @@ ID3V#{version} tag:
       name == "MP3e" or !name.match?(/\A[A-Za-z0-9]{4}\z/)
     end
   end
-  
+
   def frame_size(string, cur_pos, version, unsynchronized = true)
     case version
     when 2
@@ -565,12 +559,12 @@ ID3V#{version} tag:
   end
 
   def add_frame(hash, name, string)
-    $stderr.puts "ID3V2.add_frame(name='#{name}',string=[#{string[0..255].inspect}...])" if $DEBUG
+    warn "ID3V2.add_frame(name='#{name}',string=[#{string[0..255].inspect}...])" if $DEBUG
     frame = ID3V24::Frame.create_frame_from_string(name, string)
     hash[name] ||= []
     hash[name] << frame
   end
-  
+
   # For 2.4.0 tags, try to detect lurking unsynchronized frame size strings
   #
   # I used to handle this by silently fixing up non-synchsafe size strings
@@ -580,26 +574,25 @@ ID3V#{version} tag:
   def unsynchronized_tag?(string)
     # skip all the headers
     cur_pos = 10
-    
-    while cur_pos < string.size do
+
+    while cur_pos < string.size
       # not verifying names for now
       # name = string.slice(cur_pos, default_width(version))
       cur_pos += 4
-      
+
       size_string = string.slice(cur_pos, 4)
-      
+
       break unless size_string && size_string.size == 4
-      
+
       unless size_string.synchsafe?
-        $stderr.puts("ID3V2.unsynchronized_tag? found unsynchronized size %#010x at %#08x" % [size_string.to_binary_decimal, cur_pos]) if $DEBUG
+        warn("ID3V2.unsynchronized_tag? found unsynchronized size %#010x at %#08x" % [size_string.to_binary_decimal, cur_pos]) if $DEBUG
         return true
       end
-      
+
       # increment past the 4-byte size, the 2-byte flags and the tag's content
       cur_pos += 6 + size_string.from_synchsafe_string
     end
-    
+
     false
   end
 end
- 

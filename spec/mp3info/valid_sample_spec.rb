@@ -1,5 +1,4 @@
 describe Mp3Info, "when loading a sample MP3 file" do
-
   before do
     @mp3_filename = "test_mp3info.mp3"
     create_sample_mp3_file(@mp3_filename)
@@ -22,11 +21,17 @@ describe Mp3Info, "when loading a sample MP3 file" do
   end
 
   it "should detect that the sample file contains MPEG 1 audio" do
-    Mp3Info.open(@mp3_filename) { |info| expect(info.has_mpeg_header?).to be true ; expect(info.mpeg_header.version).to eq(1) }
+    Mp3Info.open(@mp3_filename) { |info|
+      expect(info.has_mpeg_header?).to be true
+      expect(info.mpeg_header.version).to eq(1)
+    }
   end
 
   it "should detect that the sample file contains layer 3 audio" do
-    Mp3Info.open(@mp3_filename) { |info| expect(info.has_mpeg_header?).to be true ; expect(info.mpeg_header.layer).to eq(3) }
+    Mp3Info.open(@mp3_filename) { |info|
+      expect(info.has_mpeg_header?).to be true
+      expect(info.mpeg_header.layer).to eq(3)
+    }
   end
 
   it "should detect that the sample file does not contain VBR-encoded audio" do
@@ -38,15 +43,24 @@ describe Mp3Info, "when loading a sample MP3 file" do
   end
 
   it "should detect that the sample file is encoded as joint stereo" do
-    Mp3Info.open(@mp3_filename) { |info| expect(info.has_mpeg_header?).to be true ; expect(info.mpeg_header.mode).to eq("Joint stereo") }
+    Mp3Info.open(@mp3_filename) { |info|
+      expect(info.has_mpeg_header?).to be true
+      expect(info.mpeg_header.mode).to eq("Joint stereo")
+    }
   end
 
   it "should detect that the sample file has a sample rate of 44.1kHz" do
-    Mp3Info.open(@mp3_filename) { |info| expect(info.has_mpeg_header?).to be true ; expect(info.mpeg_header.sample_rate).to eq(44_100) }
+    Mp3Info.open(@mp3_filename) { |info|
+      expect(info.has_mpeg_header?).to be true
+      expect(info.mpeg_header.sample_rate).to eq(44_100)
+    }
   end
 
   it "should detect that the sample file is not error-protected" do
-    Mp3Info.open(@mp3_filename) { |info| expect(info.has_mpeg_header?).to be true ; expect(info.mpeg_header.error_protected?).to be false }
+    Mp3Info.open(@mp3_filename) { |info|
+      expect(info.has_mpeg_header?).to be true
+      expect(info.mpeg_header.error_protected?).to be false
+    }
   end
 
   it "should detect that the sample file has a duration of 0.1305625 seconds" do

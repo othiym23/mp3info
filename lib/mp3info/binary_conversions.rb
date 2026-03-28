@@ -28,16 +28,16 @@ module Mp3InfoLib
       end
 
       def synchsafe?
-        self.size == 4 && (to_binary_decimal & 0x80808080) == 0
+        size == 4 && (to_binary_decimal & 0x80808080) == 0
       end
     end
 
     refine Array do
       def to_binary_string
-        binary_string = ''
+        binary_string = ""
         binary_list = reverse
         chunks = binary_list.size / 8
-        chunks += 1 if (binary_list.size % 8 > 0)
+        chunks += 1 if binary_list.size % 8 > 0
 
         chunks.times do |cur_slice|
           byte = 0

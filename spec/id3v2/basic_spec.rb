@@ -18,7 +18,7 @@ describe ID3V2, "when creating ID3v2 tags" do
   end
 
   it "should create a tag with a full version of '2.3.0' by default" do
-    expect(@tag.version).to eq('2.3.0')
+    expect(@tag.version).to eq("2.3.0")
   end
 
   it "should create a tag without unsynchronized frames by default" do
@@ -177,7 +177,7 @@ describe ID3V2, "when creating ID3v2 tags" do
   end
 
   it "should decompress a zlib-compressed frame in v2.3" do
-    require 'zlib'
+    require "zlib"
     # Original frame body: encoding byte + text
     original_body = "\x03Hello Compressed World".b
     compressed_body = Zlib::Deflate.deflate(original_body)
@@ -229,12 +229,12 @@ describe ID3V2, "when creating ID3v2 tags" do
     @tag.write_version = 4
     # PRIV frame with data containing \xFF\xFB (looks like MPEG sync)
     sync_data = "test\x00\xFF\xFB\x90\x00".b
-    @tag['PRIV'] = ID3V24::Frame.create_frame_from_string('PRIV', sync_data)
+    @tag["PRIV"] = ID3V24::Frame.create_frame_from_string("PRIV", sync_data)
 
     bin = @tag.to_bin
     # The per-frame unsync flag (byte 2, bit 1) should be set
     # Find the PRIV frame in the output
-    priv_pos = bin.index('PRIV')
+    priv_pos = bin.index("PRIV")
     expect(priv_pos).not_to be_nil
     frame_flags_byte = bin[priv_pos + 4 + 4 + 1].ord  # after name(4) + size(4) + status(1)
     expect(frame_flags_byte & 0x02).to eq(0x02)
@@ -242,13 +242,13 @@ describe ID3V2, "when creating ID3v2 tags" do
     # Round-trip: parse the binary back and verify data is intact
     tag2 = ID3V2.new
     tag2.from_bin(bin)
-    expect(tag2['PRIV'].value.b).to eq("\xFF\xFB\x90\x00".b)
+    expect(tag2["PRIV"].value.b).to eq("\xFF\xFB\x90\x00".b)
   end
 
   it "should not apply unsynchronization for v2.3 output" do
     @tag.write_version = 3
     sync_data = "test\x00\xFF\xFB\x90\x00".b
-    @tag['PRIV'] = ID3V24::Frame.create_frame_from_string('PRIV', sync_data)
+    @tag["PRIV"] = ID3V24::Frame.create_frame_from_string("PRIV", sync_data)
 
     bin = @tag.to_bin
     # Tag-level unsync flag should NOT be set
@@ -257,6 +257,6 @@ describe ID3V2, "when creating ID3v2 tags" do
     # Round-trip
     tag2 = ID3V2.new
     tag2.from_bin(bin)
-    expect(tag2['PRIV'].value.b).to eq("\xFF\xFB\x90\x00".b)
+    expect(tag2["PRIV"].value.b).to eq("\xFF\xFB\x90\x00".b)
   end
 end
