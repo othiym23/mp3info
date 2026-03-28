@@ -137,9 +137,8 @@ class Mp3Info
   def initialize(filename)
     # read in ID3v2 tag, MPEG info, and ID3 tag (if present) in a single pass
     @filename = filename
-    file = File.new(@filename, "rb")
-    
-    total_bytes = file.stat.size
+    File.open(@filename, "rb") do |file|
+      total_bytes = file.stat.size
 
     while file.pos < total_bytes do
       # try to read tags first, then read MPEG data
@@ -232,9 +231,8 @@ class Mp3Info
       @streamsize = file.stat.size - ID3::TAGSIZE - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
       @length = ((@streamsize << 3) / 1000.0) / bitrate
     end
+    end
 
-    file.close
-    
     load_universal_tag!
     
     if !(has_id3v1_tag? || has_id3v2_tag? || has_mpeg_header? || has_xing_header?)
