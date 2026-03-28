@@ -111,6 +111,10 @@ class Mp3Info
     !@lame_header.nil?
   end
   
+  def self.remove_id3v1_tag(filename)
+    ID3.remove_id3v1_tag!(filename)
+  end
+
   def remove_id3v1_tag
     if ID3.has_id3v1_tag?(@filename)
       ID3.remove_id3v1_tag!(@filename)
