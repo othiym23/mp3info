@@ -517,4 +517,30 @@ module MPEGUtils
       expect('βρεγμένοι ξυλουργοί'.to_binary_array.to_binary_decimal.to_binary_array.to_binary_string).to eq('βρεγμένοι ξυλουργοί')
     end
   end
+
+  describe MPEGFile, "when finding MPEG frames" do
+    include MPEGFile
+
+    it "should find a valid frame after a false sync even with non-zero start_pos" do
+      # Build test data: padding, false 0xFF sync, then a valid MPEG1 Layer III frame header
+      # Valid MPEG1 Layer III 128kbps 44100Hz stereo header: 0xFFFB9004
+      valid_header = "\xFF\xFB\x90\x04".b
+      padding = "\x00" * 20
+      false_sync = "\xFF\x00".b  # 0xFF followed by non-sync byte
+
+      data = padding + false_sync + valid_header + ("\x00" * 417)  # frame data to fill frame
+
+      require 'tempfile'
+      Tempfile.open('mpeg_test') do |f|
+        f.binmode
+        f.write(data)
+        f.flush
+
+        # Search starting from a non-zero position (past the padding)
+        header_pos, header = find_next_frame(f, 10)
+        expect(header_pos).to eq(22)  # 20 bytes padding + 2 bytes false sync
+        expect(valid_mpeg_header?(header)).to be true
+      end
+    end
+  end
 end

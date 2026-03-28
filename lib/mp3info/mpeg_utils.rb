@@ -173,15 +173,33 @@ module MPEGFile
   
   def find_next_frame(file, start_pos = 0)
     # make sure we've got the sync pattern, let the MPEGHeader validity check do the rest
+    first_valid_pos = nil
+    first_valid_header = nil
+
     header_pos, header = find_sync(file, start_pos)
     loop do
       $stderr.puts("MPEGFile::find_next_frame file.pos is %#010x, header_pos is %#010x, header is %#010x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
-      break if nil == header || valid_mpeg_header?(header)
-      header_pos, header = find_sync(file, start_pos + header_pos + 2)
+      break if nil == header
+
+      if valid_mpeg_header?(header)
+        # Remember the first valid candidate as a fallback
+        if first_valid_pos.nil?
+          first_valid_pos = header_pos
+          first_valid_header = header
+        end
+
+        # Prefer a frame that is followed by another valid sync
+        break if frame_follows?(file, header_pos, header)
+      end
+
+      header_pos, header = find_sync(file, header_pos + 1)
     end
-    
-    if header
+
+    # Use the verified frame, or fall back to the first valid-looking candidate
+    if header && valid_mpeg_header?(header)
       return header_pos, header
+    elsif first_valid_header
+      return first_valid_pos, first_valid_header
     else
       raise(MPEGFileError, "cannot find a valid frame after reading #{"%#010x" % file.pos} bytes from #{file.path} of size #{"%#010x" % file.stat.size}")
     end
@@ -211,5 +229,25 @@ module MPEGFile
   
   def valid_mpeg_header?(header_string)
     MPEGHeader.new(header_string).valid?
+  end
+
+  # Verify a candidate frame by checking that the next frame follows at the
+  # expected offset. This eliminates false positive sync matches.
+  def frame_follows?(file, header_pos, header_string)
+    candidate = MPEGHeader.new(header_string)
+    return true unless candidate.valid?
+
+    next_pos = header_pos + candidate.frame_size
+    return true if next_pos + 4 > file.stat.size  # near EOF, can't check
+
+    saved_pos = file.pos
+    file.seek(next_pos)
+    next_header = file.read(4)
+    file.seek(saved_pos)
+
+    return true unless next_header && next_header.size == 4
+
+    # The next frame should start with a sync pattern (0xFFE0 mask)
+    next_header[0].ord == 0xFF && (next_header[1].ord & 0xE0) == 0xE0
   end
 end
