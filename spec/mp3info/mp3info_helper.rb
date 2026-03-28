@@ -123,9 +123,7 @@ EOF
   end
 
   def random_string
-    out = ""
-    TEST_PRIME.times { out << rand(256).chr }
-    out
+    Random.bytes(TEST_PRIME)
   end
 
   def packed_id3_1_0_tag(tag = sample_id3v1_tag)
