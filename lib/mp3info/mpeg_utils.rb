@@ -35,7 +35,7 @@ class String
   end
   
   def synchsafe?
-    (to_binary_decimal & 0x80808080) == 0
+    size == 4 && (to_binary_decimal & 0x80808080) == 0
   end
 end
 
@@ -149,14 +149,13 @@ module MPEGFile
     raise(MPEGFileError, "File is not writable") unless File.writable?(filename)
     $stderr.puts("MPEGFile::write_mpeg_file! source file length is #{File.size(filename)}") if $DEBUG
     
-    tmpfile_path = nil
-    File.open(filename, 'rb') do |original|
-      Tempfile.open('mp3info', File.dirname(filename)) do |temporary|
-        tmpfile_path = temporary.path
-        
+    temporary = Tempfile.new('mp3info', File.dirname(filename))
+    begin
+      tmpfile_path = temporary.path
+      File.open(filename, 'rb') do |original|
         # this would be a good place to invoke code to prepend a tag to the file
         yield temporary if block_given?
-        
+
         $stderr.puts("MPEGFile::write_mpeg_file! about to call find_next_frame at %#010x" % original.pos) if $DEBUG
         header_pos, header = find_next_frame(original, original.pos)
         original.seek(header_pos)
@@ -167,8 +166,13 @@ module MPEGFile
           $stderr.puts("MPEGFile::write_mpeg_file! wrote #{"%#010x" % bufsize} bytes of the original file to #{tmpfile_path}") if $DEBUG
         end
       end
+      temporary.close
+      File.rename(tmpfile_path, filename)
+    rescue
+      temporary.close
+      temporary.unlink
+      raise
     end
-    File.rename(tmpfile_path, filename)
   end
   
   def find_next_frame(file, start_pos = 0)
