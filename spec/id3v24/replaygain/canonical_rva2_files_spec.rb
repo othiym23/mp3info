@@ -1,5 +1,4 @@
 # encoding: utf-8
-$:.unshift("lib/")
 
 require 'mp3info'
 
@@ -109,7 +108,7 @@ describe Mp3Info, "when reading a set of files with RVA2 tags with verified repl
     expect(@mp3.id3v2_tag['RVA2'].adjustments[0].peak_gain).to eq(6553)
   end
   
-  it "should find the correct gain values for a file emboldened by 12 dB" do
+  it "should find the correct gain values for a file emboldened by 16 dB" do
     @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../../sample-metadata/Replay Gain RVA2/09-2000-16dBlouder-trackonly.mp3'))
     expect(@mp3.has_id3v2_tag?).to be true
     expect(@mp3.id3v2_tag['RVA2']).not_to be_nil

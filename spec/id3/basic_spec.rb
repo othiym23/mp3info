@@ -1,10 +1,6 @@
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 require 'mp3info/id3'
 
 describe ID3, "when working with standalone ID3v1.0 tags" do
-  include Mp3InfoHelper
 
   it "should correctly identify the tag as ID3v1.0 and not ID3v1.1" do
     expect(ID3.new.from_bin(packed_id3_1_0_tag).version).to eq(ID3::VERSION_1)
@@ -40,7 +36,6 @@ describe ID3, "when working with standalone ID3v1.0 tags" do
 end
 
 describe ID3, "when working with standalone ID3v1.1 tags" do
-  include Mp3InfoHelper
 
   it "should correctly identify the tag as ID3v1.1 and not ID3v1.0" do
     expect(ID3.new.from_bin(packed_id3_1_1_tag).version).to eq(ID3::VERSION_1_1)

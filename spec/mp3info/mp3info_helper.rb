@@ -1,5 +1,3 @@
-$:.unshift("lib/")
-
 require 'base64'
 require 'mp3info'
 
@@ -13,20 +11,19 @@ module Mp3InfoHelper
   TEST_GENRE_ID     = 43
   # ID3v1 genre ID 43 -> Punk
   TEST_GENRE_NAME   = "Punk"
-  
+
   # not in the ID3v1 list of genres or the WinAmp extension list
   INVALID_GENRE_ID  = 253
-  
+
   # Use a nice, big prime size for binary strings to push string writing and
   # reading routines harder
   #
   # http://primes.utm.edu/curios/page.php/78787.html
   TEST_PRIME        = 78787
-  
-  def get_valid_mp3
-        # Command to create a dummy MP3
-        # dd if=/dev/zero bs=1024 count=15 | lame --preset cbr 128 -r -s 44.1 --bitwidth 16 - - | ruby -rbase64 -e 'print Base64.encode64($stdin.read)'
-    Base64.decode64 <<EOF
+
+  # Command to create a dummy MP3
+  # dd if=/dev/zero bs=1024 count=15 | lame --preset cbr 128 -r -s 44.1 --bitwidth 16 - - | ruby -rbase64 -e 'print Base64.encode64($stdin.read)'
+  VALID_MP3 = Base64.decode64(<<EOF
 //uQZAAAAAAAaQYAAAAAAA0gwAAAAAABpBwAAAAAADSDgAAATEFNRTMuOTNV
 VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
@@ -75,12 +72,16 @@ VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 VVVVVVVVVVVVVVVVVVVVVVVVVQ==
 EOF
+)
+
+  def get_valid_mp3
+    VALID_MP3.dup
   end
-  
+
   def create_sample_mp3_file(filename)
     File.open(filename, "w") { |f| f.write(get_valid_mp3) }
   end
-  
+
   def sample_id3v1_0_attrs
     [ TEST_TITLE,
       TEST_ARTIST,
@@ -89,7 +90,7 @@ EOF
       TEST_COMMENT,
       TEST_GENRE_ID ]
   end
-  
+
   def sample_id3v1_1_attrs
     [ TEST_TITLE,
       TEST_ARTIST,
@@ -99,7 +100,7 @@ EOF
       TEST_TRACK_NUMBER,
       TEST_GENRE_ID ]
   end
-  
+
   def sample_id3v1_tag
     { "title"    => TEST_TITLE,
       "artist"   => TEST_ARTIST,
@@ -110,7 +111,7 @@ EOF
       "genre_s"  => TEST_GENRE_NAME,
       "tracknum" => TEST_TRACK_NUMBER }
   end
-  
+
   def sample_id3v2_tag
     { "COMM" => ID3V24::Frame.create_frame("COMM", TEST_COMMENT),
       "TCON" => ID3V24::Frame.create_frame("TCON", TEST_GENRE_NAME),
@@ -120,23 +121,23 @@ EOF
       "TYER" => ID3V24::Frame.create_frame("TYER", TEST_YEAR),
       "TRCK" => ID3V24::Frame.create_frame("TRCK", "#{TEST_TRACK_NUMBER}/12") }
   end
-  
+
   def random_string
     out = ""
     TEST_PRIME.times { out << rand(256).chr }
     out
   end
-  
+
   def packed_id3_1_0_tag(tag = sample_id3v1_tag)
     attrs = [tag['title'], tag['artist'], tag['album'], tag['year'], tag['comments'], tag['genre']]
     "TAG#{attrs.pack('A30A30A30A4A30C')}"
   end
-  
+
   def packed_id3_1_1_tag(tag = sample_id3v1_tag)
     attrs = [tag['title'], tag['artist'], tag['album'], tag['year'], tag['comments'], tag['tracknum'], tag['genre']]
     "TAG#{attrs.pack('A30A30A30A4a29CC')}"
   end
-  
+
   def create_valid_id3_1_0_file(filename)
     File.open(filename, "w") do |f|
       f.write(get_valid_mp3)
@@ -144,7 +145,7 @@ EOF
       f.write(packed_id3_1_0_tag)
     end
   end
-  
+
   def create_valid_id3_1_1_file(filename)
     File.open(filename, "w") do |f|
       f.write(get_valid_mp3)
@@ -152,19 +153,19 @@ EOF
       f.write(packed_id3_1_1_tag)
     end
   end
-  
+
   def update_id3_2_tag(filename, tag)
     Mp3Info.open(filename) do |mp3|
       mp3.id3v2_tag.update(tag)
     end
-    
+
     Mp3Info.open(filename) { |m| m.id3v2_tag }
   end
-  
+
   def test_against_id3v2_prog(written_tag)
     return if RUBY_PLATFORM =~ /win32/
     return if `which id3v2`.empty?
-    
+
     start = false
     id3v2_output = {}
     `id3v2 -l #{@mp3_filename}`.each_line do |line|
@@ -174,23 +175,23 @@ EOF
       end
       next unless start
       k, v = /^(.{4}) \(.+\): (.+)$/.match(line)[1,2]
-      
+
       #COMM (Comments): ()[spa]: fmg
       v.sub!(/\(\)\[.{3}\]: (.+)/, '\1') if k == "COMM"
-      
+
       id3v2_output[k] = v
     end
-    
+
     id3v2_output
   end
-  
+
   def prettify_tag(tag)
     prettified_tag = {}
-    
+
     tag.each do |key,value|
       prettified_tag[key] = value.to_s_pretty
     end
-    
+
     prettified_tag
   end
 end

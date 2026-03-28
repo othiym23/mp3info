@@ -1,7 +1,4 @@
 # encoding: binary
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::XRVFrame, "when strictly interpreting the ID3v2 specification" do
   it "should have a minimum positive gain increment of 0.001953125 dB" do

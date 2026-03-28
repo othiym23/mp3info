@@ -1,9 +1,4 @@
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
-
 describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre that corresponds to an ID3v1 genre ID" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -33,7 +28,6 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
 end
 
 describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a bare ID3v1 genre ID" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"

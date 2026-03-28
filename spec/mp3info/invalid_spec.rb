@@ -1,5 +1,3 @@
-$:.unshift("lib/")
-
 require 'mp3info'
 
 describe Mp3Info, "when loading an invalid MP3 file" do

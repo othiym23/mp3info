@@ -1,9 +1,4 @@
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
-
 describe Mp3Info, "when exposing replaygain information" do
-  include Mp3InfoHelper
   
   before do
     @mp3_filename = "test_mp3info.mp3"

@@ -1,10 +1,6 @@
 # encoding: utf-8
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::Frame, "when dealing with the various frame encoding types" do
-  include Mp3InfoHelper
   
   before do
     @mp3_filename = "test_mp3info.mp3"

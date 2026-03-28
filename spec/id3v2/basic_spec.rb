@@ -1,9 +1,4 @@
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
-
 describe ID3V2, "when creating ID3v2 tags" do
-  include Mp3InfoHelper
   before do
     @tag = ID3V2.new
   end

@@ -1,5 +1,3 @@
-$:.unshift("lib/")
-
 require 'mp3info/mpeg_header'
 
 describe MPEGHeader, "with valid but unusual headers" do

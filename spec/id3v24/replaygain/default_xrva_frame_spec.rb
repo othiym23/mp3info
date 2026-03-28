@@ -1,10 +1,6 @@
 # encoding: binary
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::XRVAFrame, "when creating a new XRVA (replay gain) frame with defaults" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -41,11 +37,11 @@ describe ID3V24::XRVAFrame, "when creating a new XRVA (replay gain) frame with d
   end
   
   it "should have a peak gain adjustment scale 0 bits wide" do
-    @saved_frame.adjustments.first.peak_gain_bit_width == 0
+    expect(@saved_frame.adjustments.first.peak_gain_bit_width).to eq(0)
   end
   
   it "should have a peak gain adjustment of 0" do
-    @saved_frame.adjustments.first.peak_gain == 0
+    expect(@saved_frame.adjustments.first.peak_gain).to eq(0)
   end
   
   it "should correctly encode itself to binary" do

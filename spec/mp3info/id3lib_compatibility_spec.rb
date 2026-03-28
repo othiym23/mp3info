@@ -1,10 +1,6 @@
 # encoding: utf-8
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe Mp3Info, "when comparing tagged files using the ID3lib-based command-line tool 'id3v2'" do
-  include Mp3InfoHelper
 
   before do
     @mp3_filename = "test_mp3info.mp3"

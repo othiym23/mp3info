@@ -1,10 +1,6 @@
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 require 'mp3info/id3'
 
 describe Mp3Info, "when working with ID3v1 tags" do
-  include Mp3InfoHelper
 
   before do
     @mp3_filename = "test_mp3info.mp3"
@@ -106,7 +102,6 @@ describe Mp3Info, "when working with ID3v1 tags" do
 end
 
 describe Mp3Info, "when working with ID3v1.1 tags" do
-  include Mp3InfoHelper
 
   before do
     @mp3_filename = "test_mp3info.mp3"

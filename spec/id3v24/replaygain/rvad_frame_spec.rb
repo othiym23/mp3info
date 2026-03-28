@@ -1,7 +1,4 @@
 # encoding: binary
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::RVADFrame, "when strictly interpreting the ID3v2.3 specification" do
   it "should have a minimum positive gain increment of 0.000132535146647037 dB at a 16 bit width" do
@@ -152,7 +149,6 @@ describe ID3V24::RVADFrame, "when strictly interpreting the ID3v2.3 specificatio
 end
 
 describe ID3V24::RVADFrame, "when parsing a simple RVAD (ID3v2.3 volume adjustment) frame containing one adjustment of -2dB" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -190,7 +186,6 @@ describe ID3V24::RVADFrame, "when parsing a simple RVAD (ID3v2.3 volume adjustme
 end
 
 describe ID3V24::RVADFrame, "when parsing a simple RVAD (ID3v2.3 replaygain) frame containing one adjustment of 6dB and a peak gain adjustment" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -214,11 +209,11 @@ describe ID3V24::RVADFrame, "when parsing a simple RVAD (ID3v2.3 replaygain) fra
     expect(@saved_frame.adjustments.first.channel_type).to eq('Front right')
   end
   
-  it "should have a channel adjustment value of 16 dB" do
+  it "should have a channel adjustment value of 4.0 dB" do
     expect(@saved_frame.adjustments.first.adjustment).to eq(4.0)
   end
   
-  it "should have a channel raw adjustment value of 8,192" do
+  it "should have a channel raw adjustment value of 2,048" do
     expect(@saved_frame.adjustments.first.raw_adjustment).to eq(2_048)
   end
   

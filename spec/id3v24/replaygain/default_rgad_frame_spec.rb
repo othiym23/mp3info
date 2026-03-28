@@ -1,10 +1,6 @@
 # encoding: binary
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::RGADFrame, "when creating a new RGAD (replay gain) frame with defaults" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -63,7 +59,7 @@ describe ID3V24::RGADFrame, "when creating a new RGAD (replay gain) frame with d
   end
   
   it "should have a peak amplitude of 0.0" do
-    @saved_frame.peak == 0.0
+    expect(@saved_frame.peak).to eq(0.0)
   end
   
   it "should correctly encode itself to binary" do

@@ -1,9 +1,4 @@
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
-
 describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defaults" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -23,7 +18,7 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame with defau
     expect(@saved_frame.class).to eq(ID3V24::COMMFrame)
   end
   
-  it "should choose a default encoding for the description of the image of UTF-8" do
+  it "should choose a default encoding for the description of the comment of UTF-8" do
     expect(@saved_frame.encoding).to eq(ID3V24::TextFrame::ENCODING[:utf8])
   end
   

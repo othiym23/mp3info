@@ -1,7 +1,4 @@
 # encoding: binary
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::RGADFrame, "when working directly with RGAD frame gain adjustments" do
   it "should have a minimum positive gain increment of 0.1 dB" do
@@ -98,7 +95,6 @@ describe ID3V24::RGADFrame, "when working directly with RGAD frame gain adjustme
 end
 
 describe ID3V24::RGADFrame, "when parsing a constructed RGAD (nonstandard ID3v2 replaygain) frame" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -158,11 +154,11 @@ describe ID3V24::RGADFrame, "when parsing a constructed RGAD (nonstandard ID3v2 
     expect(@saved_frame.album_gain.origin).to eq('automatic')
   end
   
-  it "should have an album gain adjustment value of -2 dB" do
+  it "should have an album gain adjustment value of 2.0 dB" do
     expect(@saved_frame.album_gain.adjustment).to eq(2.0)
   end
   
-  it "should have an album gain raw adjustment value of -20" do
+  it "should have an album gain raw adjustment value of 20" do
     expect(@saved_frame.album_gain.raw_adjustment).to eq(20)
   end
 end

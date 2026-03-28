@@ -1,7 +1,4 @@
 # encoding: binary
-$:.unshift("spec/")
-
-require 'mp3info/mp3info_helper'
 
 describe ID3V24::RVA2Frame, "when strictly interpreting the ID3v2.4 specification" do
   it "should have a minimum positive gain increment of 0.001953125 dB" do
@@ -86,7 +83,6 @@ describe ID3V24::RVA2Frame, "when strictly interpreting the ID3v2.4 specificatio
 end
 
 describe ID3V24::RVA2Frame, "when parsing a simple RVA2 (ID3v2.4 replaygain) frame containing one adjustment of -2dB" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"
@@ -128,7 +124,6 @@ describe ID3V24::RVA2Frame, "when parsing a simple RVA2 (ID3v2.4 replaygain) fra
 end
 
 describe ID3V24::RVA2Frame, "when parsing a simple RVA2 (ID3v2.4 replaygain) frame containing one adjustment of 16dB and a peak gain adjustment" do
-  include Mp3InfoHelper
   
   before :all do
     @mp3_filename = "test_mp3info.mp3"

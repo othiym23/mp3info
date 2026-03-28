@@ -1,5 +1,4 @@
 # encoding: utf-8
-$:.unshift("lib/")
 
 require 'digest/sha1'
 require 'mp3info'
