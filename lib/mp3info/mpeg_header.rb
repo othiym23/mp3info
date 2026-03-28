@@ -123,7 +123,7 @@ class MPEGHeader
   end
   
   def version
-    raise InvalidMPEGHeader, "Version code of 1 is reserved by MPEG specification." if 1 == @version
+    raise InvalidMPEGHeader, "Version code of 1 is reserved by MPEG specification." if @version == 1
     VERSIONS[@version]
   end
   
@@ -136,24 +136,24 @@ class MPEGHeader
   end
   
   def layer
-    raise InvalidMPEGHeader, "Layer code of 0 is reserved by MPEG specification." if 0 == @layer
+    raise InvalidMPEGHeader, "Layer code of 0 is reserved by MPEG specification." if @layer == 0
     4 - @layer
   end
   
   def padded_stream?
-    1 == @padded_stream
+    @padded_stream == 1
   end
   
   def private_stream?
-    1 == @private_stream
+    @private_stream == 1
   end
   
   def copyrighted_stream?
-    1 == @copyrighted_stream
+    @copyrighted_stream == 1
   end
   
   def original_stream?
-    1 == @original_stream
+    @original_stream == 1
   end
   
   def error_protected?
@@ -163,7 +163,7 @@ class MPEGHeader
   # A bitrate of 0 means 'free', and bitrate for frame should be calculated by decoder.
   # Not used much in practice.
   def bitrate
-    raise InvalidMPEGHeader, "Bitrate code of 0x0f is invalid by MPEG specification." if 0x0f == @bitrate_code
+    raise InvalidMPEGHeader, "Bitrate code of 0x0f is invalid by MPEG specification." if @bitrate_code == 0x0f
     
     BITRATES[lsf][layer - 1][@bitrate_code]
   end
@@ -230,35 +230,35 @@ class MPEGHeader
     return false if @sync & 0xffe0 != 0xffe0
     
     # version type of 0x1 is reserved (probably to minimize possibility of confusing sync bitstreams)
-    return false if 1 == @version
-    
+    return false if @version == 1
+
     # layer type of 0x0 is reserved
-    return false if 0 == @layer
-    
+    return false if @layer == 0
+
     # bitrate code of 0 indicates a bitrate of 0 (free bitstream), which is supported by almost nothing
-    return false if 0x0 == @bitrate_code
-    
+    return false if @bitrate_code == 0x0
+
     # bitrate code of 15 is invalid
-    return false if 0xf == @bitrate_code
-    
+    return false if @bitrate_code == 0xf
+
     # 0, 1 and 2 are the only valid sample rate codes
-    return false if 0x3 == @sample_rate_code
-    
+    return false if @sample_rate_code == 0x3
+
     # there are some oddball restrictions on combining stereo modes and bitrates for layer II
-    if 2 == layer
+    if layer == 2
       if [32, 48, 56, 80].include?(bitrate) &&
-         MODE_MONO != mode
+         mode != MODE_MONO
         return false
       end
-      
+
       if [224, 256, 320, 384].include?(bitrate) &&
-         MODE_MONO == mode
+         mode == MODE_MONO
         return false
       end
     end
-    
+
     # emphasis type of 0x2 is reserved
-    return false if 0x2 == @emphasis
+    return false if @emphasis == 0x2
     
     return true
   end

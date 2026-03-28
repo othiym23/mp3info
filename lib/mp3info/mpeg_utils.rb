@@ -179,7 +179,7 @@ module MPEGFile
     header_pos, header = find_sync(file, start_pos)
     loop do
       $stderr.puts("MPEGFile::find_next_frame file.pos is %#010x, header_pos is %#010x, header is %#010x" % [file.pos, header_pos, header.to_binary_decimal]) if header && $DEBUG
-      break if nil == header
+      break if header.nil?
 
       if valid_mpeg_header?(header)
         # Remember the first valid candidate as a fallback
@@ -216,7 +216,7 @@ module MPEGFile
       if sync_pos = file_data.index("\xff")
         header = file_data[sync_pos, 4]
         $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
-        if 4 == header.size
+        if header.size == 4
           return start_pos + sync_pos, header
         end
         # sync_pos is within 3 bytes of the end — re-read from that position

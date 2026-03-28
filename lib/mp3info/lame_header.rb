@@ -237,7 +237,7 @@ class LAMEHeader
   def preset
     case preset_number
     when 8..321
-      if nil != vbr_method.index('Average')
+      if vbr_method.include?('Average')
         "ABR #{preset_number}"
       else
         "CBR #{preset_number}"
@@ -297,9 +297,9 @@ class LAMEHeader
   end
   
   def bitrate_type
-    if vbr_method.index('Average') != nil
+    if vbr_method.include?('Average')
       'Target'
-    elsif vbr_method.index('Variable') != nil
+    elsif vbr_method.include?('Variable')
       'Minimum'
     else
       'Constant'
