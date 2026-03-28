@@ -16,6 +16,15 @@ describe Mp3Info, "when exposing replaygain information" do
     FileUtils.rm_f(@mp3_filename)
   end
   
+  it "should display track gain (not album gain) when track_gain is set in LAME replay gain" do
+    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    lame_rg = @mp3.lame_header.replay_gain
+    expect(lame_rg.track_gain.set?).to be true
+    rg_str = lame_rg.to_s
+    expect(rg_str).to include("Track Replay Gain")
+    expect(rg_str).not_to include("Album Replay Gain") unless lame_rg.album_gain.set?
+  end
+
   it "should always provide a replaygain information container" do
     expect(Mp3Info.new(@mp3_filename).replaygain_info).not_to be_nil
   end

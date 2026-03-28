@@ -79,7 +79,7 @@ class LAMEReplayGain
   
   def to_s
     if track_gain.set? || album_gain.set?
-      (track_gain.set? ? "\n  #{album_gain.to_s}" : '') << (album_gain.set? ? "\n  #{album_gain.to_s}" : '')
+      (track_gain.set? ? "\n  #{track_gain.to_s}" : '') << (album_gain.set? ? "\n  #{album_gain.to_s}" : '')
     else
       ''
     end
