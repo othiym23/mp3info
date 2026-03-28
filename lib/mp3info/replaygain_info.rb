@@ -254,8 +254,7 @@ class ReplaygainInfo
     foobar_out = foobar_string
     
     out_string = ''
-    if (lame_out.size > 0) || (rgad_out.size > 0) || (rva_out.size > 0) || (rvad_out.size > 0) || (rva2_out.size > 0) ||
-       (xrva_out.size > 0) || (xrv_out.size > 0)  || (itunes_out.size > 0) || (foobar_out.size > 0)
+    if [lame_out, rgad_out, rva_out, rvad_out, rva2_out, xrva_out, xrv_out, itunes_out, foobar_out].any? { |s| !s.empty? }
       out_string << "MP3 replay gain adjustments:\n\n"
     end
     out_string << itunes_out
