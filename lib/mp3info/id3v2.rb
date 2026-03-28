@@ -220,9 +220,19 @@ ID3V#{version} tag:
 
     # Preserve the source version for output unless explicitly overridden
     @write_version = major_version
-    
+
+    # Remove unsynchronization if the tag-level flag is set
+    tag_data = string
+    if unsynchronized?
+      # De-unsynchronize: replace \xFF\x00 back to \xFF in the frame data (after 10-byte header)
+      header = string[0, 10]
+      body = string[10..-1]
+      body = body.gsub("\xFF\x00".b, "\xFF".b)
+      tag_data = header + body
+    end
+
     $stderr.puts("Parsing ID3v#{version} of length #{"%#010x" % tag_length}...") if $DEBUG
-    @hash.update(parse_id3v2_frames(major_version, string))
+    @hash.update(parse_id3v2_frames(major_version, tag_data))
     @hash_orig = @hash.dup
   end
   
@@ -293,7 +303,18 @@ ID3V#{version} tag:
     # 3 bytes for major version, minor version, and header flags
     # 4 bytes for tag size
     cur_pos = 10
-    
+
+    # Skip extended header if present
+    if string[5].ord & 0x40 != 0
+      if version == 4
+        ext_size = string[cur_pos, 4].from_synchsafe_string
+        cur_pos += ext_size  # v2.4: size includes the 4 size bytes
+      else
+        ext_size = string[cur_pos, 4].to_binary_decimal
+        cur_pos += 4 + ext_size  # v2.3: size does NOT include the 4 size bytes
+      end
+    end
+
     unsynchronized_sizes = true
     if version == 4
       unsynchronized_sizes = unsynchronized_tag?(string)
@@ -319,9 +340,26 @@ ID3V#{version} tag:
         frame_flags = string.slice(cur_pos, 2)
         cur_pos += 2
         $stderr.puts("parse_id3v2_frames flags are #{frame_flags.inspect}") if $DEBUG
+
+        # Skip compressed or encrypted frames — we can't parse them
+        if version >= 4
+          if frame_flags[1].ord & 0x0c != 0  # compression or encryption
+            cur_pos += size
+            next
+          end
+        elsif version == 3
+          if frame_flags[1].ord & 0xc0 != 0  # compression or encryption
+            cur_pos += size
+            next
+          end
+        end
       end
-      
-      add_frame(frame_hash, name, string.slice(cur_pos, size))
+
+      begin
+        add_frame(frame_hash, name, string.slice(cur_pos, size))
+      rescue => e
+        $stderr.puts("Warning: skipping frame '#{name}' at offset #{cur_pos}: #{e.message}") if $DEBUG
+      end
       cur_pos += size
     end
     
