@@ -163,8 +163,9 @@ class ID3 < DelegateClass(Hash)
   
   # assumes io.pos is at the beginning of the ID3 tag
   def ID3.from_io(io)
+    id3 = nil
     remaining_bytes = io.stat.size - io.pos
-    
+
     if remaining_bytes >= TAGSIZE
       raw_tag = io.read(TAGSIZE)
       
@@ -236,7 +237,7 @@ class ID3 < DelegateClass(Hash)
             @hash[TRACK_NUMBER_KEY] || 0,
             @hash[GENRE_ID_KEY]     || 255
           ]
-        "TAG#{attrs.pack('A30A30A30A4a29CC')}"
+        "TAG#{attrs.pack('A30A30A30A4a28xCC')}"
       else
         raise(ID3Error, "Unrecognized version #{@version}")
       end
