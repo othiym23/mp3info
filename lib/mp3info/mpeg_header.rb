@@ -218,7 +218,7 @@ class MPEGHeader
   end
   
   def frame_duration
-    FRAME_DURATIONS[layer].to_f / sample_rate.to_f
+    SAMPLES_PER_FRAME[lsf][layer].to_f / sample_rate.to_f
   end
   
   def side_info_size

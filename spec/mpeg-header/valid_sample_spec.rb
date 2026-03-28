@@ -81,4 +81,38 @@ describe MPEGHeader, "parsing a valid sample MPEG header" do
   it "should detect that sample header comes from a frame declared to be original content" do
     expect(@sample_header.original_stream?).to be true
   end
+
+  it "should calculate correct frame duration for MPEG1 Layer III" do
+    # 1152 samples / 44100 Hz
+    expect(@sample_header.frame_duration).to be_within(0.00001).of(1152.0 / 44100.0)
+  end
+end
+
+describe MPEGHeader, "frame duration for MPEG2 Layer III" do
+  before do
+    # MPEG2, Layer III, 32kbps, 22050Hz, stereo
+    header_array =
+      [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  # sync
+        1, 0,                             # version: 2.0
+        0, 1,                             # layer: 3
+        1,                                # no CRC
+        0, 1, 0, 1,                       # bitrate: 40kbps
+        0, 0,                             # sample rate: 22050Hz
+        0,                                # no padding
+        0,                                # private: not set
+        0, 0,                             # mode: stereo
+        0, 0,                             # mode extension
+        0,                                # not copyrighted
+        1,                                # original
+        0, 0 ]                            # no emphasis
+    @header = MPEGHeader.new(header_array.to_binary_string)
+  end
+
+  it "should use 576 samples per frame for MPEG2 Layer III" do
+    expect(@header.samples_per_frame).to eq(576)
+  end
+
+  it "should calculate frame duration as 576/sample_rate, not 1152/sample_rate" do
+    expect(@header.frame_duration).to be_within(0.00001).of(576.0 / 22050.0)
+  end
 end
