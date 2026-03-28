@@ -1,5 +1,4 @@
 # encoding: utf-8
-require 'delegate'
 require_relative 'mpeg_utils'
 require_relative 'id3v2_frames'
 require_relative 'binary_conversions'
@@ -13,7 +12,7 @@ class ID3V2ParseError < StandardError ; end
 class ID3V2InternalError < StandardError ; end
 
 # This class can be used directly, as it does no I/O of its own.
-class ID3V2 < DelegateClass(Hash)
+class ID3V2
   # write_mpeg_file! lives in the module, need it at the class level
   extend MPEGFile
   
@@ -65,9 +64,7 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def initialize
-    # initialize the delegated hash
     @hash = {}
-    super(@hash)
 
     @write_version = DEFAULT_MAJOR_VERSION
 
@@ -142,7 +139,38 @@ class ID3V2 < DelegateClass(Hash)
     other_hash.each { |key, value| self[key] = value }
     self
   end
-  
+
+  def keys
+    @hash.keys
+  end
+
+  def size
+    @hash.size
+  end
+
+  def empty?
+    @hash.empty?
+  end
+
+  def clear
+    @hash.clear
+  end
+
+  def key?(k)
+    @hash.key?(k)
+  end
+  alias include? key?
+
+  def inspect
+    "#<ID3V2(#{to_unwrapped_hash.inspect})>"
+  end
+
+  def initialize_copy(source)
+    @hash = source.instance_variable_get(:@hash).dup
+    @raw_tag = source.instance_variable_get(:@raw_tag).dup
+    @hash_orig = source.instance_variable_get(:@hash_orig).dup
+  end
+
   def major_version
     @raw_tag[3].ord
   end

@@ -3,7 +3,6 @@
 # Author:: Rei Moribito (mailto:othiym23_AT_gmail_DOT_com)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Website:: http://hg.driftglass.org/
-require 'delegate'
 require 'fileutils'
 require_relative 'mp3info/mpeg_header'
 require_relative 'mp3info/xing_header'
@@ -361,7 +360,8 @@ class Mp3Info
     @tag = {}
     
     if has_id3v1_tag?
-      @tag = @id3v1_tag.dup
+      @tag = {}
+      @id3v1_tag.each { |k, v| @tag[k] = v }
     end
     
     if actually_has_id3v2_tag?

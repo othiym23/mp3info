@@ -1,9 +1,8 @@
 # encoding: binary
-require 'delegate'
 
 class ID3Error < StandardError ; end
 
-class ID3 < DelegateClass(Hash)
+class ID3
   VERSION_1   = "ID3"
   VERSION_1_1 = "ID3v1.1"
   
@@ -78,15 +77,77 @@ class ID3 < DelegateClass(Hash)
   end
   
   def initialize
-    # initialize the delegated hash
     @hash = {}
-    super(@hash)
-    
+
     # set defaults for everything
     @raw_tag = self.to_bin
-        
+
     # hash to identify if tag is changed after creation
     @hash_orig = {}
+  end
+
+  def [](key)
+    @hash[key]
+  end
+
+  def []=(key, value)
+    @hash[key] = value
+  end
+
+  def keys
+    @hash.keys
+  end
+
+  def size
+    @hash.size
+  end
+
+  def each(&block)
+    @hash.each(&block)
+  end
+
+  def empty?
+    @hash.empty?
+  end
+
+  def clear
+    @hash.clear
+  end
+
+  def update(other_hash)
+    if other_hash.is_a?(ID3)
+      @hash.update(other_hash.instance_variable_get(:@hash))
+    else
+      @hash.update(other_hash)
+    end
+    self
+  end
+  alias merge! update
+
+  def dup
+    copy = super
+    copy
+  end
+
+  def initialize_copy(source)
+    @hash = source.instance_variable_get(:@hash).dup
+    @raw_tag = source.instance_variable_get(:@raw_tag).dup
+    @hash_orig = source.instance_variable_get(:@hash_orig).dup
+    @version = source.instance_variable_get(:@version)
+  end
+
+  def ==(other)
+    if other.is_a?(ID3)
+      @hash == other.instance_variable_get(:@hash)
+    elsif other.is_a?(Hash)
+      @hash == other
+    else
+      false
+    end
+  end
+
+  def inspect
+    "#<ID3(#{@hash.inspect})>"
   end
   
   def changed?
