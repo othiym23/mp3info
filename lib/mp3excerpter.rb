@@ -14,16 +14,16 @@ class MP3Excerpter
   def dump_excerpt
     id3v2 = id3 = frames = ''
     
-    io = File.new(@path, "rb")
-    header = io.read(3)
-    io.seek(0)
-    
-    if header == 'ID3'
-      id3v2 = grab_id3v2(io)
+    File.open(@path, "rb") do |io|
+      header = io.read(3)
+      io.seek(0)
+
+      if header == 'ID3'
+        id3v2 = grab_id3v2(io)
+      end
+
+      frames = grab_mpeg_data(io)
     end
-    
-    frames = grab_mpeg_data(io)
-    io.close
     
     if ID3.has_id3v1_tag?(@path)
       id3 = grab_id3(@path)
@@ -80,7 +80,7 @@ class MP3Excerpter
         $stderr.puts("    Grabbing #{size_to_grab} bytes from #{@path} starting at #{"%06x" % io.pos} (#{remaining_bytes} left).")
         data = io.read(size_to_grab)
       end
-    rescue Exception => cause
+    rescue StandardError => cause
       $stderr.puts("WARN: Exception: #{cause}. Couldn't read frames.")
     end
     

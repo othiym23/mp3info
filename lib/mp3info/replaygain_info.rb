@@ -118,7 +118,7 @@ class SoundCheckInfo
 
   def to_replaygain
     soundcheck = to_raw_numbers
-    raise(Exception, "Invalid Soundcheck format") unless soundcheck.size == 10
+    raise(StandardError, "Invalid Soundcheck format") unless soundcheck.size == 10
     
     high_gain = soundcheck_to_db(soundcheck[0..1].max, 1000)
     low_gain  = soundcheck_to_db(soundcheck[2..3].max, 2500)
@@ -128,7 +128,7 @@ class SoundCheckInfo
   
   def to_raw_values
     soundcheck = to_raw_numbers
-    raise(Exception, "Invalid Soundcheck format") unless soundcheck.size == 10
+    raise(StandardError, "Invalid Soundcheck format") unless soundcheck.size == 10
     
     high_values = soundcheck[0..1]
     low_values  = soundcheck[2..3]
@@ -141,7 +141,7 @@ class SoundCheckInfo
   end
   
   def to_frame
-    raise(Exception, "Invalid Soundcheck format") unless to_raw_numbers.size == 10
+    raise(StandardError, "Invalid Soundcheck format") unless to_raw_numbers.size == 10
     
     ID3V24::COMMFrame.new(ID3V24::TextFrame::DEFAULT_ENCODING, 'eng', 'iTunNORM', @raw_soundcheck)
   end
