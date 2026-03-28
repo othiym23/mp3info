@@ -225,6 +225,12 @@ class Mp3Info
       end
     end
     
+    # Recalculate streamsize now that we know about the trailing ID3v1 tag
+    if has_mpeg_header? && !has_xing_header? && has_id3v1_tag?
+      @streamsize = file.stat.size - ID3::TAGSIZE - ((has_id3v2_tag? ? (@id3v2_tag.tag_length + 10) : 0))
+      @length = ((@streamsize << 3) / 1000.0) / bitrate
+    end
+
     file.close
     
     load_universal_tag!
