@@ -542,5 +542,27 @@ module MPEGUtils
         expect(valid_mpeg_header?(header)).to be true
       end
     end
+
+    it "should find a frame header that straddles a chunk boundary" do
+      # Place a valid MPEG1 Layer III header at exactly CHUNK_SIZE - 2,
+      # so the first 2 bytes are in one chunk and the last 2 in the next
+      valid_header = "\xFF\xFB\x90\x04".b
+      chunk_size = MPEGFile::CHUNK_SIZE
+      padding = "\x00" * (chunk_size - 2)
+
+      # valid_header straddles boundary: bytes 0-1 in first chunk, bytes 2-3 in second
+      data = padding + valid_header + ("\x00" * 417)
+
+      require 'tempfile'
+      Tempfile.open('mpeg_boundary_test') do |f|
+        f.binmode
+        f.write(data)
+        f.flush
+
+        header_pos, header = find_next_frame(f, 0)
+        expect(header_pos).to eq(chunk_size - 2)
+        expect(valid_mpeg_header?(header)).to be true
+      end
+    end
   end
 end

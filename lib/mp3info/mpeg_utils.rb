@@ -209,21 +209,27 @@ module MPEGFile
     $stderr.puts("find_sync seeking to %#010x" % start_pos) if $DEBUG
     file.seek(start_pos)
     file_data = file.read(CHUNK_SIZE)
-    $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes") if $DEBUG
-    
-    while file_data do
+
+    while file_data && file_data.size > 0 do
+      $stderr.puts("find_sync file data is #{"%#010x" % file_data.size} bytes at %#010x" % start_pos) if $DEBUG
+
       if sync_pos = file_data.index("\xff")
         header = file_data[sync_pos, 4]
-        $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG 
+        $stderr.puts("Testing candidate header at #{"%#010x" % (start_pos + sync_pos)}") if $DEBUG
         if 4 == header.size
           return start_pos + sync_pos, header
         end
+        # sync_pos is within 3 bytes of the end — re-read from that position
+        # so the full 4-byte header can be checked in the next iteration
+        start_pos += sync_pos
+        file.seek(start_pos)
+        file_data = file.read(CHUNK_SIZE)
+      else
+        start_pos += file_data.size
+        file_data = file.read(CHUNK_SIZE)
       end
-      
-      start_pos += file_data.size
-      file_data = file.read(CHUNK_SIZE)
     end
-    
+
     return nil, nil
   end
   
