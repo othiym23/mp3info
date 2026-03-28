@@ -288,12 +288,8 @@ ID3V#{version} tag:
     # 4 characters max for a tag's key
     header = frame.type[0,4] 
     
-    # ID3v2.4 has synch safe frame headers
-    if major_version == 4
-      header << encoded_frame_data.safe_length.to_synchsafe_string
-    else
-      header << encoded_frame_data.safe_length.to_binary_string
-    end
+    # Always use synchsafe frame sizes since to_bin always writes a v2.4 header
+    header << encoded_frame_data.safe_length.to_synchsafe_string
     
     header << "\x00" * 2 # TODO: frame flags
     

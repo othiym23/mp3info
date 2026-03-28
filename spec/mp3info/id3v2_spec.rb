@@ -106,6 +106,47 @@ describe Mp3Info, "when working with ID3v2 tags" do
     end
   end
 
+  it "should write synchsafe frame sizes even when the source tag was v2.3" do
+    # Create a v2.3 tag (non-synchsafe frame sizes) by hand
+    v23_tag = "ID3"
+    v23_tag << [3, 0, 0].pack("CCC")  # v2.3.0, no flags
+    frame_data = "\x03Test Title\x00"  # UTF-8 encoding byte + text + null
+    frame = "TIT2"
+    frame << [frame_data.bytesize].pack("N")  # v2.3: non-synchsafe 4-byte size
+    frame << "\x00\x00"  # frame flags
+    frame << frame_data
+    v23_tag << (frame.bytesize).to_synchsafe_string
+    v23_tag << frame
+
+    File.open(@mp3_filename, 'wb') do |f|
+      f.write(v23_tag)
+      f.write(get_valid_mp3)
+    end
+
+    # Read and modify the tag
+    Mp3Info.open(@mp3_filename) do |mp3|
+      mp3.id3v2_tag['TPE1'] = 'Test Artist'
+    end
+
+    # Verify the written tag has synchsafe frame sizes
+    raw = File.binread(@mp3_filename)
+    expect(raw[0, 3]).to eq('ID3')
+    expect(raw[3].ord).to eq(4)  # should be upgraded to v2.4
+
+    # Parse the tag and verify frame sizes are synchsafe
+    tag_size = raw[6, 4].from_synchsafe_string
+    tag_data = raw[10, tag_size]
+    pos = 0
+    while pos + 10 <= tag_data.bytesize
+      name = tag_data[pos, 4]
+      break unless name.match?(/\A[A-Z0-9]{4}\z/)
+      size_bytes = tag_data[pos + 4, 4]
+      expect(size_bytes.synchsafe?).to be(true), "Frame #{name} at offset #{pos} has non-synchsafe size"
+      size = size_bytes.from_synchsafe_string
+      pos += 10 + size
+    end
+  end
+
   it "should make it easy to casually use ID3v2 tags" do
     Mp3Info.open(@mp3_filename) do |mp3|
       mp3.id3v2_tag = ID3V2.new
