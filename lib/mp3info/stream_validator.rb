@@ -238,6 +238,11 @@ class StreamValidator
           message: "Lyrics3 tag present: #{mp3.lyrics3_tag}"
         )
       end
+
+      # ID3v2 structural validation
+      if mp3.has_id3v2_tag?
+        validate_id3v2(mp3.id3v2_tag, warnings, errors)
+      end
     rescue
       # Can't read mp3info — skip metadata checks
     end
@@ -254,6 +259,41 @@ class StreamValidator
         position: nil,
         message: "#{crc_failures} of #{frame_count} frames failed CRC-16 validation"
       )
+    end
+
+    # Detect trailing non-MPEG data after the last frame
+    if last_frame_pos && last_frame_size
+      last_frame_end = last_frame_pos + last_frame_size
+      # Determine where non-audio data starts at the end of the file
+      file_size = File.size(@filename)
+      audio_end = file_size
+      if file_size >= 128
+        data = File.binread(@filename, 128, [file_size - 128, 0].max)
+      end
+      audio_end -= 128 if data && data[0, 3] == "TAG"
+
+      # Account for APE and Lyrics3 tags
+      begin
+        ape = APETag.detect(@filename)
+        if ape
+          ape_size = ape.tag_size + (ape.has_header? ? 32 : 0)
+          audio_end = [audio_end - ape_size, 0].max
+        end
+        lyrics = Lyrics3Tag.detect(@filename)
+        audio_end = [audio_end - lyrics.size, 0].max if lyrics
+      rescue
+        # ignore detection errors
+      end
+
+      if last_frame_end < audio_end
+        trailing_bytes = audio_end - last_frame_end
+        if trailing_bytes > 0
+          warnings << Warning.new(
+            position: last_frame_end,
+            message: "#{trailing_bytes} bytes of non-MPEG data after the last frame"
+          )
+        end
+      end
     end
 
     ValidationReport.new(
@@ -293,6 +333,67 @@ class StreamValidator
       errors: errors,
       warnings: warnings
     )
+  end
+
+  def validate_id3v2(tag, warnings, errors)
+    # 1. Detect duplicate frames that should be unique per spec
+    unique_frames = %w[
+      TALB TBPM TCOM TCON TCOP TDAT TDLY TENC TEXT TFLT TIT1 TIT2 TIT3 TKEY
+      TLAN TLEN TMED TOAL TOFN TOLY TOPE TOWN TPE1 TPE2 TPE3 TPE4 TPOS TPUB
+      TRCK TRDA TRSN TRSO TSIZ TSRC TSSE TYER TDRC TDOR TDRL TDTG TSOT TSOP TSOA
+    ]
+    unique_frames.each do |frame_id|
+      frames = tag.frames(frame_id)
+      if frames && frames.size > 1
+        warnings << Warning.new(
+          position: nil,
+          message: "Frame #{frame_id} appears #{frames.size} times but should be unique"
+        )
+      end
+    end
+
+    # 2. APIC MIME type vs image magic bytes validation
+    apic_frames = tag.frames("APIC")
+    apic_frames&.each_with_index do |frame, i|
+      next unless frame.respond_to?(:mime_type) && frame.respond_to?(:value)
+      detected_mime = detect_image_mime(frame.value)
+      if detected_mime && frame.mime_type != detected_mime
+        warnings << Warning.new(
+          position: nil,
+          message: "APIC frame #{i + 1}: declared MIME '#{frame.mime_type}' but data looks like '#{detected_mime}'"
+        )
+      end
+    end
+
+    # 3. Check for empty text frames
+    tag.each do |frame_id, _value|
+      frames = tag.frames(frame_id)
+      next unless frames
+      frames.each do |frame|
+        if frame.respond_to?(:value) && frame.value.is_a?(String) && frame.value.strip.empty?
+          warnings << Warning.new(
+            position: nil,
+            message: "Frame #{frame_id} has empty value"
+          )
+        end
+      end
+    end
+  end
+
+  MIME_MAGIC = {
+    "\xFF\xD8\xFF".b => "image/jpeg",
+    "\x89PNG".b => "image/png",
+    "GIF8".b => "image/gif",
+    "BM".b => "image/bmp",
+    "RIFF".b => "image/webp" # WebP starts with RIFF....WEBP but RIFF is enough to flag mismatch
+  }.freeze
+
+  def detect_image_mime(data)
+    return nil unless data && data.bytesize >= 4
+    MIME_MAGIC.each do |magic, mime|
+      return mime if data[0, magic.bytesize] == magic
+    end
+    nil
   end
 
   # Compute CRC-16 for an error-protected frame.

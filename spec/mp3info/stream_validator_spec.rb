@@ -111,6 +111,79 @@ describe StreamValidator do
     end
   end
 
+  context "with duplicate unique frames" do
+    before :all do
+      @mp3_filename = "test_dup_frames.mp3"
+      create_sample_mp3_file(@mp3_filename)
+      # Write two TIT2 frames by passing an array of Frame objects
+      Mp3Info.open(@mp3_filename) do |mp3|
+        mp3.id3v2_tag["TIT2"] = [
+          ID3V24::Frame.create_frame("TIT2", "Title 1"),
+          ID3V24::Frame.create_frame("TIT2", "Title 2")
+        ]
+      end
+    end
+
+    after :all do
+      FileUtils.rm_f(@mp3_filename)
+    end
+
+    it "warns about duplicate unique frames" do
+      report = StreamValidator.new(@mp3_filename).validate
+      dup_warnings = report.warnings.select { |w| w.message.include?("should be unique") }
+      expect(dup_warnings).not_to be_empty
+    end
+  end
+
+  context "with trailing non-MP3 data" do
+    before :all do
+      @mp3_filename = "test_trailing.mp3"
+      valid_header = "\xFF\xFB\x90\x64".b
+      frame_size = 417
+      frame = valid_header + ("\x00" * (frame_size - 4))
+      trailing = "TRAILING JUNK DATA HERE".b
+      File.binwrite(@mp3_filename, frame + trailing)
+    end
+
+    after :all do
+      FileUtils.rm_f(@mp3_filename)
+    end
+
+    it "warns about trailing non-MPEG data" do
+      report = StreamValidator.new(@mp3_filename).validate
+      trailing_warnings = report.warnings.select { |w| w.message.include?("after the last frame") }
+      expect(trailing_warnings).not_to be_empty
+    end
+  end
+
+  context "with mismatched APIC MIME type" do
+    before :all do
+      @mp3_filename = "test_apic_mime.mp3"
+      create_sample_mp3_file(@mp3_filename)
+      # Write an APIC frame with JPEG data but PNG MIME type
+      jpeg_magic = "\xFF\xD8\xFF\xE0".b + ("\x00".b * 100)
+      Mp3Info.open(@mp3_filename) do |mp3|
+        mp3.id3v2_tag["APIC"] = ID3V24::APICFrame.new(
+          ID3V24::TextFrame::ENCODING[:utf8],
+          "image/png",  # Wrong MIME - data is JPEG
+          "\x03",       # Front cover
+          "cover",
+          jpeg_magic
+        )
+      end
+    end
+
+    after :all do
+      FileUtils.rm_f(@mp3_filename)
+    end
+
+    it "warns about MIME type mismatch" do
+      report = StreamValidator.new(@mp3_filename).validate
+      mime_warnings = report.warnings.select { |w| w.message.include?("MIME") }
+      expect(mime_warnings).not_to be_empty
+    end
+  end
+
   context "accessible via Mp3Info#validate" do
     before :all do
       @mp3_filename = "test_mp3info_validate.mp3"
