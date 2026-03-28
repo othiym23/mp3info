@@ -12,8 +12,10 @@ class ID3V2 < DelegateClass(Hash)
   # write_mpeg_file! lives in the module, need it at the class level
   extend MPEGFile
   
-  DEFAULT_MAJOR_VERSION = 4
+  DEFAULT_MAJOR_VERSION = 3
   DEFAULT_MINOR_VERSION = 0
+
+  attr_accessor :write_version
   
   def self.has_id3v2_tag?(filename)
     File.read(filename, 3) == 'ID3'
@@ -61,10 +63,12 @@ class ID3V2 < DelegateClass(Hash)
     # initialize the delegated hash
     @hash = {}
     super(@hash)
-    
+
+    @write_version = DEFAULT_MAJOR_VERSION
+
     # set defaults for everything
     @raw_tag = self.to_bin
-    
+
     # hash to identify if tag is changed after creation
     @hash_orig = {}
   end
@@ -208,6 +212,9 @@ ID3V#{version} tag:
     @raw_tag = string
     
     raise(ID3V2ParseError, "Major version must be one of 2, 3 or 4 (is #{major_version || 'unknown'})") unless valid_major_version?
+
+    # Preserve the source version for output unless explicitly overridden
+    @write_version = major_version
     
     $stderr.puts("Parsing ID3v#{version} of length #{"%#010x" % tag_length}...") if $DEBUG
     @hash.update(parse_id3v2_frames(major_version, string))
@@ -225,9 +232,7 @@ ID3V#{version} tag:
       end
       
       tag_str = "ID3"
-      
-      #TODO flags: version_maj, version_min, [unsync, ext_header, experimental, footer]
-      tag_str << [ DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
+      tag_str << [ @write_version, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
       tag_str << tag.bytesize.to_synchsafe_string
       tag_str << tag
       $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
@@ -261,15 +266,18 @@ ID3V#{version} tag:
   def encode_frame(frame)
     $stderr.puts("ID3v2.encode_frame(frame=[#{frame.inspect}])") if $DEBUG
     encoded_frame_data = frame.to_s
-    
-    # 4 characters max for a tag's key
-    header = frame.type[0,4] 
-    
-    # Always use synchsafe frame sizes since to_bin always writes a v2.4 header
-    header << encoded_frame_data.bytesize.to_synchsafe_string
-    
-    header << "\x00" * 2 # TODO: frame flags
-    
+
+    header = frame.type[0,4]
+
+    # ID3v2.4 uses synchsafe frame sizes; v2.3 and earlier use plain big-endian
+    if @write_version >= 4
+      header << encoded_frame_data.bytesize.to_synchsafe_string
+    else
+      header << [encoded_frame_data.bytesize].pack("N")
+    end
+
+    header << "\x00" * 2 # frame flags
+
     header + encoded_frame_data
   end
   

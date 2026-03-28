@@ -7,16 +7,16 @@ describe ID3V2, "when creating ID3v2 tags" do
     expect(@tag.valid?).to be true
   end
 
-  it "should create a tag with a major version of 4 by default" do
-    expect(@tag.major_version).to eq(4)
+  it "should create a tag with a major version of 3 by default" do
+    expect(@tag.major_version).to eq(3)
   end
 
   it "should create a tag with a minor version of 0 by default" do
     expect(@tag.minor_version).to eq(0)
   end
 
-  it "should create a tag with a full version of '2.4.0' by default" do
-    expect(@tag.version).to eq('2.4.0')
+  it "should create a tag with a full version of '2.3.0' by default" do
+    expect(@tag.version).to eq('2.3.0')
   end
 
   it "should create a tag without unsynchronized frames by default" do

@@ -45,16 +45,16 @@ describe Mp3Info, "when working with ID3v2 tags" do
     expect(mp3.id3v2_tag['TPE1'].value).to eq('The Mighty Boosh')
   end
 
-  it "should create ID3v2.4.0 tags by default" do
+  it "should create ID3v2.3.0 tags by default" do
     mp3 = Mp3Info.new(@mp3_filename)
     expect(mp3.has_id3v2_tag?).to be false
     mp3.id3v2_tag['TRCK'] = "1/8"
     expect(mp3.has_id3v2_tag?).to be true
-    expect(mp3.id3v2_tag.version).to eq("2.4.0")
+    expect(mp3.id3v2_tag.version).to eq("2.3.0")
   end
 
   it "should be able to discover the version of the ID3v2 tag written to disk" do
-    expect(update_id3_2_tag(@mp3_filename, sample_id3v2_tag).version).to eq("2.4.0")
+    expect(update_id3_2_tag(@mp3_filename, sample_id3v2_tag).version).to eq("2.3.0")
   end
 
   it "should handle storing and retrieving tags containing arbitrary binary data" do
@@ -102,14 +102,13 @@ describe Mp3Info, "when working with ID3v2 tags" do
     end
   end
 
-  it "should write synchsafe frame sizes even when the source tag was v2.3" do
-    # Create a v2.3 tag (non-synchsafe frame sizes) by hand
+  it "should preserve v2.3 format when modifying a v2.3 tag" do
     v23_tag = "ID3"
-    v23_tag << [3, 0, 0].pack("CCC")  # v2.3.0, no flags
-    frame_data = "\x03Test Title\x00"  # UTF-8 encoding byte + text + null
+    v23_tag << [3, 0, 0].pack("CCC")
+    frame_data = "\x03Test Title\x00"
     frame = "TIT2"
-    frame << [frame_data.bytesize].pack("N")  # v2.3: non-synchsafe 4-byte size
-    frame << "\x00\x00"  # frame flags
+    frame << [frame_data.bytesize].pack("N")
+    frame << "\x00\x00"
     frame << frame_data
     v23_tag << (frame.bytesize).to_synchsafe_string
     v23_tag << frame
@@ -119,17 +118,25 @@ describe Mp3Info, "when working with ID3v2 tags" do
       f.write(get_valid_mp3)
     end
 
-    # Read and modify the tag
     Mp3Info.open(@mp3_filename) do |mp3|
       mp3.id3v2_tag['TPE1'] = 'Test Artist'
     end
 
-    # Verify the written tag has synchsafe frame sizes
     raw = File.binread(@mp3_filename)
     expect(raw[0, 3]).to eq('ID3')
-    expect(raw[3].ord).to eq(4)  # should be upgraded to v2.4
+    expect(raw[3].ord).to eq(3)  # should stay v2.3
+  end
 
-    # Parse the tag and verify frame sizes are synchsafe
+  it "should write synchsafe frame sizes when write_version is set to 4" do
+    Mp3Info.open(@mp3_filename) do |mp3|
+      mp3.id3v2_tag.write_version = 4
+      mp3.id3v2_tag['TIT2'] = 'Test Title'
+    end
+
+    raw = File.binread(@mp3_filename)
+    expect(raw[0, 3]).to eq('ID3')
+    expect(raw[3].ord).to eq(4)
+
     tag_size = raw[6, 4].from_synchsafe_string
     tag_data = raw[10, tag_size]
     pos = 0
@@ -137,7 +144,7 @@ describe Mp3Info, "when working with ID3v2 tags" do
       name = tag_data[pos, 4]
       break unless name.match?(/\A[A-Z0-9]{4}\z/)
       size_bytes = tag_data[pos + 4, 4]
-      expect(size_bytes.synchsafe?).to be(true), "Frame #{name} at offset #{pos} has non-synchsafe size"
+      expect(size_bytes.synchsafe?).to be(true), "Frame #{name} has non-synchsafe size"
       size = size_bytes.from_synchsafe_string
       pos += 10 + size
     end
