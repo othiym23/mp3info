@@ -17,7 +17,7 @@ describe MPEGHeader, "with valid but unusual headers" do
         1,                                # original: yes
         0, 0                              # emphasis: none
         ]
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to eq(true)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(128)
   end
   
@@ -40,7 +40,7 @@ describe MPEGHeader, "with valid but unusual headers" do
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(2.5)
     # verified against eyeD3
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to eq(true)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(192)
     # verified against eyeD3
@@ -50,7 +50,7 @@ describe MPEGHeader, "with valid but unusual headers" do
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode).to eq(MPEGHeader::MODE_JOINT_STEREO)
     # verified against eyeD3
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to eq(true)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to be true
     # mode extension not supported by eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode_extension &
      MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31).to eq(MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31)
@@ -75,7 +75,7 @@ describe MPEGHeader, "with valid but unusual headers" do
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(2)
     # verified against eyeD3
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to eq(true)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(192)
     # verified against eyeD3
@@ -85,7 +85,7 @@ describe MPEGHeader, "with valid but unusual headers" do
     # verified against eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode).to eq(MPEGHeader::MODE_JOINT_STEREO)
     # verified against eyeD3
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to eq(false)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to be false
     # mode extension not supported by eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode_extension &
      MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31).to eq(MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31)
@@ -112,11 +112,11 @@ describe MPEGHeader, "with valid but unusual headers" do
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(128)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).sample_rate).to eq(11_025)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).frame_size).to eq(1672)
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).copyrighted_stream?).to eq(true)
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).original_stream?).to eq(true)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).copyrighted_stream?).to be true
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).original_stream?).to be true
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode).to eq(MPEGHeader::MODE_JOINT_STEREO)
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to eq(true)
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to eq(false)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to be false
     # mode extension not supported by eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode_extension &
      MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31).to eq(MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31)
@@ -140,12 +140,12 @@ describe MPEGHeader, "with valid but unusual headers" do
         ]
     expect(MPEGHeader.new(valid_header_array.to_binary_string).version).to eq(1.0)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).layer).to eq(2)
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to eq(true)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).valid?).to be true
     expect(MPEGHeader.new(valid_header_array.to_binary_string).bitrate).to eq(80)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).sample_rate).to eq(44_100)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).frame_size).to eq(261)
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode).to eq(MPEGHeader::MODE_MONO)
-    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to eq(false)
+    expect(MPEGHeader.new(valid_header_array.to_binary_string).private_stream?).to be false
     # mode extension not supported by eyeD3
     expect(MPEGHeader.new(valid_header_array.to_binary_string).mode_extension &
      MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31).to eq(MPEGHeader::MODE_EXTENSION_BANDS_12_TO_31)

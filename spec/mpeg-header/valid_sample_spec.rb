@@ -21,7 +21,7 @@ describe MPEGHeader, "parsing a valid sample MPEG header" do
   end
   
   it "should detect that sample header '\\xff\\xfb\\x90\\x64' is a valid MPEG header" do
-    expect(@sample_header.valid?).to eq(true)
+    expect(@sample_header.valid?).to be true
   end
   
   it "should detect that sample header comes from an MPEG version 1.0 frame" do

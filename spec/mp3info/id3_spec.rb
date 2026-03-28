@@ -97,7 +97,7 @@ describe Mp3Info, "when working with ID3v1 tags" do
   it "should not be able to find the track number in an ID3v1.0 tag, because the tag doesn't contain it" do
     create_valid_id3_1_0_file(@mp3_filename)
     
-    expect(Mp3Info.new(@mp3_filename).id3v1_tag['tracknum']).to eq(nil)
+    expect(Mp3Info.new(@mp3_filename).id3v1_tag['tracknum']).to be_nil
   end
 end
 

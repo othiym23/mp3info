@@ -31,7 +31,7 @@ describe ID3, "when working with standalone ID3v1.0 tags" do
   end
 
   it "should not be able to retrieve the track number from an ID3v1.0 tag, because the tag doesn't contain it" do
-    expect(ID3.new.from_bin(packed_id3_1_0_tag)['tracknum']).to eq(nil)
+    expect(ID3.new.from_bin(packed_id3_1_0_tag)['tracknum']).to be_nil
   end
 end
 
