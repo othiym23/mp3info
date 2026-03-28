@@ -224,4 +224,39 @@ describe ID3V2, "when creating ID3v2 tags" do
     # The value should have \xFF\x00 replaced with \xFF, yielding original data
     expect(priv.value.b).to eq(real_data)
   end
+
+  it "should apply per-frame unsynchronization when writing v2.4 with sync-like data" do
+    @tag.write_version = 4
+    # PRIV frame with data containing \xFF\xFB (looks like MPEG sync)
+    sync_data = "test\x00\xFF\xFB\x90\x00".b
+    @tag['PRIV'] = ID3V24::Frame.create_frame_from_string('PRIV', sync_data)
+
+    bin = @tag.to_bin
+    # The per-frame unsync flag (byte 2, bit 1) should be set
+    # Find the PRIV frame in the output
+    priv_pos = bin.index('PRIV')
+    expect(priv_pos).not_to be_nil
+    frame_flags_byte = bin[priv_pos + 4 + 4 + 1].ord  # after name(4) + size(4) + status(1)
+    expect(frame_flags_byte & 0x02).to eq(0x02)
+
+    # Round-trip: parse the binary back and verify data is intact
+    tag2 = ID3V2.new
+    tag2.from_bin(bin)
+    expect(tag2['PRIV'].value.b).to eq("\xFF\xFB\x90\x00".b)
+  end
+
+  it "should not apply unsynchronization for v2.3 output" do
+    @tag.write_version = 3
+    sync_data = "test\x00\xFF\xFB\x90\x00".b
+    @tag['PRIV'] = ID3V24::Frame.create_frame_from_string('PRIV', sync_data)
+
+    bin = @tag.to_bin
+    # Tag-level unsync flag should NOT be set
+    expect(bin[5].ord & 0x80).to eq(0)
+
+    # Round-trip
+    tag2 = ID3V2.new
+    tag2.from_bin(bin)
+    expect(tag2['PRIV'].value.b).to eq("\xFF\xFB\x90\x00".b)
+  end
 end

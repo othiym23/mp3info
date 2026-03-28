@@ -268,17 +268,16 @@ ID3V#{version} tag:
   end
   
   def to_bin
-    #TODO handle TLEN frames
-    #TODO add CRC
     if changed?
       tag = ""
       @hash.each_value do |frames|
         next if frames.nil? || frames.empty?
         frames.each { |frame| tag << encode_frame(frame) }
       end
-      
+
       tag_str = "ID3"
-      tag_str << [ @write_version, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
+      tag_str << [@write_version, DEFAULT_MINOR_VERSION].pack("CC")
+      tag_str << "\x00"  # tag flags (no tag-level unsync — per-frame in v2.4)
       tag_str << tag.bytesize.to_synchsafe_string
       tag_str << tag
       $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
@@ -309,6 +308,45 @@ ID3V#{version} tag:
   
   private
   
+  # Check if binary data contains byte sequences that could be mistaken for
+  # MPEG sync patterns. Returns true if unsynchronization is needed.
+  def needs_unsynchronization?(data)
+    i = 0
+    while i < data.bytesize - 1
+      if data.getbyte(i) == 0xFF
+        next_byte = data.getbyte(i + 1)
+        return true if next_byte >= 0xE0 || next_byte == 0x00
+      end
+      i += 1
+    end
+    # Also check if data ends with 0xFF (could combine with following data)
+    data.bytesize > 0 && data.getbyte(data.bytesize - 1) == 0xFF
+  end
+
+  # Apply unsynchronization: insert \x00 after any \xFF that is followed by
+  # a byte >= \xE0 or \x00, or that is the last byte in the data.
+  def apply_unsynchronization(data)
+    result = String.new(encoding: Encoding::BINARY)
+    i = 0
+    while i < data.bytesize
+      byte = data.getbyte(i)
+      result << byte.chr(Encoding::BINARY)
+      if byte == 0xFF
+        if i + 1 >= data.bytesize
+          # Trailing 0xFF — insert 0x00
+          result << "\x00".b
+        else
+          next_byte = data.getbyte(i + 1)
+          if next_byte >= 0xE0 || next_byte == 0x00
+            result << "\x00".b
+          end
+        end
+      end
+      i += 1
+    end
+    result
+  end
+
   def parse_extended_header(version, string, offset)
     ext = {}
     if version == 4
@@ -354,14 +392,25 @@ ID3V#{version} tag:
 
     header = frame.type[0,4]
 
-    # ID3v2.4 uses synchsafe frame sizes; v2.3 and earlier use plain big-endian
     if @write_version >= 4
+      # v2.4: per-frame unsynchronization applied to frame data only.
+      # Frame size reflects the post-unsync size. De-unsync on read
+      # is per-frame, so this is clean and reversible.
+      frame_flags = 0
+      if needs_unsynchronization?(encoded_frame_data)
+        encoded_frame_data = apply_unsynchronization(encoded_frame_data)
+        frame_flags = 0x02  # per-frame unsync flag
+      end
       header << encoded_frame_data.bytesize.to_synchsafe_string
+      header << "\x00" << frame_flags.chr(Encoding::BINARY)
     else
+      # v2.3: no unsynchronization on write. Tag-level unsync in v2.3
+      # modifies frame headers (including size fields) which makes
+      # round-tripping fragile. Modern players parse tags by size,
+      # not by sync scanning, so unsync is unnecessary in practice.
       header << [encoded_frame_data.bytesize].pack("N")
+      header << "\x00\x00"
     end
-
-    header << "\x00" * 2 # frame flags
 
     header + encoded_frame_data
   end
