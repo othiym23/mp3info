@@ -6,65 +6,65 @@ class UserTextReplaygainInfo
   end
   
   def track_gain_set?
-    @id3v2.find_frames_by_description('replaygain_track_gain').size > 0 &&
-    @id3v2.find_frames_by_description('replaygain_track_peak').size > 0
+    @id3v2.find_frames_by_description('replaygain_track_gain').any? &&
+    @id3v2.find_frames_by_description('replaygain_track_peak').any?
   end
   
   def track_db
-    if @id3v2.find_frames_by_description('replaygain_track_gain').size > 0
+    if @id3v2.find_frames_by_description('replaygain_track_gain').any?
       @id3v2.find_frames_by_description('replaygain_track_gain').first.value.to_f
     end
   end
   
   def track_peak
-    if @id3v2.find_frames_by_description('replaygain_track_peak').size > 0
+    if @id3v2.find_frames_by_description('replaygain_track_peak').any?
       @id3v2.find_frames_by_description('replaygain_track_peak').first.value.to_f
     end
   end
   
   def track_minimum
-    if track_minmax.size > 0
+    if track_minmax.any?
       track_minmax.first.value.split(',')[0].to_i
     end
   end
   
   def track_maximum
-    if track_minmax.size > 0
+    if track_minmax.any?
       track_minmax.first.value.split(',')[1].to_i
     end
   end
   
   def album_gain_set?
-    @id3v2.find_frames_by_description('replaygain_album_gain').size > 0 &&
-    @id3v2.find_frames_by_description('replaygain_album_peak').size > 0
+    @id3v2.find_frames_by_description('replaygain_album_gain').any? &&
+    @id3v2.find_frames_by_description('replaygain_album_peak').any?
   end
   
   def album_db
-    if @id3v2.find_frames_by_description('replaygain_album_gain').size > 0
+    if @id3v2.find_frames_by_description('replaygain_album_gain').any?
       @id3v2.find_frames_by_description('replaygain_album_gain').first.value.to_f
     end
   end
   
   def album_peak
-    if @id3v2.find_frames_by_description('replaygain_album_peak').size > 0
+    if @id3v2.find_frames_by_description('replaygain_album_peak').any?
       @id3v2.find_frames_by_description('replaygain_album_peak').first.value.to_f
     end
   end
   
   def album_minimum
-    if album_minmax.size > 0
+    if album_minmax.any?
       album_minmax.first.value.split(',')[0].to_i
     end
   end
   
   def album_maximum
-    if album_minmax.size > 0
+    if album_minmax.any?
       album_minmax.first.value.split(',')[1].to_i
     end
   end
   
   def mp3gain_undo_string
-    if @id3v2.find_frames_by_description('mp3gain_undo').size > 0
+    if @id3v2.find_frames_by_description('mp3gain_undo').any?
       @id3v2.find_frames_by_description('mp3gain_undo').first.value
     end
   end
@@ -92,17 +92,17 @@ class SoundCheckInfo
     @raw_soundcheck = soundcheck_string
   end
 
-  def SoundCheckInfo.from_id3v2(id3v2)
+  def self.from_id3v2(id3v2)
     candidates = id3v2.find_frames_by_description('iTunNORM')
     # TODO: find a way of judging the quality of these things
-    if candidates && candidates.size > 0
+    if candidates&.any?
       SoundCheckInfo.new(candidates.first.value)
     else
       nil
     end
   end
   
-  def SoundCheckInfo.from_replaygain(gain, peak)
+  def self.from_replaygain(gain, peak)
     soundcheck = []
     # left and right channel of 1/1000 dB-milliwatt gain
     soundcheck[0] = soundcheck[1] = db_to_soundcheck(gain, 1000)

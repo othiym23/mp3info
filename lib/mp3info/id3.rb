@@ -63,7 +63,7 @@ class ID3 < DelegateClass(Hash)
   # expose the version of the tag
   attr_reader :version
   
-  def ID3.has_id3v1_tag?(filename)
+  def self.has_id3v1_tag?(filename)
     return false if File.size(filename) < TAGSIZE
     File.open(filename) { |f|
       f.seek(-TAGSIZE, File::SEEK_END)
@@ -71,7 +71,7 @@ class ID3 < DelegateClass(Hash)
     }
   end
   
-  def ID3.remove_id3v1_tag!(filename)
+  def self.remove_id3v1_tag!(filename)
     if has_id3v1_tag?(filename)
       File.truncate(filename, File.size(filename) - TAGSIZE)
     end
@@ -110,9 +110,9 @@ class ID3 < DelegateClass(Hash)
     
     case version
     when VERSION_1
-      ID3_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] if @hash[key].size > 0} 
+      ID3_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] unless @hash[key].empty?}
     when VERSION_1_1
-      ID3_1_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] if @hash[key].size > 0} 
+      ID3_1_1_ORDER.each { |key| tag_values << "  %-8s : %s\n" % [KEY_PRETTY_NAMES[key], @hash[key]] unless @hash[key].empty?} 
     end
 
     <<-DONE
@@ -125,7 +125,7 @@ class ID3 < DelegateClass(Hash)
     DONE
   end
   
-  def ID3.from_file(filename)
+  def self.from_file(filename)
     if has_id3v1_tag?(filename)
       File.open(filename) do |file|
         file.seek(-TAGSIZE, IO::SEEK_END)
@@ -161,7 +161,7 @@ class ID3 < DelegateClass(Hash)
   end
   
   # assumes io.pos is at the beginning of the ID3 tag
-  def ID3.from_io(io)
+  def self.from_io(io)
     id3 = nil
     remaining_bytes = io.stat.size - io.pos
 

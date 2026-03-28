@@ -62,11 +62,11 @@ module ID3V24
       @raw_size = value.respond_to?(:size) ? value.size : 0
     end
     
-    def Frame.default(value, type = 'XXXX')
+    def self.default(value, type = 'XXXX')
       Frame.new(type, value)
     end
   
-    def Frame.from_s(value, type = 'XXXX')
+    def self.from_s(value, type = 'XXXX')
       Frame.new(type, value)
     end
     
@@ -367,11 +367,11 @@ module ID3V24
       APICFrame.new(encoding, mime_type, picture_type, descr, entry, value.size)
     end
     
-    def APICFrame.picture_type_to_name(type)
+    def self.picture_type_to_name(type)
       PICTURE_TYPE[type]
     end
     
-    def APICFrame.name_to_picture_type(name)
+    def self.name_to_picture_type(name)
       PICTURE_TYPE.invert[name]
     end
     
@@ -390,7 +390,7 @@ module ID3V24
   
     def to_s_pretty
       about = 'Attached Picture'
-      about << ' (' << @description << ')' if @description && '' != @description
+      about << ' (' << @description << ')' if @description && !@description.empty?
       about << ' of image type ' << @mime_type
       about << ' and class ' <<  PICTURE_TYPE[@picture_type]
       about << ' of size ' << @value.size.to_s
@@ -565,7 +565,7 @@ module ID3V24
       "#{@value} (#{genre_code})"
     end
     
-    def TCONFrame.from_genre_code(string)
+    def self.from_genre_code(string)
       if hidden_genre = string.match(/\((\d+)\)/)
         ID3::GENRES[hidden_genre[1].to_i]
       elsif bare_genre = string.match(/\A(\d+)\Z/)

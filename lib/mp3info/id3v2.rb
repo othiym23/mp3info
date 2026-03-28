@@ -17,15 +17,15 @@ class ID3V2 < DelegateClass(Hash)
   DEFAULT_MAJOR_VERSION = 4
   DEFAULT_MINOR_VERSION = 0
   
-  def ID3V2.has_id3v2_tag?(filename)
+  def self.has_id3v2_tag?(filename)
     File.read(filename, 3) == 'ID3'
   end
   
-  def ID3V2.remove_id3v2_tag!(filename)
+  def self.remove_id3v2_tag!(filename)
     write_mpeg_file!(filename)
   end
   
-  def ID3V2.from_file(filename)
+  def self.from_file(filename)
     File.open(filename, "rb") { |file| from_io(file) }
   end
   
@@ -34,7 +34,7 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   # assumes file.pos is at the beginning of the ID3v2 tag
-  def ID3V2.from_io(io)
+  def self.from_io(io)
     # read the tag ID (should always be 'ID3') + the 3-byte ID3v2 header
     raw_tag = io.read(6)
     
@@ -84,7 +84,7 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def valid_frame_sizes?
-    !(4 == major_version && unsynchronized_tag?(@raw_tag))
+    !(major_version == 4 && unsynchronized_tag?(@raw_tag))
   end
   
   def []=(key, args)
@@ -229,7 +229,7 @@ ID3V#{version} tag:
       $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
       tag_str
     else
-      raise(ID3V2InternalError,"Can't return an uninitialized tag.") unless defined?(@raw_tag) && nil != @raw_tag
+      raise(ID3V2InternalError,"Can't return an uninitialized tag.") unless defined?(@raw_tag) && !@raw_tag.nil?
       $stderr.puts "ID3V2.to_bin tag unchanged, returning cached raw tag [#{@raw_tag}]." if $DEBUG
       @raw_tag
     end
@@ -278,7 +278,7 @@ ID3V#{version} tag:
     cur_pos = 10
     
     unsynchronized_sizes = true
-    if 4 == version
+    if version == 4
       unsynchronized_sizes = unsynchronized_tag?(string)
     end
     
@@ -297,7 +297,7 @@ ID3V#{version} tag:
       
       # ID3v2.2 lacks the awesomely useful frame flags of later versions
       # TODO do something useful with the frame flags
-      if 2 != version
+      if version != 2
         break if cur_pos + 2 > string.size  # not enough bytes for flags
         frame_flags = string.slice(cur_pos, 2)
         cur_pos += 2

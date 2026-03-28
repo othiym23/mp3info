@@ -92,11 +92,11 @@ class Mp3Info
   end
 
   def has_id3v1_tag?
-    !@id3v1_tag.nil? && @id3v1_tag.valid? && @id3v1_tag.size > 0
+    !@id3v1_tag.nil? && @id3v1_tag.valid? && !@id3v1_tag.empty?
   end
 
   def has_id3v2_tag?
-    actually_has_id3v2_tag? && @id3v2_tag.size > 0
+    actually_has_id3v2_tag? && !@id3v2_tag.empty?
   end
   
   def has_mpeg_header?
@@ -256,7 +256,7 @@ class Mp3Info
   end
 
   # "block version" of Mp3Info::new()
-  def Mp3Info.open(filename)
+  def self.open(filename)
     m = self.new(filename)
     ret = nil
     if block_given?
