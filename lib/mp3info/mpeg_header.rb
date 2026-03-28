@@ -1,4 +1,4 @@
-require 'mp3info/mpeg_utils'
+require_relative 'mpeg_utils'
 
 # lots of stuff can go wrong with an MPEG header
 class InvalidMPEGHeader < StandardError ; end

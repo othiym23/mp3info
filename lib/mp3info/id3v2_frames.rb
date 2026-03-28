@@ -1,7 +1,6 @@
 # encoding: utf-8
 require 'yaml'
 require 'time'
-require 'mp3info/compatibility_utils'
 
 module ID3V24
   class FrameException < StandardError ; end
@@ -83,14 +82,11 @@ module ID3V24
       object.respond_to?("value") && @value == object.value
     end
     
+    FRAME_REF = YAML::load_file(File.join(File.dirname(__FILE__), 'frame-ref-24.yml')).freeze
+
     def frame_info
-      frame_ref = YAML::load_file(File.join(File.dirname(__FILE__), 'frame-ref-24.yml'))
-      if frame_ref[@type]
-        if frame_ref[@type]['long']
-          frame_ref[@type]['long']
-        else
-          frame_ref[@type]['terse']
-        end
+      if FRAME_REF[@type]
+        FRAME_REF[@type]['long'] || FRAME_REF[@type]['terse']
       else
         "No description available for frame type '#{@type}'."
       end
@@ -131,7 +127,7 @@ module ID3V24
     end
     
     def to_s
-      @encoding.chr << encode_value(@encoding, @value).to_s_ignore_encoding
+      @encoding.chr << encode_value(@encoding, @value).b
     end
     
     def to_s_pretty
@@ -259,7 +255,7 @@ module ID3V24
     end
     
     def to_s
-      @encoding.chr << encode_value(@encoding, @description || '').to_s_ignore_encoding << encode_value(@encoding, @value || '').to_s_ignore_encoding
+      @encoding.chr << encode_value(@encoding, @description || '').b << encode_value(@encoding, @value || '').b
     end
     
     def to_s_pretty
@@ -305,7 +301,7 @@ module ID3V24
     end
     
     def to_s
-      @encoding.chr << encode_value(@encoding, @description || '').to_s_ignore_encoding << @value
+      @encoding.chr << encode_value(@encoding, @description || '').b << @value
     end
     
     def to_s_pretty
@@ -381,7 +377,7 @@ module ID3V24
     
     def to_s
       @encoding.chr << @mime_type << 0.chr << @picture_type << \
-        encode_value(@encoding, @description || '').to_s_ignore_encoding << @value
+        encode_value(@encoding, @description || '').b << @value
     end
     
     def picture_type_name
@@ -467,7 +463,7 @@ module ID3V24
   
     def to_s
       $stderr.puts("COMMFrame.to_s => [#{encoding}|#{@language || 'XXX'}|#{encode_value(@encoding, @description || '').inspect}|#{encode_value(@encoding, @value).inspect}]") if $DEBUG
-      @encoding.chr << (@language || 'XXX') << encode_value(@encoding, @description || '').to_s_ignore_encoding << encode_value(@encoding, @value || '').to_s_ignore_encoding
+      @encoding.chr << (@language || 'XXX') << encode_value(@encoding, @description || '').b << encode_value(@encoding, @value || '').b
     end
   
     def to_s_pretty
@@ -559,10 +555,10 @@ module ID3V24
       TCONFrame.new(encoding, TCONFrame.from_genre_code(TextFrame.decode_value(encoding, string)))
     end
     
+    GENRE_CODES = ID3::GENRES.each_with_index.to_h { |g, i| [g, i] }.freeze
+
     def genre_code
-      reversed = {}
-      ID3::GENRES.each_index{ |index| reversed[ID3::GENRES[index]] = index}
-      reversed[@value] || 255
+      GENRE_CODES[@value] || 255
     end
   
     def to_s_pretty
@@ -615,10 +611,6 @@ module ID3V24
   end
   
   class UFIFrame < UFIDFrame
-    def initialize(namespace, value)
-      super(namespace, value)
-      @namespace = namespace
-    end
   end
   
   class XDORFrame < TextFrame
@@ -644,7 +636,7 @@ module ID3V24
     
     def to_s
       if @value
-        @encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d")).to_s_ignore_encoding
+        @encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d")).b
       else
         ''.b
       end
@@ -763,14 +755,14 @@ module ID3V24
     
     def self.parse_adjustments(raw_value)
       adjustment_list = []
-      total_bytes = raw_value.safe_length
+      total_bytes = raw_value.bytesize
       cur_pos = 0
       $stderr.puts("RVA2Frame.parse_adjustments(raw_value=#{raw_value.inspect}) => total_bytes=[#{total_bytes}]") if $DEBUG
       
       while total_bytes - cur_pos > 0 do
         # get the channel code byte
         raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 > total_bytes;
-        channel_code = raw_value[cur_pos].to_ordinal
+        channel_code = raw_value[cur_pos].ord
         cur_pos += 1
         $stderr.puts("RVA2Frame.parse_adjustments channel_code=[#{channel_code.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
         
@@ -782,7 +774,7 @@ module ID3V24
         
         # figure out how many bits' worth of peak gain scale adjustment there is
         raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 > total_bytes;
-        peak_gain_bit_size = raw_value[cur_pos].to_ordinal
+        peak_gain_bit_size = raw_value[cur_pos].ord
         cur_pos += 1
         $stderr.puts("RVA2Frame.parse_adjustments peak_gain_bit_size=[#{peak_gain_bit_size.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
         
@@ -817,7 +809,6 @@ module ID3V24
   end
   
   # 2.3 compatibility frame created by normalize; identical to RVA2
-  # TODO: move to ID3V23::Frame when splitting apart 2.2/3/4 frames.
   # normalize: http://normalize.nongnu.org/
   class XRVAFrame < RVA2Frame
     def initialize(identifier, adjustments = [])
@@ -889,7 +880,7 @@ module ID3V24
     end
     
     def bit_width
-      @value[1].to_ordinal
+      @value[1].ord
     end
     
     def set_raw(channel, value)
@@ -972,11 +963,11 @@ module ID3V24
     private
     
     def byte_width
-      (@value[1].to_ordinal.to_f / 8).ceil
+      (@value[1].ord.to_f / 8).ceil
     end
     
     def bit_field
-      @value[0].to_ordinal
+      @value[0].ord
     end
     
     def channel_to_offset(channel)
@@ -1064,7 +1055,7 @@ module ID3V24
     end
     
     def bit_width
-      @value[1].to_ordinal
+      @value[1].ord
     end
     
     def set_raw(channel, value)
@@ -1151,11 +1142,11 @@ module ID3V24
     private
     
     def byte_width
-      (@value[1].to_ordinal.to_f / 8).ceil
+      (@value[1].ord.to_f / 8).ceil
     end
     
     def bit_field
-      @value[0].to_ordinal
+      @value[0].ord
     end
     
     def ensure_capacity!(channel)
@@ -1306,7 +1297,7 @@ module ID3V24
     
     def type_code=(value)
       # strip out the old type code
-      cleared   = @raw_string[0].to_ordinal & ~(0x7 << 5)
+      cleared   = @raw_string[0].ord & ~(0x7 << 5)
       # ensure the new value doesn't overflow 3 bits and shift into position
       new_value = (value & 0x7) << 5
       # combine the two and store
@@ -1319,7 +1310,7 @@ module ID3V24
     
     def origin_code=(value)
       # strip out the old origin code
-      cleared   = @raw_string[0].to_ordinal & ~(0x7 << 2)
+      cleared   = @raw_string[0].ord & ~(0x7 << 2)
       # ensure the new value doesn't overflow 3 bits and shift into position
       new_value = (value & 0x7) << 2
       # combine the two and store

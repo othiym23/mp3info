@@ -1,7 +1,7 @@
 require 'digest/sha1'
 
-require 'mp3info/id3'
-require 'mp3info/mpeg_utils'
+require_relative 'mp3info/id3'
+require_relative 'mp3info/mpeg_utils'
 
 class MP3Excerpter
   GRABBINATE_SIZE = 2**16

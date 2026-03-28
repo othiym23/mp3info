@@ -1,6 +1,5 @@
 # encoding: binary
 require 'delegate'
-require 'mp3info/compatibility_utils'
 
 class ID3Error < StandardError ; end
 
@@ -91,7 +90,7 @@ class ID3 < DelegateClass(Hash)
   end
   
   def changed?
-    !defined?(@hash_orig) || @hash_orig != @hash
+    @hash_orig.nil? || @hash_orig != @hash
   end
   
   def valid?
@@ -190,11 +189,9 @@ class ID3 < DelegateClass(Hash)
     # The sole difference between ID3v1.1 and ID3v1 is that the former has the
     # track number tucked in as an unsigned byte at the end of the comments field.
     #
-    # There is probably a better way to make this comparison work in both
-    # ruby 1.9 and previous versions, but for now, this works.
-    if raw_comments[-2].to_ordinal == 0 && raw_comments[-1].to_ordinal > 0
+    if raw_comments[-2].ord == 0 && raw_comments[-1].ord > 0
       @version = VERSION_1_1
-      @hash[TRACK_NUMBER_KEY] = raw_comments[-1].to_ordinal
+      @hash[TRACK_NUMBER_KEY] = raw_comments[-1].ord
       # remove the last character, which contains the track number
       raw_comments.chop!
     else
@@ -213,7 +210,7 @@ class ID3 < DelegateClass(Hash)
   
   def to_bin
     if changed?
-      @version = VERSION_1_1 unless defined? @version
+      @version = VERSION_1_1 unless @version
       case @version
       when VERSION_1
         attrs = 

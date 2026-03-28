@@ -1,4 +1,4 @@
-require 'mp3info'
+require_relative '../mp3info'
 
 class UserTextReplaygainInfo
   def initialize(id3v2)
@@ -318,7 +318,7 @@ class ReplaygainInfo
   def rva_string
     out_string = ''
     if rva_replaygain
-      ensure_list(rva_replaygain).each do |rva|
+      Array(rva_replaygain).each do |rva|
         out_string << "RVA adjustment:\n"
         rva.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
@@ -337,7 +337,7 @@ class ReplaygainInfo
   def rvad_string
     out_string = ''
     if rvad_replaygain
-      ensure_list(rvad_replaygain).each do |rvad|
+      Array(rvad_replaygain).each do |rvad|
         out_string << "RVAD adjustment:\n"
         rvad.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
@@ -356,7 +356,7 @@ class ReplaygainInfo
   def rva2_string
     out_string = ''
     if rva2_replaygain
-      ensure_list(rva2_replaygain).each do |rva2|
+      Array(rva2_replaygain).each do |rva2|
         out_string << "RVA2 #{rva2.identifier} adjustment:\n"
         rva2.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
@@ -375,7 +375,7 @@ class ReplaygainInfo
   def xrva_string
     out_string = ''
     if xrva_replaygain
-      ensure_list(xrva_replaygain).each do |xrva|
+      Array(xrva_replaygain).each do |xrva|
         out_string << "XRVA #{xrva.identifier} adjustment:\n"
         xrva.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
@@ -394,7 +394,7 @@ class ReplaygainInfo
   def xrv_string
     out_string = ''
     if xrv_replaygain
-      ensure_list(xrv_replaygain).each do |xrva|
+      Array(xrv_replaygain).each do |xrva|
         out_string << "XRV #{xrva.identifier} adjustment:\n"
         xrva.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
@@ -432,11 +432,4 @@ class ReplaygainInfo
     out_string
   end
   
-  def ensure_list(value)
-    if value.is_a?(Array)
-      value
-    else
-      [value]
-    end
-  end
 end

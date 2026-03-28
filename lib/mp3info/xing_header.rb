@@ -1,6 +1,6 @@
-require 'mp3info/mpeg_utils'
-require 'mp3info/mpeg_header'
-require 'mp3info/size_utils'
+require_relative 'mpeg_utils'
+require_relative 'mpeg_header'
+require_relative 'size_utils'
 
 class XingHeaderError < StandardError ; end
 

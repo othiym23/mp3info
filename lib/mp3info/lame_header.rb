@@ -1,5 +1,5 @@
-require 'mp3info/mpeg_utils'
-require 'mp3info/size_utils'
+require_relative 'mpeg_utils'
+require_relative 'size_utils'
 
 class LAMEReplayGainType
   def initialize(gain_data)
@@ -449,12 +449,12 @@ LAME tag:
   end
   
   def header_location
-    # LAME tag follows the Xing/Info header within the first frame.
-    # Start searching after the MPEG header (4 bytes) + side info to avoid
-    # false matches in audio data.
-    mpeg_header = MPEGHeader.new(@raw_frame.slice(0,4))
-    search_start = 4 + mpeg_header.side_info_size
-    @raw_frame.index('LAME', search_start) || -1
+    @header_location ||= begin
+      # Search after the MPEG header + side info to avoid false matches
+      mpeg_header = MPEGHeader.new(@raw_frame.slice(0,4))
+      search_start = 4 + mpeg_header.side_info_size
+      @raw_frame.index('LAME', search_start) || -1
+    end
   end
   
   def check_crc(data)

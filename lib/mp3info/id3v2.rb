@@ -1,34 +1,7 @@
 # encoding: utf-8
 require 'delegate'
-require 'mp3info/compatibility_utils'
-require 'mp3info/mpeg_utils'
-require "mp3info/id3v2_frames"
-
-# Ruby 1.8<->1.9 compatibility workarounds: should be considered deprecated immediately.
-class String
-  # There is no String method in both Ruby 1.8 and 1.9 that will return the
-  # byte length without resorting to hacks involving regexps. For now,
-  # monkeypatching String is my preferred way of hacking around this.
-  def safe_length
-    if self.respond_to?(:bytesize)
-      bytesize
-    else
-      size
-    end
-  end
-  
-  # Ruby 1.9 goes out of its way to make it difficult to quickly
-  # smoosh together strings of 'incompatible' encodings. I dislike
-  # gratuitous monkeypatching, but this works in both Ruby 1.9 and
-  # previous versions.
-  def to_s_ignore_encoding
-    if self.respond_to?(:force_encoding)
-      self.force_encoding("BINARY")
-    else
-      self
-    end
-  end
-end
+require_relative 'mpeg_utils'
+require_relative 'id3v2_frames'
 
 class ID3V2Error < StandardError ; end
 class ID3V2ParseError < StandardError ; end
@@ -99,7 +72,7 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def changed?
-    !defined?(@hash_orig) || @hash_orig != @hash
+    @hash_orig.nil? || @hash_orig != @hash
   end
   
   def valid?
@@ -134,11 +107,11 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def major_version
-    @raw_tag[3].to_ordinal
+    @raw_tag[3].ord
   end
   
   def minor_version
-    @raw_tag[4].to_ordinal
+    @raw_tag[4].ord
   end
   
   def version
@@ -251,7 +224,7 @@ ID3V#{version} tag:
       
       #TODO flags: version_maj, version_min, [unsync, ext_header, experimental, footer]
       tag_str << [ DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION, "0000" ].pack("CCB4")
-      tag_str << tag.safe_length.to_synchsafe_string
+      tag_str << tag.bytesize.to_synchsafe_string
       tag_str << tag
       $stderr.puts "ID3V2.to_bin => tag_str=[#{tag_str.inspect}]" if $DEBUG
       tag_str
@@ -289,7 +262,7 @@ ID3V#{version} tag:
     header = frame.type[0,4] 
     
     # Always use synchsafe frame sizes since to_bin always writes a v2.4 header
-    header << encoded_frame_data.safe_length.to_synchsafe_string
+    header << encoded_frame_data.bytesize.to_synchsafe_string
     
     header << "\x00" * 2 # TODO: frame flags
     

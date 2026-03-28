@@ -1,22 +1,16 @@
 # encoding: binary
-# $Id: mp3info.rb,v 37eef5deb369 2009/03/17 23:04:39 ogd $
 # License:: Ruby
 # Author:: Rei Moribito (mailto:othiym23_AT_gmail_DOT_com)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Website:: http://hg.driftglass.org/
-script_path = __FILE__
-script_path = File.readlink(script_path) if File.symlink?(script_path)
-
-$: << File.join(File.dirname(script_path), '../lib')
-
 require 'delegate'
 require 'fileutils'
-require 'mp3info/mpeg_header'
-require 'mp3info/xing_header'
-require 'mp3info/lame_header'
-require 'mp3info/replaygain_info'
-require 'mp3info/id3'
-require 'mp3info/id3v2'
+require_relative 'mp3info/mpeg_header'
+require_relative 'mp3info/xing_header'
+require_relative 'mp3info/lame_header'
+require_relative 'mp3info/replaygain_info'
+require_relative 'mp3info/id3'
+require_relative 'mp3info/id3v2'
 
 # ruby -d to display debugging info
 
@@ -50,7 +44,7 @@ class Mp3Info
   
   # replaygain info object
   def replaygain_info
-    ReplaygainInfo.new(self)
+    @replaygain_info ||= ReplaygainInfo.new(self)
   end
   
   # bitrate in kbps
@@ -94,11 +88,11 @@ class Mp3Info
   attr_reader :filename
 
   def has_universal_tag?
-    nil != defined?(@tag)
+    !@tag.nil?
   end
 
   def has_id3v1_tag?
-    nil != defined?(@id3v1_tag) && nil != @id3v1_tag && @id3v1_tag.valid? && @id3v1_tag.size > 0
+    !@id3v1_tag.nil? && @id3v1_tag.valid? && @id3v1_tag.size > 0
   end
 
   def has_id3v2_tag?
@@ -106,15 +100,15 @@ class Mp3Info
   end
   
   def has_mpeg_header?
-    nil != defined?(@mpeg_header) && nil != @mpeg_header
+    !@mpeg_header.nil?
   end
   
   def has_xing_header?
-    nil != defined?(@xing_header) && nil != @xing_header
+    !@xing_header.nil?
   end
   
   def has_lame_header?
-    nil != defined?(@lame_header) && nil != @lame_header
+    !@lame_header.nil?
   end
   
   def remove_id3v1_tag
@@ -240,8 +234,8 @@ class Mp3Info
     end
     
     # there should always be tags available for convenience
-    @id3v1_tag = ID3.new if nil == defined? @id3v1_tag
-    @id3v2_tag = ID3V2.new if nil == defined? @id3v2_tag
+    @id3v1_tag = ID3.new if @id3v1_tag.nil?
+    @id3v2_tag = ID3V2.new if @id3v2_tag.nil?
   end
   
   # Flush pending modifications to tags and close the file
@@ -345,9 +339,9 @@ class Mp3Info
   # but the universal tag relies upon not stomping on the empty tag if it
   # exists.
   def actually_has_id3v2_tag?
-    nil != defined?(@id3v2_tag) && nil != @id3v2_tag
+    !@id3v2_tag.nil?
   end
-  
+
   def load_universal_tag!
     @tag = {}
     

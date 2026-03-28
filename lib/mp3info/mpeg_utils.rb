@@ -1,11 +1,7 @@
 # encoding: binary
-# mutually dependent files do not make me happy.
-require 'mp3info/mpeg_header'
+require_relative 'mpeg_header'
 require 'tempfile'
 
-#
-# Initially ported from eyeD3 by Ryan Finne & Travis Shirk.
-#
 class String
   # convert a string representing an array of big-endian bytes into an array of bits
   def to_binary_array(size = 8)
@@ -57,7 +53,7 @@ class Array
         byte |= bit << index
       end
 
-      binary_string += byte.chr(Encoding::BINARY)
+      binary_string << byte.chr(Encoding::BINARY)
     end
 
     binary_string.reverse
@@ -106,10 +102,10 @@ class Integer
 
     binary_string = ''.b
 
-    binary_string += ((self >> 21) & 0x7f).chr(Encoding::BINARY)
-    binary_string += ((self >> 14) & 0x7f).chr(Encoding::BINARY)
-    binary_string += ((self >>  7) & 0x7f).chr(Encoding::BINARY)
-    binary_string += ((self >>  0) & 0x7f).chr(Encoding::BINARY)
+    binary_string << ((self >> 21) & 0x7f).chr(Encoding::BINARY)
+    binary_string << ((self >> 14) & 0x7f).chr(Encoding::BINARY)
+    binary_string << ((self >>  7) & 0x7f).chr(Encoding::BINARY)
+    binary_string << ((self >>  0) & 0x7f).chr(Encoding::BINARY)
 
     binary_string
   end
