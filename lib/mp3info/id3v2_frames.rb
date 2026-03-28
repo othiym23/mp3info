@@ -696,6 +696,9 @@ module ID3V24
       @peak_gain_width
     end
 
+    # Frame body data is not synchsafe — 0xFF bytes are valid here.
+    # See doc/DESIGN_NOTES.md for the distinction between synchsafe
+    # integers (size fields) and unsynchronization (body data).
     def to_bin
       "#{@channel_code.chr}#{encode_raw_adjustment}#{encode_peak_gain_bits}"
     end
