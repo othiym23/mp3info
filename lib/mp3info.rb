@@ -11,6 +11,7 @@ require_relative "mp3info/lame_header"
 require_relative "mp3info/replaygain_info"
 require_relative "mp3info/id3"
 require_relative "mp3info/id3v2"
+require_relative "mp3info/mpeg_stream"
 require_relative "mp3info/binary_conversions"
 require_relative "mp3info/size_units"
 
@@ -91,6 +92,11 @@ class Mp3Info
 
   # the original filename
   attr_reader :filename
+
+  # Access the MPEG stream for frame-by-frame iteration and validation
+  def stream
+    @stream ||= MPEGStream.new(@filename)
+  end
 
   def has_universal_tag?
     !@tag.nil?
