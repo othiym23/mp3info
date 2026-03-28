@@ -769,13 +769,13 @@ module ID3V24
       
       while total_bytes - cur_pos > 0 do
         # get the channel code byte
-        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 >= total_bytes;
+        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 1 > total_bytes;
         channel_code = raw_value[cur_pos].to_ordinal
         cur_pos += 1
         $stderr.puts("RVA2Frame.parse_adjustments channel_code=[#{channel_code.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
         
         # get the 16-bit signed big-endian value for the gain adjustment
-        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 2 >= total_bytes;
+        raise(RVA2ParseError, "insufficient bytes left to parse out another adjustment") if cur_pos + 2 > total_bytes;
         adjustment = decode_gain_value(raw_value.slice(cur_pos, 2))
         cur_pos += 2
         $stderr.puts("RVA2Frame.parse_adjustments adjustment=[#{adjustment.inspect}] cur_pos=[#{cur_pos}]") if $DEBUG
