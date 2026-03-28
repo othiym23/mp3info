@@ -85,15 +85,53 @@ class ID3V2 < DelegateClass(Hash)
     !(major_version == 4 && unsynchronized_tag?(@raw_tag))
   end
   
+  # Retrieve a frame by key. Returns the single frame object when there is
+  # only one frame for a key, or an array when there are multiple.
+  def [](key)
+    value = @hash[key]
+    return nil if value.nil?
+    value.size == 1 ? value.first : value
+  end
+
+  # Access the raw array of frames for a key, always as an Array.
+  def frames(key)
+    @hash[key]
+  end
+
+  # Iteration and comparison unwrap single-element arrays for backward compat
+  def each
+    @hash.each { |k, v| yield k, (v.size == 1 ? v.first : v) }
+  end
+
+  def values
+    @hash.values.map { |v| v.size == 1 ? v.first : v }
+  end
+
+  def ==(other)
+    return false unless other.is_a?(Hash) || other.is_a?(ID3V2)
+    other_hash = other.is_a?(ID3V2) ? other.to_unwrapped_hash : other
+    to_unwrapped_hash == other_hash
+  end
+
+  def to_unwrapped_hash
+    @hash.transform_values { |v| v.size == 1 ? v.first : v }
+  end
+
   def []=(key, args)
     value = args
     if value.is_a? ID3V24::Frame
-      @hash[key] = value
+      @hash[key] = [value]
     elsif value.is_a? Array
       @hash[key] = value.map { |t| t.is_a?(ID3V24::Frame) ? t : ID3V24::Frame.create_frame(key, t.to_s) }
     else
-      @hash[key] = ID3V24::Frame.create_frame(key, value.to_s)
+      @hash[key] = [ID3V24::Frame.create_frame(key, value.to_s)]
     end
+  end
+
+  # Override Hash#update to ensure values are always wrapped in arrays
+  def update(other_hash)
+    other_hash.each { |key, value| self[key] = value }
+    self
   end
   
   def major_version
@@ -129,16 +167,12 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def frame_count
-    values.sum { |v| v.is_a?(Array) ? v.size : 1 }
+    @hash.values.sum(&:size)
   end
-  
+
   def find_frames_by_description(description)
-    values.flat_map do |frames|
-      if frames.is_a?(Array)
-        frames.select { |frame| frame.respond_to?(:description) && frame.description == description }
-      else
-        (frames.respond_to?(:description) && frames.description == description) ? [frames] : []
-      end
+    @hash.values.flat_map do |frames|
+      frames.select { |frame| frame.respond_to?(:description) && frame.description == description }
     end
   end
   
@@ -185,16 +219,9 @@ ID3V#{version} tag:
     #TODO add CRC
     if changed?
       tag = ""
-      @hash.each_value do |value|
-        next unless value
-        next if value.respond_to?("empty?") and value.empty?
-        if value.is_a?(Array)
-          value.each do |frame|
-            tag << encode_frame(frame)
-          end
-        else
-          tag << encode_frame(value)
-        end
+      @hash.each_value do |frames|
+        next if frames.nil? || frames.empty?
+        frames.each { |frame| tag << encode_frame(frame) }
       end
       
       tag_str = "ID3"
@@ -213,19 +240,19 @@ ID3V#{version} tag:
   end
   
   def merge(other_id3v2)
-    # just copy all the frames this tag doesn't know about
-    new_frames   = other_id3v2.keys - @hash.keys
-    new_frames.each { |key| @hash[key] = other_id3v2[key].dup }
-    
-    # merge the shared values
+    # copy frames this tag doesn't know about
+    new_frames = other_id3v2.keys - @hash.keys
+    new_frames.each { |key| @hash[key] = Array(other_id3v2[key]).dup }
+
+    # merge shared values, deduplicating by ==
     merge_frames = other_id3v2.keys & @hash.keys
     merge_frames.each do |key|
-      current_set = self[key].is_a?(Array) ? self[key] : [self[key]]
-      other_set   = other_id3v2[key].is_a?(Array) ? other_id3v2[key] : [other_id3v2[key]]
-      merged_set  = current_set + other_set
+      current_set = @hash[key]
+      other_set   = Array(other_id3v2[key])
+      merged = current_set + other_set
       out = []
-      merged_set.each { |value| out << value unless out.include?(value) }
-      @hash[key] = out.size == 1 ? out.first : out
+      merged.each { |v| out << v unless out.include?(v) }
+      @hash[key] = out
     end
   end
   
@@ -325,22 +352,11 @@ ID3V#{version} tag:
     end
   end
 
-  # Parse a string from a frame
-  #
-  # An oddity of this class is that it handles multiple frames with the same
-  # ID but only returns them as a list if there's more than 1. For consistency's
-  # sake this should return a list every time, so consider that a TODO.
   def add_frame(hash, name, string)
     $stderr.puts "ID3V2.add_frame(name='#{name}',string=[#{string[0..255].inspect}...])" if $DEBUG
     frame = ID3V24::Frame.create_frame_from_string(name, string)
-    if hash.key?(name)
-      unless hash[name].is_a?(Array)
-        hash[name] = [hash[name]]
-      end
-      hash[name] << frame
-    else
-      hash[name] = frame
-    end
+    hash[name] ||= []
+    hash[name] << frame
   end
   
   # For 2.4.0 tags, try to detect lurking unsynchronized frame size strings

@@ -200,7 +200,7 @@ class Mp3Info
       if has_id3v2_tag? && @id3v2_tag['TLEN']
         # but if another duration is given and it isn't close (within 5%)
         #  assume the mp3 is vbr and go with the given duration
-        tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
+        tlen = @id3v2_tag.frames('TLEN').last.value.to_i / 1000
         if tlen > 0
           percent_diff = ((@length.to_i - tlen) / tlen.to_f)
           if percent_diff.abs > 0.05
@@ -314,8 +314,8 @@ class Mp3Info
       end
     elsif has_mpeg_header?
       time = (@streamsize * @mpeg_header.frame_duration) / @mpeg_header.frame_size
-      if has_id3v2_tag? && @id3v2_tag['TLEN'] && @id3v2_tag['TLEN'].value.to_i > 0
-        tlen = (@id3v2_tag['TLEN'].is_a?(Array) ? @id3v2_tag['TLEN'].last : @id3v2_tag['TLEN']).value.to_i / 1000
+      if has_id3v2_tag? && @id3v2_tag.frames('TLEN')&.any? && @id3v2_tag.frames('TLEN').last.value.to_i > 0
+        tlen = @id3v2_tag.frames('TLEN').last.value.to_i / 1000
         percent_diff = ((time.to_i - tlen) / tlen.to_f)
         if percent_diff.abs > 0.05
           time = tlen
@@ -357,15 +357,11 @@ class Mp3Info
     
     if actually_has_id3v2_tag?
       @tag = {}
-      V1_V2_TAG_MAPPING.each do |key1, key2| 
-        t2 = @id3v2_tag[key2]
-        next unless t2
-        @tag[key1] = t2.is_a?(Array) ? t2.first.value : t2.value
-
-        if key1 == "tracknum"
-          val = @id3v2_tag[key2].is_a?(Array) ? @id3v2_tag[key2].first.value : @id3v2_tag[key2].value
-          @tag[key1] = val.to_i
-        end
+      V1_V2_TAG_MAPPING.each do |key1, key2|
+        frames = @id3v2_tag.frames(key2)
+        next unless frames&.any?
+        @tag[key1] = frames.first.value
+        @tag[key1] = frames.first.value.to_i if key1 == "tracknum"
       end
     end
     
