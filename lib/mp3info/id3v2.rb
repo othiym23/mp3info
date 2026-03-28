@@ -92,15 +92,7 @@ class ID3V2 < DelegateClass(Hash)
     if value.is_a? ID3V24::Frame
       @hash[key] = value
     elsif value.is_a? Array
-      list = []
-      value.each do |thing|
-        if thing.is_a? ID3V24::Frame
-          list << thing
-        else
-          list << ID3V24::Frame.create_frame(key, thing.to_s)
-        end
-      end
-      @hash[key] = list
+      @hash[key] = value.map { |t| t.is_a?(ID3V24::Frame) ? t : ID3V24::Frame.create_frame(key, t.to_s) }
     else
       @hash[key] = ID3V24::Frame.create_frame(key, value.to_s)
     end
@@ -139,30 +131,17 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def frame_count
-    count = 0
-    values.each do |frames|
-      unless frames.is_a?(Array)
-        count += 1
-      else
-        count += frames.size
-      end
-    end
-    
-    count
+    values.sum { |v| v.is_a?(Array) ? v.size : 1 }
   end
   
   def find_frames_by_description(description)
-    found_frames = []
-    
-    values.each do |frames|
+    values.flat_map do |frames|
       if frames.is_a?(Array)
-        found_frames << frames.select {|frame| frame.respond_to?(:description) && frame.description == description }
+        frames.select { |frame| frame.respond_to?(:description) && frame.description == description }
       else
-        found_frames << frames if frames.respond_to?(:description) && frames.description == description
+        (frames.respond_to?(:description) && frames.description == description) ? [frames] : []
       end
     end
-    
-    found_frames.flatten
   end
   
   def tag_length
@@ -247,7 +226,7 @@ ID3V#{version} tag:
       other_set   = other_id3v2[key].is_a?(Array) ? other_id3v2[key] : [other_id3v2[key]]
       merged_set  = current_set + other_set
       out = []
-      merged_set.each { |value| out << value if !out.include?(value) }
+      merged_set.each { |value| out << value unless out.include?(value) }
       @hash[key] = out.size == 1 ? out.first : out
     end
   end
@@ -356,7 +335,7 @@ ID3V#{version} tag:
   def add_frame(hash, name, string)
     $stderr.puts "ID3V2.add_frame(name='#{name}',string=[#{string[0..255].inspect}...])" if $DEBUG
     frame = ID3V24::Frame.create_frame_from_string(name, string)
-    if hash.keys.include?(name)
+    if hash.key?(name)
       unless hash[name].is_a?(Array)
         hash[name] = [hash[name]]
       end
