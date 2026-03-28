@@ -38,7 +38,7 @@ module MPEGFile
   def write_mpeg_file!(filename)
     raise(MPEGFileError, "File is not writable") unless File.writable?(filename)
     $stderr.puts("MPEGFile::write_mpeg_file! source file length is #{File.size(filename)}") if $DEBUG
-    
+
     temporary = Tempfile.new('mp3info', File.dirname(filename))
     begin
       tmpfile_path = temporary.path
@@ -46,14 +46,17 @@ module MPEGFile
         # this would be a good place to invoke code to prepend a tag to the file
         yield temporary if block_given?
 
-        $stderr.puts("MPEGFile::write_mpeg_file! about to call find_next_frame at %#010x" % original.pos) if $DEBUG
-        header_pos, header = find_next_frame(original, original.pos)
-        original.seek(header_pos)
-        $stderr.puts("MPEGFile::write_mpeg_file! original file is at %#010x" % original.pos) if $DEBUG
+        # Skip past any existing ID3v2 tag to find where the audio data starts.
+        # Read the tag size directly from the header rather than searching for
+        # MPEG sync, which can skip valid audio data between the tag and the
+        # first frame that passes frame-following validation.
+        audio_start = skip_id3v2_tag(original)
+        original.seek(audio_start)
+        $stderr.puts("MPEGFile::write_mpeg_file! copying audio from %#010x" % audio_start) if $DEBUG
+
         bufsize = original.stat.blksize || 4096
         while buf = original.read(bufsize)
           temporary.write(buf)
-          $stderr.puts("MPEGFile::write_mpeg_file! wrote #{"%#010x" % bufsize} bytes of the original file to #{tmpfile_path}") if $DEBUG
         end
       end
       temporary.close
@@ -62,6 +65,22 @@ module MPEGFile
       temporary.close
       temporary.unlink
       raise
+    end
+  end
+
+  # Skip past an ID3v2 tag at the current file position and return the
+  # offset where audio data begins. Returns 0 if there is no ID3v2 tag.
+  def skip_id3v2_tag(file)
+    file.seek(0)
+    header = file.read(3)
+    if header == 'ID3'
+      file.read(2) # version bytes
+      file.read(1) # flags
+      size_bytes = file.read(4)
+      tag_size = size_bytes.from_synchsafe_string
+      10 + tag_size
+    else
+      0
     end
   end
   
