@@ -8,6 +8,7 @@ describe Mp3Info, "round-trip integrity" do
   # Files known to have no useful MPEG audio data
   no_audio_files = %w[
     mp3info-qa/3aeb9bc1396b9b840c677e161e731908a4a66464.mp3
+    id3lib/empty.mp3
   ]
 
   mp3_files.each do |path|
