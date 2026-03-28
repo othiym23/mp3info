@@ -105,7 +105,7 @@ module ID3V24
   class TextFrame < Frame
     attr_accessor :encoding
     
-    ENCODING = { :iso => 0, :utf16 => 1, :utf16be => 2, :utf8 => 3 }
+    ENCODING = { iso: 0, utf16: 1, utf16be: 2, utf8: 3 }
     DEFAULT_ENCODING = ENCODING[:utf8]
   
     def initialize(type, encoding, value)
@@ -168,7 +168,7 @@ module ID3V24
         when ENCODING[:utf8]
           value.to_s + "\000"
         else
-          raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{value}")
+          raise FrameException, "invalid encoding #{encoding} parsed from tag with value #{value}"
         end
       end
     end
@@ -206,7 +206,7 @@ module ID3V24
           remainder = ''.b
         end
       else
-        raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
+        raise FrameException, "invalid encoding #{encoding} parsed from tag with value #{string}"
       end
 
       $stderr.puts("ID3V24::TextFrame.split_encoded(encoding=#{encoding},string=[#{string[0..255].inspect}...]) => [prefix='#{prefix.inspect}',remainder=[#{remainder ? remainder[0..255].inspect : 'nil'}...]]") if $DEBUG
@@ -799,12 +799,7 @@ module ID3V24
     end
     
     def encode_adjustments
-      bin_string = ''
-      @value.each do |adjustment|
-        bin_string << adjustment.to_bin
-      end
-      
-      bin_string
+      @value.map(&:to_bin).join
     end
   end
   
@@ -948,32 +943,29 @@ module ID3V24
     end
     
     def adjustments
-      adjustment_list = []
-      CHANNELS.each do |channel|
-        adjustment_list << RVA2Adjustment.new(TO_RVA2_TYPE[channel], (get_db(channel) * 512).round, bit_width, get_peak(channel))
+      CHANNELS.map do |channel|
+        RVA2Adjustment.new(TO_RVA2_TYPE[channel], (get_db(channel) * 512).round, bit_width, get_peak(channel))
       end
-      
-      adjustment_list
     end
-    
+
     def set_channel_sign!(channel, value)
       @value[0] = ((value < 0) ? (bit_field & ~channel) : (bit_field | channel)).chr
     end
-    
+
     private
-    
+
     def byte_width
       (@value[1].ord.to_f / 8).ceil
     end
-    
+
     def bit_field
       @value[0].ord
     end
-    
+
     def channel_to_offset(channel)
       # base offset is 1 increment / decrement field byte + 1 bitwidth byte
       base_offset = 2
-      
+
       case channel
       when RIGHT
         base_offset
@@ -1125,14 +1117,9 @@ module ID3V24
     end
     
     def adjustments
-      adjustment_list = []
-      CHANNELS.each do |channel|
-        if channel_adjusted?(channel)
-          adjustment_list << RVA2Adjustment.new(TO_RVA2_TYPE[channel], (get_db(channel) * 512).round, bit_width, get_peak(channel))
-        end
+      CHANNELS.select { |channel| channel_adjusted?(channel) }.map do |channel|
+        RVA2Adjustment.new(TO_RVA2_TYPE[channel], (get_db(channel) * 512).round, bit_width, get_peak(channel))
       end
-      
-      adjustment_list
     end
     
     def set_channel_sign!(channel, value)
