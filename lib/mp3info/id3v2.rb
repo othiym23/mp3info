@@ -57,7 +57,7 @@ class ID3V2 < DelegateClass(Hash)
   end
   
   def to_file(filename)
-    File.open(filename, "w") { |file| file.write(to_bin) }
+    File.open(filename, "wb") { |file| file.write(to_bin) }
   end
   
   # assumes file.pos is at the beginning of the ID3v2 tag
@@ -315,7 +315,9 @@ ID3V#{version} tag:
       $stderr.puts("parse_id3v2_frames name is #{name}") if $DEBUG
       
       break if frame_name_invalid?(version, name)
-      
+
+      break if cur_pos + default_width(version) > string.size  # not enough bytes for size
+
       size = frame_size(string, cur_pos, version, unsynchronized_sizes)
       cur_pos += default_width(version)
       $stderr.puts("parse_id3v2_frames size is #{size}") if $DEBUG
@@ -323,6 +325,7 @@ ID3V#{version} tag:
       # ID3v2.2 lacks the awesomely useful frame flags of later versions
       # TODO do something useful with the frame flags
       if 2 != version
+        break if cur_pos + 2 > string.size  # not enough bytes for flags
         frame_flags = string.slice(cur_pos, 2)
         cur_pos += 2
         $stderr.puts("parse_id3v2_frames flags are #{frame_flags.inspect}") if $DEBUG
@@ -347,10 +350,10 @@ ID3V#{version} tag:
   def frame_name_invalid?(version, name)
     case version
     when 2
-      name.match(/[A-Za-z0-9]{3}/) == nil
+      !name.match?(/\A[A-Za-z0-9]{3}\z/)
     when 3, 4
       # bug caused by old tagging application "mp3ext" ( http://www.mutschler.de/mp3ext/ )
-      name == "MP3e" or name.match(/[A-Za-z0-9]{4}/) == nil
+      name == "MP3e" or !name.match?(/\A[A-Za-z0-9]{4}\z/)
     end
   end
   
