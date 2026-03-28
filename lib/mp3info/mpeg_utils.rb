@@ -100,14 +100,7 @@ class Integer
     raise ArgumentError, "Only positive numbers can be translated" if self < 0
     raise ArgumentError, "Synchsafe value must be less than 2^28 - 1" if self > 268435455
 
-    binary_string = ''.b
-
-    binary_string << ((self >> 21) & 0x7f).chr(Encoding::BINARY)
-    binary_string << ((self >> 14) & 0x7f).chr(Encoding::BINARY)
-    binary_string << ((self >>  7) & 0x7f).chr(Encoding::BINARY)
-    binary_string << ((self >>  0) & 0x7f).chr(Encoding::BINARY)
-
-    binary_string
+    [(self >> 21) & 0x7f, (self >> 14) & 0x7f, (self >> 7) & 0x7f, self & 0x7f].pack("C4")
   end
 end
 
