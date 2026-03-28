@@ -12,6 +12,7 @@ require_relative "mp3info/replaygain_info"
 require_relative "mp3info/id3"
 require_relative "mp3info/id3v2"
 require_relative "mp3info/mpeg_stream"
+require_relative "mp3info/stream_validator"
 require_relative "mp3info/binary_conversions"
 require_relative "mp3info/size_units"
 
@@ -96,6 +97,11 @@ class Mp3Info
   # Access the MPEG stream for frame-by-frame iteration and validation
   def stream
     @stream ||= MPEGStream.new(@filename)
+  end
+
+  # Validate the MPEG stream and return a ValidationReport
+  def validate
+    StreamValidator.new(@filename).validate
   end
 
   def has_universal_tag?
