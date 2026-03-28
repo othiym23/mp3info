@@ -80,6 +80,18 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     expect(remainder).to eq("\x00\x42".b)
   end
 
+  it "should handle malformed UTF-16 data without crashing" do
+    # Odd number of bytes — invalid UTF-16
+    malformed = "\xFF\xFE\x41".b
+    expect { ID3V24::TextFrame.from_s("\x01#{malformed}", 'TIT2') }.not_to raise_error
+  end
+
+  it "should handle malformed UTF-8 data without crashing" do
+    # Invalid UTF-8 continuation byte
+    malformed = "\xFF\xFE".b
+    expect { ID3V24::TextFrame.from_s("\x03#{malformed}", 'TIT2') }.not_to raise_error
+  end
+
   it "should correctly split UTF-16LE strings with BOM containing characters with null bytes" do
     # UTF-16 with LE BOM: \xFF\xFE
     # Description "A" (\x41\x00) + null terminator (\x00\x00) + value "B" (\x42\x00)

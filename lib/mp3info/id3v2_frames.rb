@@ -150,11 +150,11 @@ module ID3V24
       when ENCODING[:iso]
         value.force_encoding("ISO-8859-1").encode("UTF-8").strip
       when ENCODING[:utf16]
-        value.force_encoding("UTF-16").encode("UTF-8").strip
+        value.force_encoding("UTF-16").encode("UTF-8", invalid: :replace, undef: :replace).strip
       when ENCODING[:utf16be]
-        value.force_encoding("UTF-16BE").encode("UTF-8").strip
+        value.force_encoding("UTF-16BE").encode("UTF-8", invalid: :replace, undef: :replace).strip
       when ENCODING[:utf8]
-        value.force_encoding("UTF-8").strip
+        value.force_encoding("UTF-8").encode("UTF-8", invalid: :replace, undef: :replace).strip
       else
         raise(FrameException, "invalid encoding #{encoding} encountered in tag value #{value.inspect}")
       end
