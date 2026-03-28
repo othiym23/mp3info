@@ -20,6 +20,7 @@ class ID3V2
   DEFAULT_MINOR_VERSION = 0
 
   attr_accessor :write_version
+  attr_reader :extended_header
   
   def self.has_id3v2_tag?(filename)
     File.read(filename, 3) == 'ID3'
@@ -67,6 +68,7 @@ class ID3V2
     @hash = {}
 
     @write_version = DEFAULT_MAJOR_VERSION
+    @extended_header = nil
 
     # set defaults for everything
     @raw_tag = self.to_bin
@@ -169,6 +171,7 @@ class ID3V2
     @hash = source.instance_variable_get(:@hash).dup
     @raw_tag = source.instance_variable_get(:@raw_tag).dup
     @hash_orig = source.instance_variable_get(:@hash_orig).dup
+    @extended_header = source.instance_variable_get(:@extended_header)&.dup
   end
 
   def major_version
@@ -306,6 +309,45 @@ ID3V#{version} tag:
   
   private
   
+  def parse_extended_header(version, string, offset)
+    ext = {}
+    if version == 4
+      ext[:size] = string[offset, 4].from_synchsafe_string
+      ext[:data_start] = offset + ext[:size]
+      flag_count = string[offset + 4].ord
+      if flag_count > 0
+        ext_flags = string[offset + 5].ord
+        ext[:is_update] = (ext_flags & 0x40) != 0
+        ext[:has_crc] = (ext_flags & 0x20) != 0
+        ext[:has_restrictions] = (ext_flags & 0x10) != 0
+        pos = offset + 6
+        if ext[:is_update]
+          pos += 1  # skip $00 length byte
+        end
+        if ext[:has_crc]
+          pos += 1  # skip $05 length byte
+          ext[:crc] = string[pos, 5].from_synchsafe_string
+          pos += 5
+        end
+        if ext[:has_restrictions]
+          pos += 1  # skip $01 length byte
+          ext[:restrictions] = string[pos].ord
+          pos += 1
+        end
+      end
+    else  # v2.3
+      ext[:size] = string[offset, 4].to_binary_decimal
+      ext[:data_start] = offset + 4 + ext[:size]
+      ext_flags = string[offset + 4, 2]
+      ext[:has_crc] = (ext_flags[0].ord & 0x80) != 0
+      ext[:padding_size] = string[offset + 6, 4].to_binary_decimal
+      if ext[:has_crc]
+        ext[:crc] = string[offset + 10, 4].to_binary_decimal
+      end
+    end
+    ext
+  end
+
   def encode_frame(frame)
     $stderr.puts("ID3v2.encode_frame(frame=[#{frame.inspect}])") if $DEBUG
     encoded_frame_data = frame.to_s
@@ -332,15 +374,11 @@ ID3V#{version} tag:
     # 4 bytes for tag size
     cur_pos = 10
 
-    # Skip extended header if present
+    # Parse extended header if present
+    @extended_header = nil
     if string[5].ord & 0x40 != 0
-      if version == 4
-        ext_size = string[cur_pos, 4].from_synchsafe_string
-        cur_pos += ext_size  # v2.4: size includes the 4 size bytes
-      else
-        ext_size = string[cur_pos, 4].to_binary_decimal
-        cur_pos += 4 + ext_size  # v2.3: size does NOT include the 4 size bytes
-      end
+      @extended_header = parse_extended_header(version, string, cur_pos)
+      cur_pos = @extended_header[:data_start]
     end
 
     unsynchronized_sizes = true
@@ -361,30 +399,76 @@ ID3V#{version} tag:
       cur_pos += default_width(version)
       $stderr.puts("parse_id3v2_frames size is #{size}") if $DEBUG
       
-      # ID3v2.2 lacks the awesomely useful frame flags of later versions
-      # TODO do something useful with the frame flags
+      # ID3v2.2 has no frame flags
+      frame_flags_raw = nil
+      extra_header_bytes = 0
       if version != 2
-        break if cur_pos + 2 > string.size  # not enough bytes for flags
-        frame_flags = string.slice(cur_pos, 2)
+        break if cur_pos + 2 > string.size
+        frame_flags_raw = string.slice(cur_pos, 2)
         cur_pos += 2
-        $stderr.puts("parse_id3v2_frames flags are #{frame_flags.inspect}") if $DEBUG
 
-        # Skip compressed or encrypted frames — we can't parse them
+        # Parse flag-dependent extra data that precedes the frame body
         if version >= 4
-          if frame_flags[1].ord & 0x0c != 0  # compression or encryption
+          compressed = (frame_flags_raw[1].ord & 0x08) != 0
+          encrypted = (frame_flags_raw[1].ord & 0x04) != 0
+          has_group = (frame_flags_raw[1].ord & 0x40) != 0
+          frame_unsync = (frame_flags_raw[1].ord & 0x02) != 0
+          has_data_length = (frame_flags_raw[1].ord & 0x01) != 0
+
+          extra_header_bytes += 1 if has_group      # group identifier byte
+          extra_header_bytes += 1 if encrypted       # encryption method byte
+          extra_header_bytes += 4 if has_data_length # synchsafe data length
+
+          if encrypted
             cur_pos += size
             next
           end
-        elsif version == 3
-          if frame_flags[1].ord & 0xc0 != 0  # compression or encryption
+        else  # v2.3
+          compressed = (frame_flags_raw[1].ord & 0x80) != 0
+          encrypted = (frame_flags_raw[1].ord & 0x40) != 0
+          has_group = (frame_flags_raw[1].ord & 0x20) != 0
+          frame_unsync = false
+          has_data_length = false
+
+          extra_header_bytes += 4 if compressed  # decompressed size
+          extra_header_bytes += 1 if encrypted   # encryption method
+          extra_header_bytes += 1 if has_group   # group identifier
+
+          if encrypted
             cur_pos += size
             next
           end
         end
+      else
+        compressed = false
+        encrypted = false
+        frame_unsync = false
+      end
+
+      # Extract the frame body, skipping any extra header bytes
+      frame_body_start = cur_pos + extra_header_bytes
+      frame_body_size = size - extra_header_bytes
+      frame_body = string.slice(frame_body_start, frame_body_size)
+
+      # Remove per-frame unsynchronization (v2.4)
+      if frame_unsync && frame_body
+        frame_body = frame_body.gsub("\xFF\x00".b, "\xFF".b)
+      end
+
+      # Decompress zlib-compressed frames
+      if compressed && frame_body
+        require 'zlib'
+        begin
+          frame_body = Zlib::Inflate.inflate(frame_body)
+        rescue Zlib::DataError => e
+          $stderr.puts("Warning: failed to decompress frame '#{name}': #{e.message}") if $DEBUG
+          cur_pos += size
+          next
+        end
       end
 
       begin
-        add_frame(frame_hash, name, string.slice(cur_pos, size))
+        add_frame(frame_hash, name, frame_body)
       rescue => e
         $stderr.puts("Warning: skipping frame '#{name}' at offset #{cur_pos}: #{e.message}") if $DEBUG
       end

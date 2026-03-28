@@ -125,4 +125,103 @@ describe ID3V2, "when creating ID3v2 tags" do
     expect(@tag["TIT2"]).to be_nil
     expect(@tag["TPE1"].value).to eq("Artist")
   end
+
+  it "should parse a v2.3 extended header with CRC" do
+    # v2.3 extended header: 4-byte size (big-endian) + flags + padding size + CRC
+    # size = 10 (2 flag bytes + 4 padding bytes + 4 CRC bytes)
+    ext_size = [10].pack("N")
+    ext_flags = "\x80\x00".b  # CRC flag set
+    ext_padding = [0].pack("N")
+    ext_crc = [0xDEADBEEF].pack("N")
+    ext_header = (ext_size + ext_flags + ext_padding + ext_crc).b
+
+    frame_data = "\x03Test".b
+    frame = ("TIT2" + [frame_data.bytesize].pack("N") + "\x00\x00".b + frame_data).b
+
+    tag_body = ext_header + frame
+    tag_size = tag_body.bytesize.to_synchsafe_string
+    tag_string = ("ID3\x03\x00\x40".b + tag_size + tag_body).b
+
+    @tag.from_bin(tag_string)
+    expect(@tag["TIT2"].value).to eq("Test")
+    expect(@tag.extended_header).not_to be_nil
+    expect(@tag.extended_header[:has_crc]).to be true
+    expect(@tag.extended_header[:crc]).to eq(0xDEADBEEF)
+    expect(@tag.extended_header[:padding_size]).to eq(0)
+  end
+
+  it "should parse a v2.4 extended header with restrictions" do
+    # v2.4 extended header: synchsafe size (includes 4 size bytes), flag byte count, flags, flag data
+    # Restrictions flag: 0x10
+    restrictions_byte = 0b00110001  # some restriction bits set
+    # Layout: [4 synchsafe size] [1 flag count] [1 flags] [1 restrictions length=0x01] [1 restrictions]
+    ext_body = "\x01"           # number of flag bytes
+    ext_body << "\x10"          # flags: restrictions
+    ext_body << "\x01"          # restrictions data length
+    ext_body << restrictions_byte.chr
+    ext_total_size = (4 + ext_body.bytesize)  # size includes the 4 size bytes
+    ext_header = ext_total_size.to_synchsafe_string + ext_body
+
+    frame_data = "\x03Test"
+    frame = "TIT2" + frame_data.bytesize.to_synchsafe_string + "\x00\x00" + frame_data
+
+    tag_body = ext_header + frame
+    tag_size = tag_body.bytesize.to_synchsafe_string
+    tag_string = "ID3\x04\x00\x40" + tag_size + tag_body
+
+    @tag.from_bin(tag_string.dup.force_encoding("BINARY"))
+    expect(@tag["TIT2"].value).to eq("Test")
+    expect(@tag.extended_header).not_to be_nil
+    expect(@tag.extended_header[:has_restrictions]).to be true
+    expect(@tag.extended_header[:restrictions]).to eq(restrictions_byte)
+  end
+
+  it "should decompress a zlib-compressed frame in v2.3" do
+    require 'zlib'
+    # Original frame body: encoding byte + text
+    original_body = "\x03Hello Compressed World".b
+    compressed_body = Zlib::Deflate.deflate(original_body)
+
+    # v2.3 compressed frame: flags byte 2 bit 7 = 0x80
+    # Extra header: 4-byte decompressed size (big-endian)
+    decompressed_size = [original_body.bytesize].pack("N")
+    frame_content = (decompressed_size + compressed_body).b
+    frame = ("TIT2" + [frame_content.bytesize].pack("N") + "\x00\x80".b + frame_content).b
+
+    # Also add a normal frame to verify parsing continues
+    frame2_data = "\x03Artist".b
+    frame2 = ("TPE1" + [frame2_data.bytesize].pack("N") + "\x00\x00".b + frame2_data).b
+
+    tag_body = frame + frame2
+    tag_size = tag_body.bytesize.to_synchsafe_string
+    tag_string = ("ID3\x03\x00\x00".b + tag_size + tag_body).b
+
+    @tag.from_bin(tag_string)
+    expect(@tag["TIT2"].value).to eq("Hello Compressed World")
+    expect(@tag["TPE1"].value).to eq("Artist")
+  end
+
+  it "should handle per-frame unsynchronization in v2.4" do
+    # Use a PRIV frame to test raw binary de-unsynchronization.
+    # The real data should contain \xFF\xFB after de-unsync.
+    # Unsync encoding turns \xFF\xFB into \xFF\x00\xFB.
+    owner = "test".b
+    real_data = "\xFF\xFB\x90\x00".b
+    unsync_data = "\xFF\x00\xFB\x90\x00".b
+    unsync_body = (owner + "\x00".b + unsync_data).b
+
+    # v2.4 frame unsync flag: byte 2 bit 1 = 0x02
+    frame_size = unsync_body.bytesize.to_synchsafe_string
+    frame = ("PRIV".b + frame_size + "\x00\x02".b + unsync_body).b
+
+    tag_body = frame
+    tag_size = tag_body.bytesize.to_synchsafe_string
+    tag_string = ("ID3\x04\x00\x00".b + tag_size + tag_body).b
+
+    @tag.from_bin(tag_string)
+    priv = @tag["PRIV"]
+    expect(priv.owner).to eq("test")
+    # The value should have \xFF\x00 replaced with \xFF, yielding original data
+    expect(priv.value.b).to eq(real_data)
+  end
 end
