@@ -156,10 +156,14 @@ class Mp3Info
       when 'ID3' # ID3v2 tag
         file.seek(-3, IO::SEEK_CUR)
         $stderr.puts("Mp3Info.initialize ID3 found at %#010x" % file.pos) if $DEBUG
-        if has_id3v2_tag?
-          @id3v2_tag.merge(ID3V2.from_io(file))
-        else
-          @id3v2_tag = ID3V2.from_io(file)
+        begin
+          if has_id3v2_tag?
+            @id3v2_tag.merge(ID3V2.from_io(file))
+          else
+            @id3v2_tag = ID3V2.from_io(file)
+          end
+        rescue ID3V2ParseError, ID3V2Error => e
+          $stderr.puts("Warning: could not parse ID3v2 tag: #{e.message}") if $DEBUG
         end
       else
         file.seek(-3, IO::SEEK_CUR)
