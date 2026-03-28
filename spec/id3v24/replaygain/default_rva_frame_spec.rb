@@ -12,30 +12,30 @@ describe ID3V24::RVAFrame, "when creating a new RVAD (replay gain) frame with de
   end
   
   it "should be the correct class" do
-    @frame.class.should == ID3V24::RVAFrame
+    expect(@frame.class).to eq(ID3V24::RVAFrame)
   end
   
   it "should have a volume bit width of 16 by default" do
-    @frame.bit_width.should == 16
+    expect(@frame.bit_width).to eq(16)
   end
   
   it "should preserve the gain adjustment of the right channel within the epsilon at 16 bits' width (0.001953125)" do
-    @frame.right_gain.should be_close(@gain, 0.001953125)
+    expect(@frame.right_gain).to be_within(0.001953125).of(@gain)
   end
   
   it "should have peak value on the right channel of 0" do
-    @frame.right_peak.should == 0
+    expect(@frame.right_peak).to eq(0)
   end
   
   it "should preserve the gain adjustment of the left channel within the epsilon at 16 bits' width (0.001953125)" do
-    @frame.left_gain.should be_close(@gain, 0.001953125)
+    expect(@frame.left_gain).to be_within(0.001953125).of(@gain)
   end
   
   it "should have peak value on the left channel of 0" do
-    @frame.left_peak.should == 0
+    expect(@frame.left_peak).to eq(0)
   end
   
   it "should correctly encode itself to binary" do
-    @frame.to_s.should == "\x03\x10\x2a\x5c\x2a\x5c\x00\x00\x00\x00"
+    expect(@frame.to_s).to eq("\x03\x10\x2a\x5c\x2a\x5c\x00\x00\x00\x00")
   end
 end

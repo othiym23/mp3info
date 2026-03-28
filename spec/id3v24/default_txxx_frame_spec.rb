@@ -20,22 +20,22 @@ describe ID3V24::TXXXFrame, "when creating a new TXXX (user-defined text) frame 
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::TXXXFrame
+    expect(@saved_frame.class).to eq(ID3V24::TXXXFrame)
   end
   
   it "should be saved as UTF-8 Unicode text by default" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
+    expect(@saved_frame.encoding).to eq(ID3V24::TextFrame::ENCODING[:utf8])
   end
   
   it "should have 'Mp3Info Comment' as its default description (this should be overridden in practice)" do
-    @saved_frame.description.should == 'Mp3Info Comment'
+    expect(@saved_frame.description).to eq('Mp3Info Comment')
   end
   
   it "should safely retrieve its value" do
-    @saved_frame.value.should == @user_text
+    expect(@saved_frame.value).to eq(@user_text)
   end
   
   it "should be directly comparable as a whole frame" do
-    @saved_frame.should == @new_tag['TXXX']
+    expect(@saved_frame).to eq(@new_tag['TXXX'])
   end
 end

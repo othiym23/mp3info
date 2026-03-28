@@ -406,7 +406,7 @@ module ID3V24
     protected
     
     def self.split_picture_components(encoding, string)
-      mime_type, picture_type, raw_content = string.unpack("3aaa*")
+      mime_type, picture_type, raw_content = string.unpack("a3aa*")
       descr, entry = split_encoded(encoding, raw_content)
       
       [mime_type, picture_type, TextFrame.decode_value(encoding, descr), entry]

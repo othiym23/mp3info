@@ -22,18 +22,18 @@ describe ID3V24::XDORFrame, "when dealing with the iTunes and ID3v2.3-specific X
   it "should convert the release date to a known value captured from an iTunes-created file" do
     xdor = ID3V24::Frame.create_frame("XDOR", Time.gm(1993, 3, 8))
     xdor.encoding = ID3V24::TextFrame::ENCODING[:utf16]
-    xdor.to_s.should == "\001\376\377\0001\0009\0009\0003\000-\0000\0003\000-\0000\0008\000\000"
+    expect(xdor.to_s).to eq("\001\376\377\0001\0009\0009\0003\000-\0000\0003\000-\0000\0008\000\000".b)
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::XDORFrame
+    expect(@saved_frame.class).to eq(ID3V24::XDORFrame)
   end
   
   it "should reconstitute the release date properly" do
-    @saved_frame.value.should == @release_date
+    expect(@saved_frame.value).to eq(@release_date)
   end
   
   it "should pretty-print the release date as an RFC-compliant date" do
-    @saved_frame.to_s_pretty.should == "Release date: Mon, 08 Mar 1993 00:00:00 -0000"
+    expect(@saved_frame.to_s_pretty).to eq("Release date: Mon, 08 Mar 1993 00:00:00 -0000")
   end
 end

@@ -20,14 +20,14 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::TCONFrame
+    expect(@saved_frame.class).to eq(ID3V24::TCONFrame)
   end
   
   it "should retrieve 'Experimental' as the bare genre name" do
-    @saved_frame.value.should == @genre_name
+    expect(@saved_frame.value).to eq(@genre_name)
   end
   
   it "should fail to find a numeric genre ID for 'Experimental' and use 255 instead" do
-    @saved_frame.genre_code.should == 255
+    expect(@saved_frame.genre_code).to eq(255)
   end
 end

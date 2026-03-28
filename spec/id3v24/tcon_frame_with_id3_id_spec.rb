@@ -20,15 +20,15 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a genre
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::TCONFrame
+    expect(@saved_frame.class).to eq(ID3V24::TCONFrame)
   end
   
   it "should retrieve 'Jungle' as the bare genre name" do
-    @saved_frame.value.should == @genre_name
+    expect(@saved_frame.value).to eq(@genre_name)
   end
   
   it "should find the numeric genre ID for 'Jungle'" do
-    @saved_frame.genre_code.should == 63
+    expect(@saved_frame.genre_code).to eq(63)
   end
 end
 
@@ -52,14 +52,14 @@ describe ID3V24::TCONFrame, "when creating a new TCON (genre) frame with a bare 
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::TCONFrame
+    expect(@saved_frame.class).to eq(ID3V24::TCONFrame)
   end
   
   it "should retrieve 'Jungle' as the bare genre name" do
-    @saved_frame.value.should == @genre_name
+    expect(@saved_frame.value).to eq(@genre_name)
   end
   
   it "should find the numeric genre ID for 'Jungle'" do
-    @saved_frame.genre_code.should == 63
+    expect(@saved_frame.genre_code).to eq(63)
   end
 end

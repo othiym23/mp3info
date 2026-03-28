@@ -17,6 +17,6 @@ describe Mp3Info, "when loading an invalid MP3 file" do
       f.write(str)
     end
 
-    lambda { Mp3Info.new(@mp3_filename) }.should raise_error(Mp3InfoError, "There was no useful metadata in #{@mp3_filename}, are you sure it's an MP3?")
+    expect { Mp3Info.new(@mp3_filename) }.to raise_error(Mp3InfoError, "There was no useful metadata in #{@mp3_filename}, are you sure it's an MP3?")
   end
 end

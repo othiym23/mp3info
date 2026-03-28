@@ -21,45 +21,45 @@ describe ID3V24::RGADFrame, "when creating a new RGAD (replay gain) frame with d
   end
   
   it "should reconstitute itself as the correct class" do
-    @saved_frame.class.should == ID3V24::RGADFrame
+    expect(@saved_frame.class).to eq(ID3V24::RGADFrame)
   end
   
   it "should be valid" do
-    @saved_frame.track_gain.valid?.should be_true
-    @saved_frame.album_gain.valid?.should be_true
-    @saved_frame.valid?.should be_true
+    expect(@saved_frame.track_gain.valid?).to be true
+    expect(@saved_frame.album_gain.valid?).to be true
+    expect(@saved_frame.valid?).to be true
   end
   
   it "should show the track gain adjustment of being the 'track' type" do
-    @saved_frame.track_gain.type.should == 'track'
+    expect(@saved_frame.track_gain.type).to eq('track')
   end
   
   it "should show the track gain adjustment as having an origin of 'automatic'" do
-    @saved_frame.track_gain.origin.should == 'automatic'
+    expect(@saved_frame.track_gain.origin).to eq('automatic')
   end
   
   it "should preserve the track gain adjustment set within a tolerance of the epsilon for the adjustment (0.001953125)" do
-    @saved_frame.track_gain.adjustment.should == @gain
+    expect(@saved_frame.track_gain.adjustment).to eq(@gain)
   end
   
   it "should correctly calculate the raw track gain adjustment value based on the dB value passed to the default generator" do
-    @saved_frame.track_gain.raw_adjustment.should == 43
+    expect(@saved_frame.track_gain.raw_adjustment).to eq(43)
   end
   
   it "should show the album gain adjustment of being the 'album' type" do
-    @saved_frame.album_gain.type.should == 'album'
+    expect(@saved_frame.album_gain.type).to eq('album')
   end
   
   it "should show the album gain adjustment as having an origin of 'automatic'" do
-    @saved_frame.album_gain.origin.should == 'automatic'
+    expect(@saved_frame.album_gain.origin).to eq('automatic')
   end
   
   it "should preserve the album gain adjustment set within a tolerance of the epsilon for the adjustment (0.001953125)" do
-    @saved_frame.album_gain.adjustment.should == @gain
+    expect(@saved_frame.album_gain.adjustment).to eq(@gain)
   end
   
   it "should correctly calculate the raw album gain adjustment value based on the dB value passed to the default generator" do
-    @saved_frame.album_gain.raw_adjustment.should == 43
+    expect(@saved_frame.album_gain.raw_adjustment).to eq(43)
   end
   
   it "should have a peak amplitude of 0.0" do
@@ -67,6 +67,6 @@ describe ID3V24::RGADFrame, "when creating a new RGAD (replay gain) frame with d
   end
   
   it "should correctly encode itself to binary" do
-    @saved_frame.to_s.should == "\x00\x00\x00\x00\x2c\x2b\x4c\x2b"
+    expect(@saved_frame.to_s).to eq("\x00\x00\x00\x00\x2c\x2b\x4c\x2b")
   end
 end

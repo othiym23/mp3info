@@ -21,23 +21,23 @@ describe ID3V24::XRVAFrame, "when creating a new XRVA (replay gain) frame with d
   end
   
   it "should reconstitute itself as the correct class" do
-    @saved_frame.class.should == ID3V24::XRVAFrame
+    expect(@saved_frame.class).to eq(ID3V24::XRVAFrame)
   end
   
   it "should default to adjusting track-level replay gain" do
-    @saved_frame.identifier.should == 'track'
+    expect(@saved_frame.identifier).to eq('track')
   end
   
   it "should come with a single adjustment" do
-    @saved_frame.adjustments.size.should == 1
+    expect(@saved_frame.adjustments.size).to eq(1)
   end
   
   it "should preserve the gain adjustment set within a tolerance of the epsilon for the adjustment (0.001953125)" do
-    @saved_frame.adjustments.first.adjustment.should be_close(@gain, 0.001953125)
+    expect(@saved_frame.adjustments.first.adjustment).to be_within(0.001953125).of(@gain)
   end
   
   it "should correctly calculate the raw adjustment value based on the dB value passed to the default generator" do
-    @saved_frame.adjustments.first.raw_adjustment.should == 2201
+    expect(@saved_frame.adjustments.first.raw_adjustment).to eq(2201)
   end
   
   it "should have a peak gain adjustment scale 0 bits wide" do
@@ -49,6 +49,6 @@ describe ID3V24::XRVAFrame, "when creating a new XRVA (replay gain) frame with d
   end
   
   it "should correctly encode itself to binary" do
-    @saved_frame.to_s.should == "track\x00\x01\x08\x99\x00"
+    expect(@saved_frame.to_s).to eq("track\x00\x01\x08\x99\x00")
   end
 end

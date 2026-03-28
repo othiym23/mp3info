@@ -23,62 +23,62 @@ describe MPEGHeader, "parsing a valid sample MPEG header" do
   end
   
   it "should detect that sample header '\\xff\\xfb\\x90\\x64' is a valid MPEG header" do
-    @sample_header.valid?.should == true
+    expect(@sample_header.valid?).to eq(true)
   end
   
   it "should detect that sample header comes from an MPEG version 1.0 frame" do
-    @sample_header.version.should == 1.0
+    expect(@sample_header.version).to eq(1.0)
   end
   
   it "should detect that sample header comes from an MPEG layer 3 frame" do
-    @sample_header.layer.should == 3
+    expect(@sample_header.layer).to eq(3)
   end
   
   it "should detect that sample header comes from an unpadded frame" do
-    @sample_header.padded_stream?.should be_false
+    expect(@sample_header.padded_stream?).to be false
   end
   
   it "should detect that sample header comes from a frame with no error protection" do
-    @sample_header.error_protected?.should be_false
+    expect(@sample_header.error_protected?).to be false
   end
   
   it "should detect that sample header comes from a stream with a frame size of 417" do
-    @sample_header.frame_size.should == 417
+    expect(@sample_header.frame_size).to eq(417)
   end
   
   it "should detect that sample header comes from a frame with an MPEG CBR bitrate of 128" do
-    @sample_header.bitrate.should == 128
+    expect(@sample_header.bitrate).to eq(128)
   end
   
   it "should detect that sample header comes from a frame with a sample frequency of 44.1KHz" do
-    @sample_header.sample_rate.should == 44_100
+    expect(@sample_header.sample_rate).to eq(44_100)
   end
   
   it "should detect that sample header comes from a frame with no emphasis" do
-    @sample_header.emphasis.should == 'none'
+    expect(@sample_header.emphasis).to eq('none')
   end
   
   it "should detect that sample header comes from a frame with a channel mode of 'Joint stereo'" do
-    @sample_header.mode.should == MPEGHeader::MODE_JOINT_STEREO
+    expect(@sample_header.mode).to eq(MPEGHeader::MODE_JOINT_STEREO)
   end
   
   it "should detect that sample header comes from a frame with intensity stereo turned off" do
-    (@sample_header.mode_extension & MPEGHeader::MODE_EXTENSION_INTENSITY).should == 0
+    expect((@sample_header.mode_extension & MPEGHeader::MODE_EXTENSION_INTENSITY)).to eq(0)
   end
   
   it "should detect that sample header comes from a frame with m/s stereo turned on" do
-    (@sample_header.mode_extension & MPEGHeader::MODE_EXTENSION_M_S_STEREO).should == MPEGHeader::MODE_EXTENSION_M_S_STEREO
+    expect((@sample_header.mode_extension & MPEGHeader::MODE_EXTENSION_M_S_STEREO)).to eq(MPEGHeader::MODE_EXTENSION_M_S_STEREO)
   end
   
   it "should detect that sample header comes from a frame with the private bit clear" do
-    @sample_header.private_stream?.should be_false
+    expect(@sample_header.private_stream?).to be false
   end
   
   it "should detect that sample header comes from a frame declared to not be copyrighted" do
-    @sample_header.copyrighted_stream?.should be_false
+    expect(@sample_header.copyrighted_stream?).to be false
   end
   
   it "should detect that sample header comes from a frame declared to be original content" do
-    @sample_header.original_stream?.should be_true
+    expect(@sample_header.original_stream?).to be true
   end
 end

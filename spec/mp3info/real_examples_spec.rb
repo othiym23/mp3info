@@ -12,251 +12,251 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Keith Fullerton
   end
   
   it "should verify that the MPEG header exists the same as eyeD3" do
-    @mp3.has_mpeg_header?.should be_true
+    expect(@mp3.has_mpeg_header?).to be true
   end
   
   it "should find the MPEG header the same as eyeD3" do
-    @mp3.mpeg_header.should_not be_nil
+    expect(@mp3.mpeg_header).not_to be_nil
   end
   
   it "should verify that the MPEG is of type 1.0 the same as eyeD3" do
-    @mpeg_info.version.should == 1.0
+    expect(@mpeg_info.version).to eq(1.0)
   end
   
   it "should verify that the MPEG is layer 3 the same as eyeD3" do
-    @mpeg_info.layer.should == 3
+    expect(@mpeg_info.layer).to eq(3)
   end
   
   it "should verify that the MPEG has a sample rate of 44.1kHz the same as eyeD3" do
-    @mpeg_info.sample_rate.should == 44_100
+    expect(@mpeg_info.sample_rate).to eq(44_100)
   end
   
   it "should verify that the MPEG header claims a bitrate of 128kbps the same as eyeD3" do
-    @mpeg_info.bitrate.should == 128
+    expect(@mpeg_info.bitrate).to eq(128)
   end
   
   it "should verify that the MPEG is joint stereo the same as eyeD3" do
-    @mpeg_info.mode.should == 'Joint stereo'
+    expect(@mpeg_info.mode).to eq('Joint stereo')
   end
   
   it "should verify that the MPEG has no mode extension the same as eyeD3" do
-    @mpeg_info.mode_extension.should == 0
+    expect(@mpeg_info.mode_extension).to eq(0)
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protected?.should be_false
+    expect(@mpeg_info.error_protected?).to be false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
-    @mpeg_info.original_stream?.should be_true
+    expect(@mpeg_info.original_stream?).to be true
   end
   
   it "should verify that the MPEG is not copyrighted the same as eyeD3" do
-    @mpeg_info.copyrighted_stream?.should be_false
+    expect(@mpeg_info.copyrighted_stream?).to be false
   end
   
   it "should verify that the MPEG is not a private stream the same as eyeD3" do
-    @mpeg_info.private_stream?.should be_false
+    expect(@mpeg_info.private_stream?).to be false
   end
   
   it "should verify that the MPEG is not a padded stream the same as eyeD3" do
-    @mpeg_info.padded_stream?.should be_false
+    expect(@mpeg_info.padded_stream?).to be false
   end
   
   it "should verify that the MPEG has no emphasis the same as eyeD3" do
-    @mpeg_info.emphasis.should == MPEGHeader::EMPHASIS_NONE
+    expect(@mpeg_info.emphasis).to eq(MPEGHeader::EMPHASIS_NONE)
   end
   
   it "should verify that the MPEG has a frame length of 417 the same as eyeD3" do
-    @mpeg_info.frame_size.should == 417
+    expect(@mpeg_info.frame_size).to eq(417)
   end
   
   it "should verify that the Xing header exists the same as eyeD3" do
-    @mp3.has_xing_header?.should be_true
+    expect(@mp3.has_xing_header?).to be true
   end
   
   it "should verify that there is a Xing header the same as eyeD3" do
-    @mp3.xing_header.should_not be_nil
+    expect(@mp3.xing_header).not_to be_nil
   end
   
   it "should verify that the Xing header says the stream is VBR the same as eyeD3" do
-    @xing_info.vbr?.should be_true
+    expect(@xing_info.vbr?).to be true
   end
   
   it "should verify that the Xing header says there are 6,493 frames the same as eyeD3" do
-    @xing_info.frames.should == 6_493
+    expect(@xing_info.frames).to eq(6_493)
   end
   
   it "should verify that the Xing header says there are 3,539,892 bytes in the stream the same as eyeD3" do
-    @xing_info.bytes.should == 3_539_892
+    expect(@xing_info.bytes).to eq(3_539_892)
   end
   
   it "should verify that the Xing header contains a table of contents the same as eyeD3" do
-    @xing_info.has_toc?.should be_true
+    expect(@xing_info.has_toc?).to be true
   end
   
   it "should verify that the Xing header says the stream has a quality of 57 the same as eyeD3" do
-    @xing_info.quality.should == 57
+    expect(@xing_info.quality).to eq(57)
   end
   
   it "should verify that the LAME tag exists the same as eyeD3" do
-    @mp3.has_lame_header?.should be_true
+    expect(@mp3.has_lame_header?).to be true
   end
   
   it "should verify that there is a LAME tag the same as eyeD3" do
-    @mp3.lame_header.should_not be_nil
+    expect(@mp3.lame_header).not_to be_nil
   end
   
   it "should verify that the LAME tag has a valid header is valid the same as eyeD3" do
-    @lame_info.valid_header?.should be_true
+    expect(@lame_info.valid_header?).to be true
   end
   
   it "should verify that the LAME tag has a valid CRC the same as eyeD3" do
-    @lame_info.valid_crc?.should be_true
+    expect(@lame_info.valid_crc?).to be true
   end
   
   it "should verify that the LAME tag is valid the same as eyeD3" do
-    @lame_info.valid?.should be_true
+    expect(@lame_info.valid?).to be true
   end
   
   it "should verify that the version of LAME used was 3.94a the same as eyeD3" do
-    @lame_info.encoder_version.should == "LAME3.94a"
+    expect(@lame_info.encoder_version).to eq("LAME3.94a")
   end
   
   it "should verify that the LAME tag version is 0 the same as eyeD3" do
-    @lame_info.tag_version.should == 0
+    expect(@lame_info.tag_version).to eq(0)
   end
   
   it "should verify that the LAME VBR method was old/rh the same as eyeD3" do
-    @lame_info.vbr_method.should == 'Variable Bitrate method1 (old/rh)'
+    expect(@lame_info.vbr_method).to eq('Variable Bitrate method1 (old/rh)')
   end
   
   it "should verify that the LAME lowpass frequency was 19kHz the same as eyeD3" do
-    @lame_info.lowpass_filter.should == 19_000
+    expect(@lame_info.lowpass_filter).to eq(19_000)
   end
   
   it "should verify that the LAME tag has encoder flags the same as eyeD3" do
-    @lame_info.encoder_flags.should_not be_empty
+    expect(@lame_info.encoder_flags).not_to be_empty
   end
   
   it "should verify that the LAME encoder flags were NSPSYTUNE and NSSAFEJOINT the same as eyeD3" do
-    @lame_info.encoder_flag_string.should == '--nspsytune --nssafejoint'
+    expect(@lame_info.encoder_flag_string).to eq('--nspsytune --nssafejoint')
   end
   
   it "should verify that the LAME tag has no gapless encoding flags the same as eyeD3" do
-    @lame_info.nogap_flags.should be_empty
+    expect(@lame_info.nogap_flags).to be_empty
   end
   
   it "should verify that the LAME gapless flag string is empty the same as eyeD3" do
-    @lame_info.nogap_flag_string.should == ''
+    expect(@lame_info.nogap_flag_string).to eq('')
   end
   
   it "should verify that the LAME tag indicates an ATH type of 4 the same as eyeD3" do
-    @lame_info.ath_type.should == 4
+    expect(@lame_info.ath_type).to eq(4)
   end
   
   it "should verify that the LAME tag's CRC is 0x4446 the same as eyeD3" do
-    @lame_info.lame_tag_crc.should == 0x4446
+    expect(@lame_info.lame_tag_crc).to eq(0x4446)
   end
   
   it "should verify that there is no bitrate in the LAME tag the same as eyeD3" do
-    @lame_info.bitrate.should == 0
+    expect(@lame_info.bitrate).to eq(0)
   end
   
   it "should verify that the bitrate type is 'Minimum' the same as eyeD3" do
-    @lame_info.bitrate_type.should == 'Minimum'
+    expect(@lame_info.bitrate_type).to eq('Minimum')
   end
   
   it "should verify that the LAME encoding has a delay of 576 samples the same as eyeD3" do
-    @lame_info.encoder_delay.should == 576
+    expect(@lame_info.encoder_delay).to eq(576)
   end
   
   it "should verify that the LAME padding of 1,788 byte the same as eyeD3" do
-    @lame_info.encoder_padding.should == 1_788
+    expect(@lame_info.encoder_padding).to eq(1_788)
   end
   
   it "should verify that the LAME encoding has a noise shaping curve of type 1 the same as eyeD3" do
-    @lame_info.noise_shaping_type.should == 1
+    expect(@lame_info.noise_shaping_type).to eq(1)
   end
   
   it "should verify that the LAME sample frequency is set to 44.1kHz the same as eyeD3" do
-    @lame_info.sample_frequency.should == '44.1 kHz'
+    expect(@lame_info.sample_frequency).to eq('44.1 kHz')
   end
   
   it "should verify that LAME's settings were not unwise the same as eyeD3" do
-    @lame_info.unwise_settings?.should be_false
+    expect(@lame_info.unwise_settings?).to be false
   end
   
   it "should verify that the LAME stereo mode was 'Joint' the same as eyeD3" do
-    @lame_info.stereo_mode.should == 'Joint'
+    expect(@lame_info.stereo_mode).to eq('Joint')
   end
   
   it "should verify that the LAME tag has an MP3 gain of 0 the same as eyeD3" do
-    @lame_info.mp3_gain.should == 0
+    expect(@lame_info.mp3_gain).to eq(0)
   end
   
   it "should verify that the LAME tag has an MP3 gain of 0dB the same as eyeD3" do
-    @lame_info.mp3_gain_db.should == 0.0
+    expect(@lame_info.mp3_gain_db).to eq(0.0)
   end
   
   it "should verify that the LAME tag has no surround sound info the same as eyeD3" do
-    @lame_info.surround_info.should == 'None'
+    expect(@lame_info.surround_info).to eq('None')
   end
   
   it "should verify that the LAME preset was standard the same as eyeD3" do
-    @lame_info.preset.should == 'standard'
+    expect(@lame_info.preset).to eq('standard')
   end
   
   it "should verify that the LAME tag indicates the music length is 3,539,892 bytes the same as eyeD3" do
-    @lame_info.music_length.should == 3_539_892
+    expect(@lame_info.music_length).to eq(3_539_892)
   end
   
   it "should verify that the LAME music CRC is 0x1F4E the same as eyeD3" do
-    @lame_info.music_crc.should == 0x1F4E
+    expect(@lame_info.music_crc).to eq(0x1F4E)
   end
   
   it "should verify that the LAME tag has replaygain info the same as eyeD3" do
-    @lame_info.replay_gain.should_not be_nil
+    expect(@lame_info.replay_gain).not_to be_nil
   end
   
   it "should verify that the LAME tag has no replaygain peak RMS the same as eyeD3" do
-    @lame_info.replay_gain.peak.should be_nil
+    expect(@lame_info.replay_gain.peak).to be_nil
   end
   
   it "should verify that the LAME tag has no replaygain dB the same as eyeD3" do
-    @lame_info.replay_gain.db.should be_nil
+    expect(@lame_info.replay_gain.db).to be_nil
   end
   
   it "should verify that the LAME replaygain tag has track gain the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.should_not be_nil
+    expect(@lame_info.replay_gain.track_gain).not_to be_nil
   end
   
   it "should verify that the LAME replaygain track gain info is set the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.set?.should be_true
+    expect(@lame_info.replay_gain.track_gain.set?).to be true
   end
   
   it "should verify that the LAME replaygain track gain info has a name of 'Track' instead of eyeD3's 'Radio'" do
-    @lame_info.replay_gain.track_gain.type.should == 'Track'
+    expect(@lame_info.replay_gain.track_gain.type).to eq('Track')
   end
   
   it "should verify that the LAME replaygain track gain info has an origin of 'Set automatically' the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.origin.should == 'Set automatically'
+    expect(@lame_info.replay_gain.track_gain.origin).to eq('Set automatically')
   end
   
   it "should verify that the LAME replaygain track gain info has an adjustment of -4.2 the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.adjustment.should == -4.2
+    expect(@lame_info.replay_gain.track_gain.adjustment).to eq(-4.2)
   end
   
   it "should verify that the LAME replaygain track gain info is formatted similarly to eyeD3's" do
-    @lame_info.replay_gain.track_gain.to_s.should == 'Track Replay Gain: -4.2 dB (Set automatically)'
+    expect(@lame_info.replay_gain.track_gain.to_s).to eq('Track Replay Gain: -4.2 dB (Set automatically)')
   end
   
   it "should verify that the LAME replaygain tag has album gain info the same as eyeD3" do
-    @lame_info.replay_gain.album_gain.should_not be_nil
+    expect(@lame_info.replay_gain.album_gain).not_to be_nil
   end
   
   it "should verify that the LAME replaygain album gain info is not set the same as eyeD3" do
-    @lame_info.replay_gain.album_gain.set?.should be_false
+    expect(@lame_info.replay_gain.album_gain.set?).to be false
   end
 end
 
@@ -269,231 +269,231 @@ describe Mp3Info, "when reading the MP3 info from an encoding of RAC's 'Distance
   end
   
   it "should verify that the MPEG header exists the same as eyeD3" do
-    @mp3.has_mpeg_header?.should be_true
+    expect(@mp3.has_mpeg_header?).to be true
   end
   
   it "should find the MPEG header the same as eyeD3" do
-    @mp3.mpeg_header.should_not be_nil
+    expect(@mp3.mpeg_header).not_to be_nil
   end
   
   it "should verify that the MPEG is of type 1.0 the same as eyeD3" do
-    @mpeg_info.version.should == 1.0
+    expect(@mpeg_info.version).to eq(1.0)
   end
   
   it "should verify that the MPEG is layer 3 the same as eyeD3" do
-    @mpeg_info.layer.should == 3
+    expect(@mpeg_info.layer).to eq(3)
   end
   
   it "should verify that the MPEG has a sample rate of 44.1kHz the same as eyeD3" do
-    @mpeg_info.sample_rate.should == 44_100
+    expect(@mpeg_info.sample_rate).to eq(44_100)
   end
   
   it "should verify that the MPEG header claims a bitrate of 128kbps the same as eyeD3" do
-    @mpeg_info.bitrate.should == 128
+    expect(@mpeg_info.bitrate).to eq(128)
   end
   
   it "should verify that the MPEG is joint stereo the same as eyeD3" do
-    @mpeg_info.mode.should == 'Joint stereo'
+    expect(@mpeg_info.mode).to eq('Joint stereo')
   end
   
   it "should verify that the MPEG has a mode extension of M/S stereo the same as eyeD3" do
-    @mpeg_info.mode_extension.should == MPEGHeader::MODE_EXTENSION_M_S_STEREO
+    expect(@mpeg_info.mode_extension).to eq(MPEGHeader::MODE_EXTENSION_M_S_STEREO)
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protected?.should be_false
+    expect(@mpeg_info.error_protected?).to be false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
-    @mpeg_info.original_stream?.should be_true
+    expect(@mpeg_info.original_stream?).to be true
   end
   
   it "should verify that the MPEG is not copyrighted the same as eyeD3" do
-    @mpeg_info.copyrighted_stream?.should be_false
+    expect(@mpeg_info.copyrighted_stream?).to be false
   end
   
   it "should verify that the MPEG is not a private stream the same as eyeD3" do
-    @mpeg_info.private_stream?.should be_false
+    expect(@mpeg_info.private_stream?).to be false
   end
   
   it "should verify that the MPEG is not a padded stream the same as eyeD3" do
-    @mpeg_info.padded_stream?.should be_false
+    expect(@mpeg_info.padded_stream?).to be false
   end
   
   it "should verify that the MPEG has no emphasis the same as eyeD3" do
-    @mpeg_info.emphasis.should == MPEGHeader::EMPHASIS_NONE
+    expect(@mpeg_info.emphasis).to eq(MPEGHeader::EMPHASIS_NONE)
   end
   
   it "should verify that the MPEG has a frame length of 417 the same as eyeD3" do
-    @mpeg_info.frame_size.should == 417
+    expect(@mpeg_info.frame_size).to eq(417)
   end
   
   it "should verify that the Xing header exists the same as eyeD3" do
-    @mp3.has_xing_header?.should be_true
+    expect(@mp3.has_xing_header?).to be true
   end
   
   it "should verify that there is a Xing header the same as eyeD3" do
-    @mp3.xing_header.should_not be_nil
+    expect(@mp3.xing_header).not_to be_nil
   end
   
   it "should verify that the Xing header says the stream is VBR the same as eyeD3" do
-    @xing_info.vbr?.should be_true
+    expect(@xing_info.vbr?).to be true
   end
   
   it "should verify that the Xing header says there are 12,900 frames the same as eyeD3" do
-    @xing_info.frames.should == 12_900
+    expect(@xing_info.frames).to eq(12_900)
   end
   
   it "should verify that the Xing header says there are 9,457,829 bytes in the stream the same as eyeD3" do
-    @xing_info.bytes.should == 9_457_829
+    expect(@xing_info.bytes).to eq(9_457_829)
   end
   
   it "should verify that the Xing header contains a table of contents the same as eyeD3" do
-    @xing_info.has_toc?.should be_true
+    expect(@xing_info.has_toc?).to be true
   end
   
   it "should verify that the Xing header says the stream has a quality of 78 the same as eyeD3" do
-    @xing_info.quality.should == 78
+    expect(@xing_info.quality).to eq(78)
   end
   
   it "should verify that the LAME tag exists the same as eyeD3" do
-    @mp3.has_lame_header?.should be_true
+    expect(@mp3.has_lame_header?).to be true
   end
   
   it "should verify that there is a LAME tag the same as eyeD3" do
-    @mp3.lame_header.should_not be_nil
+    expect(@mp3.lame_header).not_to be_nil
   end
   
   it "should verify that the LAME tag has a valid header is valid the same as eyeD3" do
-    @lame_info.valid_header?.should be_true
+    expect(@lame_info.valid_header?).to be true
   end
   
   it "should verify that the LAME tag has a valid CRC the same as eyeD3" do
-    @lame_info.valid_crc?.should be_true
+    expect(@lame_info.valid_crc?).to be true
   end
   
   it "should verify that the LAME tag is valid the same as eyeD3" do
-    @lame_info.valid?.should be_true
+    expect(@lame_info.valid?).to be true
   end
   
   it "should verify that the version of LAME used was 3.90.(3) the same as eyeD3" do
-    @lame_info.encoder_version.should == "LAME3.90."
+    expect(@lame_info.encoder_version).to eq("LAME3.90.")
   end
   
   it "should verify that the LAME tag version is 0 the same as eyeD3" do
-    @lame_info.tag_version.should == 0
+    expect(@lame_info.tag_version).to eq(0)
   end
   
   it "should verify that the LAME VBR method was old/rh the same as eyeD3" do
-    @lame_info.vbr_method.should == 'Variable Bitrate method1 (old/rh)'
+    expect(@lame_info.vbr_method).to eq('Variable Bitrate method1 (old/rh)')
   end
   
   it "should verify that the LAME lowpass frequency was 19kHz the same as eyeD3" do
-    @lame_info.lowpass_filter.should == 19_000
+    expect(@lame_info.lowpass_filter).to eq(19_000)
   end
   
   it "should verify that the LAME tag has encoder flags the same as eyeD3" do
-    @lame_info.encoder_flags.should_not be_empty
+    expect(@lame_info.encoder_flags).not_to be_empty
   end
   
   it "should verify that the LAME encoder flags were NSPSYTUNE and NSSAFEJOINT the same as eyeD3" do
-    @lame_info.encoder_flag_string.should == '--nspsytune --nssafejoint'
+    expect(@lame_info.encoder_flag_string).to eq('--nspsytune --nssafejoint')
   end
   
   it "should verify that the LAME tag has no gapless encoding flags the same as eyeD3" do
-    @lame_info.nogap_flags.should be_empty
+    expect(@lame_info.nogap_flags).to be_empty
   end
   
   it "should verify that the LAME gapless flag string is empty the same as eyeD3" do
-    @lame_info.nogap_flag_string.should == ''
+    expect(@lame_info.nogap_flag_string).to eq('')
   end
   
   it "should verify that the LAME tag indicates an ATH type of 4 the same as eyeD3" do
-    @lame_info.ath_type.should == 4
+    expect(@lame_info.ath_type).to eq(4)
   end
   
   it "should verify that the LAME tag's CRC is 0x4446 the same as eyeD3" do
-    @lame_info.lame_tag_crc.should == 0x84D9
+    expect(@lame_info.lame_tag_crc).to eq(0x84D9)
   end
   
   it "should verify that the guaranteed minimum bitrate in the LAME tag is 192 the same as eyeD3" do
-    @lame_info.bitrate.should == 192
+    expect(@lame_info.bitrate).to eq(192)
   end
   
   it "should verify that the bitrate type is 'Minimum' the same as eyeD3" do
-    @lame_info.bitrate_type.should == 'Minimum'
+    expect(@lame_info.bitrate_type).to eq('Minimum')
   end
   
   it "should verify that the LAME encoding has a delay of 576 samples the same as eyeD3" do
-    @lame_info.encoder_delay.should == 576
+    expect(@lame_info.encoder_delay).to eq(576)
   end
   
   it "should verify that the LAME padding of 1,464 byte the same as eyeD3" do
-    @lame_info.encoder_padding.should == 1_464
+    expect(@lame_info.encoder_padding).to eq(1_464)
   end
   
   it "should verify that the LAME encoding has a noise shaping curve of type 1 the same as eyeD3" do
-    @lame_info.noise_shaping_type.should == 1
+    expect(@lame_info.noise_shaping_type).to eq(1)
   end
   
   it "should verify that the LAME sample frequency is set to 44.1kHz the same as eyeD3" do
-    @lame_info.sample_frequency.should == '44.1 kHz'
+    expect(@lame_info.sample_frequency).to eq('44.1 kHz')
   end
   
   it "should verify that LAME's settings were not unwise the same as eyeD3" do
-    @lame_info.unwise_settings?.should be_false
+    expect(@lame_info.unwise_settings?).to be false
   end
   
   it "should verify that the LAME stereo mode was 'Joint' the same as eyeD3" do
-    @lame_info.stereo_mode.should == 'Joint'
+    expect(@lame_info.stereo_mode).to eq('Joint')
   end
   
   it "should verify that the LAME tag has an MP3 gain of 0 the same as eyeD3" do
-    @lame_info.mp3_gain.should == 0
+    expect(@lame_info.mp3_gain).to eq(0)
   end
   
   it "should verify that the LAME tag has an MP3 gain of 0dB the same as eyeD3" do
-    @lame_info.mp3_gain_db.should == 0.0
+    expect(@lame_info.mp3_gain_db).to eq(0.0)
   end
   
   it "should verify that the LAME tag has no surround sound info the same as eyeD3" do
-    @lame_info.surround_info.should == 'None'
+    expect(@lame_info.surround_info).to eq('None')
   end
   
   it "should verify that the LAME preset was unknown (actually alt-preset standard) the same as eyeD3" do
-    @lame_info.preset.should == 'Unknown'
+    expect(@lame_info.preset).to eq('Unknown')
   end
   
   it "should verify that the LAME tag indicates the music length is 9,457,829 bytes the same as eyeD3" do
-    @lame_info.music_length.should == 9_457_829
+    expect(@lame_info.music_length).to eq(9_457_829)
   end
   
   it "should verify that the LAME music CRC is 0xFBD3 the same as eyeD3" do
-    @lame_info.music_crc.should == 0xFBD3
+    expect(@lame_info.music_crc).to eq(0xFBD3)
   end
   
   it "should verify that the LAME tag has replaygain info the same as eyeD3" do
-    @lame_info.replay_gain.should_not be_nil
+    expect(@lame_info.replay_gain).not_to be_nil
   end
   
   it "should verify that the LAME tag has no replaygain peak RMS the same as eyeD3" do
-    @lame_info.replay_gain.peak.should be_nil
+    expect(@lame_info.replay_gain.peak).to be_nil
   end
   
   it "should verify that the LAME tag has no replaygain dB the same as eyeD3" do
-    @lame_info.replay_gain.db.should be_nil
+    expect(@lame_info.replay_gain.db).to be_nil
   end
   
   it "should verify that the LAME replaygain tag has track gain info the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.should_not be_nil
+    expect(@lame_info.replay_gain.track_gain).not_to be_nil
   end
   
   it "should verify that the LAME replaygain track gain info is not set the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.set?.should be_false
+    expect(@lame_info.replay_gain.track_gain.set?).to be false
   end
   
   it "should verify that the LAME replaygain tag has no album gain info the same as eyeD3" do
-    @lame_info.replay_gain.album_gain.set?.should be_false
+    expect(@lame_info.replay_gain.album_gain.set?).to be false
   end
 end
 
@@ -506,251 +506,251 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Wire's 'I Feel 
   end
   
   it "should verify that the MPEG header exists the same as eyeD3" do
-    @mp3.has_mpeg_header?.should be_true
+    expect(@mp3.has_mpeg_header?).to be true
   end
   
   it "should find the MPEG header the same as eyeD3" do
-    @mp3.mpeg_header.should_not be_nil
+    expect(@mp3.mpeg_header).not_to be_nil
   end
   
   it "should verify that the MPEG is of type 1.0 the same as eyeD3" do
-    @mpeg_info.version.should == 1.0
+    expect(@mpeg_info.version).to eq(1.0)
   end
   
   it "should verify that the MPEG is layer 3 the same as eyeD3" do
-    @mpeg_info.layer.should == 3
+    expect(@mpeg_info.layer).to eq(3)
   end
   
   it "should verify that the MPEG has a sample rate of 44.1kHz the same as eyeD3" do
-    @mpeg_info.sample_rate.should == 44_100
+    expect(@mpeg_info.sample_rate).to eq(44_100)
   end
   
   it "should verify that the MPEG header claims a bitrate of 128kbps the same as eyeD3" do
-    @mpeg_info.bitrate.should == 128
+    expect(@mpeg_info.bitrate).to eq(128)
   end
   
   it "should verify that the MPEG is joint stereo the same as eyeD3" do
-    @mpeg_info.mode.should == 'Joint stereo'
+    expect(@mpeg_info.mode).to eq('Joint stereo')
   end
   
   it "should verify that the MPEG has no mode extension the same as eyeD3" do
-    @mpeg_info.mode_extension.should == 0 # none
+    expect(@mpeg_info.mode_extension).to eq(0) # none
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protected?.should be_false
+    expect(@mpeg_info.error_protected?).to be false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
-    @mpeg_info.original_stream?.should be_true
+    expect(@mpeg_info.original_stream?).to be true
   end
   
   it "should verify that the MPEG is not copyrighted the same as eyeD3" do
-    @mpeg_info.copyrighted_stream?.should be_false
+    expect(@mpeg_info.copyrighted_stream?).to be false
   end
   
   it "should verify that the MPEG is not a private stream the same as eyeD3" do
-    @mpeg_info.private_stream?.should be_false
+    expect(@mpeg_info.private_stream?).to be false
   end
   
   it "should verify that the MPEG is not a padded stream the same as eyeD3" do
-    @mpeg_info.padded_stream?.should be_false
+    expect(@mpeg_info.padded_stream?).to be false
   end
   
   it "should verify that the MPEG has no emphasis the same as eyeD3" do
-    @mpeg_info.emphasis.should == MPEGHeader::EMPHASIS_NONE
+    expect(@mpeg_info.emphasis).to eq(MPEGHeader::EMPHASIS_NONE)
   end
   
   it "should verify that the MPEG has a frame length of 417 the same as eyeD3" do
-    @mpeg_info.frame_size.should == 417
+    expect(@mpeg_info.frame_size).to eq(417)
   end
   
   it "should verify that the Xing header exists the same as eyeD3" do
-    @mp3.has_xing_header?.should be_true
+    expect(@mp3.has_xing_header?).to be true
   end
   
   it "should verify that there is a Xing header the same as eyeD3" do
-    @mp3.xing_header.should_not be_nil
+    expect(@mp3.xing_header).not_to be_nil
   end
   
   it "should verify that the Xing header says the stream is VBR the same as eyeD3" do
-    @xing_info.vbr?.should be_true
+    expect(@xing_info.vbr?).to be true
   end
   
   it "should verify that the Xing header says there are 4,432 frames the same as eyeD3" do
-    @xing_info.frames.should == 4_432
+    expect(@xing_info.frames).to eq(4_432)
   end
   
   it "should verify that the Xing header says there are 2,963,271 bytes in the stream the same as eyeD3" do
-    @xing_info.bytes.should == 2_963_271
+    expect(@xing_info.bytes).to eq(2_963_271)
   end
   
   it "should verify that the Xing header contains a table of contents the same as eyeD3" do
-    @xing_info.has_toc?.should be_true
+    expect(@xing_info.has_toc?).to be true
   end
   
   it "should verify that the Xing header says the stream has a quality of 57 the same as eyeD3" do
-    @xing_info.quality.should == 77
+    expect(@xing_info.quality).to eq(77)
   end
   
   it "should verify that the LAME tag exists the same as eyeD3" do
-    @mp3.has_lame_header?.should be_true
+    expect(@mp3.has_lame_header?).to be true
   end
   
   it "should verify that there is a LAME tag the same as eyeD3" do
-    @mp3.lame_header.should_not be_nil
+    expect(@mp3.lame_header).not_to be_nil
   end
   
   it "should verify that the LAME tag has a valid header is valid the same as eyeD3" do
-    @lame_info.valid_header?.should be_true
+    expect(@lame_info.valid_header?).to be true
   end
   
   it "should verify that the LAME tag has a valid CRC the same as eyeD3" do
-    @lame_info.valid_crc?.should be_true
+    expect(@lame_info.valid_crc?).to be true
   end
   
   it "should verify that the LAME tag is valid the same as eyeD3" do
-    @lame_info.valid?.should be_true
+    expect(@lame_info.valid?).to be true
   end
   
   it "should verify that the version of LAME used was 3.94a the same as eyeD3" do
-    @lame_info.encoder_version.should == "LAME3.96r"
+    expect(@lame_info.encoder_version).to eq("LAME3.96r")
   end
   
   it "should verify that the LAME tag version is 0 the same as eyeD3" do
-    @lame_info.tag_version.should == 0
+    expect(@lame_info.tag_version).to eq(0)
   end
   
   it "should verify that the LAME VBR method was old/rh the same as eyeD3" do
-    @lame_info.vbr_method.should == 'Variable Bitrate method1 (old/rh)'
+    expect(@lame_info.vbr_method).to eq('Variable Bitrate method1 (old/rh)')
   end
   
   it "should verify that the LAME lowpass frequency was 19kHz the same as eyeD3" do
-    @lame_info.lowpass_filter.should == 19_000
+    expect(@lame_info.lowpass_filter).to eq(19_000)
   end
   
   it "should verify that the LAME tag has encoder flags the same as eyeD3" do
-    @lame_info.encoder_flags.should_not be_empty
+    expect(@lame_info.encoder_flags).not_to be_empty
   end
   
   it "should verify that the LAME encoder flags were NSPSYTUNE and NSSAFEJOINT the same as eyeD3" do
-    @lame_info.encoder_flag_string.should == '--nspsytune --nssafejoint'
+    expect(@lame_info.encoder_flag_string).to eq('--nspsytune --nssafejoint')
   end
   
   it "should verify that the LAME tag has no gapless encoding flags the same as eyeD3" do
-    @lame_info.nogap_flags.should be_empty
+    expect(@lame_info.nogap_flags).to be_empty
   end
   
   it "should verify that the LAME gapless flag string is empty the same as eyeD3" do
-    @lame_info.nogap_flag_string.should == ''
+    expect(@lame_info.nogap_flag_string).to eq('')
   end
   
   it "should verify that the LAME tag indicates an ATH type of 4 the same as eyeD3" do
-    @lame_info.ath_type.should == 4
+    expect(@lame_info.ath_type).to eq(4)
   end
   
   it "should verify that the LAME tag's CRC is 0xD487 the same as eyeD3" do
-    @lame_info.lame_tag_crc.should == 0xD487
+    expect(@lame_info.lame_tag_crc).to eq(0xD487)
   end
   
   it "should verify that bitrate in the LAME tag is set to 128kbps the same as eyeD3" do
-    @lame_info.bitrate.should == 128
+    expect(@lame_info.bitrate).to eq(128)
   end
   
   it "should verify that the bitrate type is 'Minimum' the same as eyeD3" do
-    @lame_info.bitrate_type.should == 'Minimum'
+    expect(@lame_info.bitrate_type).to eq('Minimum')
   end
   
   it "should verify that the LAME encoding has a delay of 576 samples the same as eyeD3" do
-    @lame_info.encoder_delay.should == 576
+    expect(@lame_info.encoder_delay).to eq(576)
   end
   
   it "should verify that the LAME padding of 1,344 bytes the same as eyeD3" do
-    @lame_info.encoder_padding.should == 1_344
+    expect(@lame_info.encoder_padding).to eq(1_344)
   end
   
   it "should verify that the LAME encoding has a noise shaping curve of type 1 the same as eyeD3" do
-    @lame_info.noise_shaping_type.should == 1
+    expect(@lame_info.noise_shaping_type).to eq(1)
   end
   
   it "should verify that the LAME sample frequency is set to 44.1kHz the same as eyeD3" do
-    @lame_info.sample_frequency.should == '44.1 kHz'
+    expect(@lame_info.sample_frequency).to eq('44.1 kHz')
   end
   
   it "should verify that LAME's settings were not unwise the same as eyeD3" do
-    @lame_info.unwise_settings?.should be_false
+    expect(@lame_info.unwise_settings?).to be false
   end
   
   it "should verify that the LAME stereo mode was 'Joint' the same as eyeD3" do
-    @lame_info.stereo_mode.should == 'Joint'
+    expect(@lame_info.stereo_mode).to eq('Joint')
   end
   
   it "should verify that the LAME tag has an MP3 gain of 0 the same as eyeD3" do
-    @lame_info.mp3_gain.should == 0
+    expect(@lame_info.mp3_gain).to eq(0)
   end
   
   it "should verify that the LAME tag has an MP3 gain of 0dB the same as eyeD3" do
-    @lame_info.mp3_gain_db.should == 0.0
+    expect(@lame_info.mp3_gain_db).to eq(0.0)
   end
   
   it "should verify that the LAME tag has no surround sound info the same as eyeD3" do
-    @lame_info.surround_info.should == 'None'
+    expect(@lame_info.surround_info).to eq('None')
   end
   
   it "should verify that the LAME preset was -V2 the same as eyeD3" do
-    @lame_info.preset.should == 'V2'
+    expect(@lame_info.preset).to eq('V2')
   end
   
   it "should verify that the LAME tag indicates the music length is 2,963,271 bytes the same as eyeD3" do
-    @lame_info.music_length.should == 2_963_271
+    expect(@lame_info.music_length).to eq(2_963_271)
   end
   
   it "should verify that the LAME music CRC is 0xF82D the same as eyeD3" do
-    @lame_info.music_crc.should == 0xF82D
+    expect(@lame_info.music_crc).to eq(0xF82D)
   end
   
   it "should verify that the LAME tag has replaygain info the same as eyeD3" do
-    @lame_info.replay_gain.should_not be_nil
+    expect(@lame_info.replay_gain).not_to be_nil
   end
   
   it "should verify that the LAME tag has no replaygain peak RMS the same as eyeD3" do
-    @lame_info.replay_gain.peak.should be_nil
+    expect(@lame_info.replay_gain.peak).to be_nil
   end
   
   it "should verify that the LAME tag has no replaygain dB the same as eyeD3" do
-    @lame_info.replay_gain.db.should be_nil
+    expect(@lame_info.replay_gain.db).to be_nil
   end
   
   it "should verify that the LAME replaygain tag has track gain info the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.should_not be_nil
+    expect(@lame_info.replay_gain.track_gain).not_to be_nil
   end
   
   it "should verify that the LAME replaygain track gain info is set the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.set?.should be_true
+    expect(@lame_info.replay_gain.track_gain.set?).to be true
   end
   
   it "should verify that the LAME replaygain track gain info has a type of 'Track' unlike eyeD3's 'Radio'" do
-    @lame_info.replay_gain.track_gain.type.should == 'Track'
+    expect(@lame_info.replay_gain.track_gain.type).to eq('Track')
   end
   
   it "should verify that the LAME replaygain track gain info has an originator of 'Set automatically' the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.origin.should == 'Set automatically'
+    expect(@lame_info.replay_gain.track_gain.origin).to eq('Set automatically')
   end
   
   it "should verify that the LAME replaygain track gain info has an adjustment of -6.4 the same as eyeD3" do
-    @lame_info.replay_gain.track_gain.adjustment.should == -6.4
+    expect(@lame_info.replay_gain.track_gain.adjustment).to eq(-6.4)
   end
   
   it "should verify that the LAME replaygain track gain info has a format similar to eyeD3's" do
-    @lame_info.replay_gain.track_gain.to_s.should == 'Track Replay Gain: -6.4 dB (Set automatically)'
+    expect(@lame_info.replay_gain.track_gain.to_s).to eq('Track Replay Gain: -6.4 dB (Set automatically)')
   end
   
   it "should verify that the LAME replaygain tag has album gain info the same as eyeD3" do
-    @lame_info.replay_gain.album_gain.should_not be_nil
+    expect(@lame_info.replay_gain.album_gain).not_to be_nil
   end
   
   it "should verify that the LAME replaygain album gain info is not set the same as eyeD3" do
-    @lame_info.replay_gain.album_gain.set?.should be_false
+    expect(@lame_info.replay_gain.album_gain.set?).to be false
   end
 end
 
@@ -761,79 +761,79 @@ describe Mp3Info, "when reading the MP3 info from an encoding of Jürgen Paape's
   end
   
   it "should verify that the MPEG header exists the same as eyeD3" do
-    @mp3.has_mpeg_header?.should be_true
+    expect(@mp3.has_mpeg_header?).to be true
   end
   
   it "should find the MPEG header the same as eyeD3" do
-    @mp3.mpeg_header.should_not be_nil
+    expect(@mp3.mpeg_header).not_to be_nil
   end
   
   it "should verify that the MPEG is of type 1.0 the same as eyeD3" do
-    @mpeg_info.version.should == 1.0
+    expect(@mpeg_info.version).to eq(1.0)
   end
   
   it "should verify that the MPEG is layer 3 the same as eyeD3" do
-    @mpeg_info.layer.should == 3
+    expect(@mpeg_info.layer).to eq(3)
   end
   
   it "should verify that the MPEG has a sample rate of 44.1kHz the same as eyeD3" do
-    @mpeg_info.sample_rate.should == 44_100
+    expect(@mpeg_info.sample_rate).to eq(44_100)
   end
   
   it "should verify that the MPEG header claims a bitrate of 128kbps the same as eyeD3" do
-    @mpeg_info.bitrate.should == 320
+    expect(@mpeg_info.bitrate).to eq(320)
   end
   
   it "should verify that the MPEG is joint stereo the same as eyeD3" do
-    @mpeg_info.mode.should == 'Joint stereo'
+    expect(@mpeg_info.mode).to eq('Joint stereo')
   end
   
   it "should verify that the MPEG has no mode extension the same as eyeD3" do
-    @mpeg_info.mode_extension.should == 0
+    expect(@mpeg_info.mode_extension).to eq(0)
   end
   
   it "should verify that the MPEG is not error protected the same as eyeD3" do
-    @mpeg_info.error_protected?.should be_false
+    expect(@mpeg_info.error_protected?).to be false
   end
   
   it "should verify that the MPEG is an original stream the same as eyeD3" do
-    @mpeg_info.original_stream?.should be_true
+    expect(@mpeg_info.original_stream?).to be true
   end
   
   it "should verify that the MPEG is not copyrighted the same as eyeD3" do
-    @mpeg_info.copyrighted_stream?.should be_false
+    expect(@mpeg_info.copyrighted_stream?).to be false
   end
   
   it "should verify that the MPEG is not a private stream the same as eyeD3" do
-    @mpeg_info.private_stream?.should be_false
+    expect(@mpeg_info.private_stream?).to be false
   end
   
   it "should verify that the MPEG is not a padded stream the same as eyeD3" do
-    @mpeg_info.padded_stream?.should be_false
+    expect(@mpeg_info.padded_stream?).to be false
   end
   
   it "should verify that the MPEG has no emphasis the same as eyeD3" do
-    @mpeg_info.emphasis.should == MPEGHeader::EMPHASIS_NONE
+    expect(@mpeg_info.emphasis).to eq(MPEGHeader::EMPHASIS_NONE)
   end
   
   it "should verify that the MPEG has a frame length of 1,044 the same as eyeD3" do
-    @mpeg_info.frame_size.should == 1_044
+    expect(@mpeg_info.frame_size).to eq(1_044)
   end
   
   it "should verify that the Xing header doesn't exist the same as eyeD3" do
-    @mp3.has_xing_header?.should be_false
+    expect(@mp3.has_xing_header?).to be false
   end
   
   it "should verify that there is no Xing header the same as eyeD3" do
-    @mp3.xing_header.should be_nil
+    expect(@mp3.xing_header).to be_nil
   end
   
   it "should verify that the LAME tag doesn't exit the same as eyeD3" do
-    @mp3.has_lame_header?.should be_false
+    expect(@mp3.has_lame_header?).to be false
   end
   
   it "should verify that there is no LAME tag the same as eyeD3" do
-    @mp3.lame_header.should be_nil
+    expect(@mp3.lame_header).to be_nil
   end
 end
 
@@ -844,31 +844,31 @@ describe Mp3Info, "when reading the MP3 info from an encoding of MIA's \"Bamba B
   end
   
   it "should find an MPEG header" do
-    @mp3.has_mpeg_header?.should be_true
+    expect(@mp3.has_mpeg_header?).to be true
   end
   
   it "should have a Xing tag" do
-    @mp3.has_xing_header?.should be_true
+    expect(@mp3.has_xing_header?).to be true
   end
   
   it "should have a LAME tag" do
-    @mp3.has_lame_header?.should be_true
+    expect(@mp3.has_lame_header?).to be true
   end
   
   it "should show itself as having been encoded by LAME3.97" do
-    @mp3.lame_header.encoder_version.should == "LAME3.97"
+    expect(@mp3.lame_header.encoder_version).to eq("LAME3.97")
   end
   
   it "should show itself as having been encoded with preset V1" do
-    @mp3.lame_header.preset.should == "V1"
+    expect(@mp3.lame_header.preset).to eq("V1")
   end
   
   it "should have an ID3v2 tag" do
-    @mp3.has_id3v2_tag?.should be_true
+    expect(@mp3.has_id3v2_tag?).to be true
   end
   
   it "should have 33 ID3V2 frames after merging (although some duplicates should be removed)" do
-    @mp3.id3v2_tag.frame_count.should == 33
+    expect(@mp3.id3v2_tag.frame_count).to eq(33)
   end
 end
 
@@ -879,22 +879,22 @@ describe Mp3Info, "when reading the MP3 info from an encoding a short tone (used
   end
   
   it "should find an MPEG header" do
-    @mp3.has_mpeg_header?.should be_true
+    expect(@mp3.has_mpeg_header?).to be true
   end
   
   it "should see that the file is an MPEG 1, layer III file" do
-    @mpeg_info.version_string.should == "MPEG1, layer III"
+    expect(@mpeg_info.version_string).to eq("MPEG1, layer III")
   end
   
   it "should see that the bitrate is 128kbps" do
-    @mp3.bitrate.should == 128
+    expect(@mp3.bitrate).to eq(128)
   end
   
   it "should find an ID3 tag on the file" do
-    @mp3.has_id3v1_tag?.should be_true
+    expect(@mp3.has_id3v1_tag?).to be true
   end
   
   it "should find an ID3v2 tag on the file" do
-    @mp3.has_id3v2_tag?.should be_true
+    expect(@mp3.has_id3v2_tag?).to be true
   end
 end

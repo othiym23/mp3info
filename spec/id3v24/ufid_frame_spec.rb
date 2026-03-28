@@ -20,18 +20,18 @@ describe ID3V24::UFIDFrame, "when creating a new UFID (unique file identifier) f
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::UFIDFrame
+    expect(@saved_frame.class).to eq(ID3V24::UFIDFrame)
   end
   
   it "has no default namespace, but uses 'http://www.id3.org/dummy/ufid.html' instead" do
-    @saved_frame.namespace.should == "http://www.id3.org/dummy/ufid.html"
+    expect(@saved_frame.namespace).to eq("http://www.id3.org/dummy/ufid.html")
   end
   
   it "should retrieve the stored ID unmolested" do
-    @saved_frame.value.should == @ufid
+    expect(@saved_frame.value).to eq(@ufid)
   end
   
   it "should pretty-print the unique ID as namespace: \"ID\"" do
-    @saved_frame.to_s_pretty.should == 'http://www.id3.org/dummy/ufid.html: "2451-4235-af32a3-1312"'
+    expect(@saved_frame.to_s_pretty).to eq('http://www.id3.org/dummy/ufid.html: "2451-4235-af32a3-1312"')
   end
 end

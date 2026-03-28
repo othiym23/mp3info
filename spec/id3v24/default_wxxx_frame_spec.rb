@@ -20,22 +20,22 @@ describe ID3V24::WXXXFrame, "when creating a new WXXX (user-defined link) frame 
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::WXXXFrame
+    expect(@saved_frame.class).to eq(ID3V24::WXXXFrame)
   end
   
   it "should have a description encoded as UTF-8 text by default" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
+    expect(@saved_frame.encoding).to eq(ID3V24::TextFrame::ENCODING[:utf8])
   end
   
   it "should have 'Mp3Info User Link' as its default description (this should be overridden in practice)" do
-    @saved_frame.description.should == 'Mp3Info User Link'
+    expect(@saved_frame.description).to eq('Mp3Info User Link')
   end
   
   it "should safely retrieve its value" do
-    @saved_frame.value.should == @user_link
+    expect(@saved_frame.value).to eq(@user_link)
   end
   
   it "should be directly comparable as a whole frame" do
-    @saved_frame.should == @new_tag['WXXX']
+    expect(@saved_frame).to eq(@new_tag['WXXX'])
   end
 end

@@ -21,18 +21,18 @@ describe ID3V24::PRIVFrame, "when creating a new PRIV (private data) frame with 
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::PRIVFrame
+    expect(@saved_frame.class).to eq(ID3V24::PRIVFrame)
   end
   
   it "should default to being owned by me (sure, why not?)" do
-    @saved_frame.owner.should == 'mailto:ogd@aoaioxxysz.net'
+    expect(@saved_frame.owner).to eq('mailto:ogd@aoaioxxysz.net')
   end
   
   it "should retrieve the stored private data correctly" do
-    @saved_frame.value.should == @random_data
+    expect(@saved_frame.value).to eq(@random_data)
   end
   
   it "should produce a useful pretty-printed representation" do
-    @saved_frame.to_s_pretty.should == "PRIVATE DATA (from mailto:ogd@aoaioxxysz.net) [#{@random_data.inspect}]"
+    expect(@saved_frame.to_s_pretty).to eq("PRIVATE DATA (from mailto:ogd@aoaioxxysz.net) [#{@random_data.inspect}]")
   end
 end

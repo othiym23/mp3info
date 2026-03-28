@@ -23,10 +23,10 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame containing
   end
   
   it "should be in Russian" do
-    @saved_frame.language.should == 'rus'
+    expect(@saved_frame.language).to eq('rus')
   end
   
   it "should retrieve the stored comment value correctly" do
-    @saved_frame.value.should == @comment_text
+    expect(@saved_frame.value).to eq(@comment_text)
   end
 end

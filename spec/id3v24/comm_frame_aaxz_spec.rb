@@ -23,22 +23,22 @@ describe ID3V24::COMMFrame, "when creating a new COMM (comment) frame customized
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::COMMFrame
+    expect(@saved_frame.class).to eq(ID3V24::COMMFrame)
   end
   
   it "should choose a default encoding for the comment (and its description) of UTF-8" do
-    @saved_frame.encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
+    expect(@saved_frame.encoding).to eq(ID3V24::TextFrame::ENCODING[:utf8])
   end
   
   it "should describe itself as an '::AOAIOXXYSZ:: Info' frame" do
-    @saved_frame.description.should == '::AOAIOXXYSZ:: Info'
+    expect(@saved_frame.description).to eq('::AOAIOXXYSZ:: Info')
   end
   
   it "should default to being in English (sorry, non-English-speaking world)" do
-    @saved_frame.language.should == 'eng'
+    expect(@saved_frame.language).to eq('eng')
   end
   
   it "should retrieve the stored comment value correctly" do
-    @saved_frame.value.should == @comment_text
+    expect(@saved_frame.value).to eq(@comment_text)
   end
 end

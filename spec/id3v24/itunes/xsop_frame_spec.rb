@@ -20,14 +20,14 @@ describe ID3V24::XSOPFrame, "when dealing with the iTunes and ID3v2.3-specific X
   end
   
   it "should have been reconstituted as the correct class" do
-    @saved_frame.class.should == ID3V24::XSOPFrame
+    expect(@saved_frame.class).to eq(ID3V24::XSOPFrame)
   end
   
   it "should reconstitute the artist sort name properly" do
-    @saved_frame.value.should == @artist_the
+    expect(@saved_frame.value).to eq(@artist_the)
   end
   
   it "should pretty-print the artist sort name identically to printing its raw value" do
-    @saved_frame.to_s_pretty.should == @artist_the
+    expect(@saved_frame.to_s_pretty).to eq(@artist_the)
   end
 end

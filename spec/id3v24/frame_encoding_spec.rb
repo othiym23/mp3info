@@ -22,9 +22,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:iso] => 0
-    saved_tag['TIT2'].encoding.should == 0
-    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:iso]
-    saved_tag['TIT2'].value.should == "Junior Citizen (lé Freak!)"
+    expect(saved_tag['TIT2'].encoding).to eq(0)
+    expect(saved_tag['TIT2'].encoding).to eq(ID3V24::TextFrame::ENCODING[:iso])
+    expect(saved_tag['TIT2'].value).to eq("Junior Citizen (lé Freak!)")
   end
   
   it "should correctly handle UTF-16 Unicode text with a byte-order mark" do
@@ -34,9 +34,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:utf16] => 1
-    saved_tag['TIT2'].encoding.should == 1
-    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:utf16]
-    saved_tag['TIT2'].value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+    expect(saved_tag['TIT2'].encoding).to eq(1)
+    expect(saved_tag['TIT2'].encoding).to eq(ID3V24::TextFrame::ENCODING[:utf16])
+    expect(saved_tag['TIT2'].value).to eq("Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
   end
   
   it "should correctly handle big-endian UTF-16 Unicode text" do
@@ -46,9 +46,9 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:utf16be] => 2
-    saved_tag['TIT2'].encoding.should == 2
-    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:utf16be]
-    saved_tag['TIT2'].value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+    expect(saved_tag['TIT2'].encoding).to eq(2)
+    expect(saved_tag['TIT2'].encoding).to eq(ID3V24::TextFrame::ENCODING[:utf16be])
+    expect(saved_tag['TIT2'].value).to eq("Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
   end
   
   it "should correctly handle UTF-8 Unicode text" do
@@ -58,15 +58,15 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
     # ID3V24::TextFrame::ENCODING[:utf8] => 3
-    saved_tag['TIT2'].encoding.should == 3
-    saved_tag['TIT2'].encoding.should == ID3V24::TextFrame::ENCODING[:utf8]
-    saved_tag['TIT2'].value.should == "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈"
+    expect(saved_tag['TIT2'].encoding).to eq(3)
+    expect(saved_tag['TIT2'].encoding).to eq(ID3V24::TextFrame::ENCODING[:utf8])
+    expect(saved_tag['TIT2'].value).to eq("Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
   end
   
   it "should raise a conversion error when trying to save Unicode text in an ISO 8859-1-encoded frame" do
     tit2 = ID3V24::Frame.create_frame("TIT2", "Sviatoslav Richter: Святослав Теофилович Рихтер Kana:  香奈")
     tit2.encoding = ID3V24::TextFrame::ENCODING[:iso]
     tag = { "TIT2" => tit2 }
-    lambda { update_id3_2_tag(@mp3_filename, tag) }.should raise_error(Iconv::IllegalSequence)
+    expect { update_id3_2_tag(@mp3_filename, tag) }.to raise_error(Encoding::UndefinedConversionError)
   end
 end

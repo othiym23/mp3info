@@ -18,17 +18,17 @@ describe ID3V24::TCMPFrame, "when creating a new TCMP (iTunes-specific compilati
     tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", true) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag['TCMP'].class.should == ID3V24::TCMPFrame
-    saved_tag['TCMP'].value.should == true
-    saved_tag['TCMP'].to_s_pretty.should == "This track is part of a compilation."
+    expect(saved_tag['TCMP'].class).to eq(ID3V24::TCMPFrame)
+    expect(saved_tag['TCMP'].value).to eq(true)
+    expect(saved_tag['TCMP'].to_s_pretty).to eq("This track is part of a compilation.")
   end
   
   it "should correctly indicate when the track is not part of a compilation" do
     tag = { "TCMP" => ID3V24::Frame.create_frame("TCMP", false) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     
-    saved_tag['TCMP'].class.should == ID3V24::TCMPFrame
-    saved_tag['TCMP'].value.should == false
-    saved_tag['TCMP'].to_s_pretty.should == "This track is not part of a compilation."
+    expect(saved_tag['TCMP'].class).to eq(ID3V24::TCMPFrame)
+    expect(saved_tag['TCMP'].value).to eq(false)
+    expect(saved_tag['TCMP'].to_s_pretty).to eq("This track is not part of a compilation.")
   end
 end

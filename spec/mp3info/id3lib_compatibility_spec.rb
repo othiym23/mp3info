@@ -20,49 +20,46 @@ describe Mp3Info, "when comparing tagged files using the ID3lib-based command-li
   # a version of id3lib above 3.8.3
   it "should produce results equivalent to those produced by id3v2" do
     written_tag = update_id3_2_tag(@mp3_filename, sample_id3v2_tag)
-    written_tag.should == sample_id3v2_tag
+    expect(written_tag).to eq(sample_id3v2_tag)
     
-    pending("find a replacement for id3v2 because id3lib doesn't like UTF-8 values") do
-      test_against_id3v2_prog(written_tag).should == prettify_tag(written_tag)
-    end
+    pending("find a replacement for id3v2 because id3lib doesn't like UTF-8 values")
+    expect(test_against_id3v2_prog(written_tag)).to eq(prettify_tag(written_tag))
   end
-  
+
   it "should default having a pretty format identical to id3v2's" do
     comment_text = "This is a sample comment."
     tag = { "COMM" => ID3V24::Frame.create_frame("COMM", comment_text) }
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
-    saved_tag['COMM'].to_s_pretty.should == "(Mp3Info Comment)[eng]: This is a sample comment."
+    expect(saved_tag['COMM'].to_s_pretty).to eq("(Mp3Info Comment)[eng]: This is a sample comment.")
   end
-  
+
   it "should produce output identical to id3v2's when compared" do
-    pending("find a replacement for id3v2 because id3lib doesn't like UTF-8 values") do
-      comment_text = "This is a sample comment."
-      tag = { "COMM" => ID3V24::Frame.create_frame("COMM", comment_text) }
-      saved_tag = update_id3_2_tag(@mp3_filename, tag)
-      test_against_id3v2_prog(saved_tag).should == prettify_tag(saved_tag)
-    end
+    pending("find a replacement for id3v2 because id3lib doesn't like UTF-8 values")
+    comment_text = "This is a sample comment."
+    tag = { "COMM" => ID3V24::Frame.create_frame("COMM", comment_text) }
+    saved_tag = update_id3_2_tag(@mp3_filename, tag)
+    expect(test_against_id3v2_prog(saved_tag)).to eq(prettify_tag(saved_tag))
   end
-  
+
   it "should formate comment (COMM) frames identically to id3v2" do
     comment_text = "Ευφροσυνη"
     comm = ID3V24::Frame.create_frame("COMM", comment_text)
     comm.description = '::AOAIOXXYSZ:: Info'
-    
+
     saved_tag = update_id3_2_tag(@mp3_filename, { "COMM" => comm })
-    
-    saved_tag['COMM'].to_s_pretty.should == "(::AOAIOXXYSZ:: Info)[eng]: Ευφροσυνη"
+
+    expect(saved_tag['COMM'].to_s_pretty).to eq("(::AOAIOXXYSZ:: Info)[eng]: Ευφροσυνη")
   end
-  
+
   it "should produce output identical to id3v2's when compared" do
-    pending("find a replacement for id3v2 because id3lib doesn't like UTF-8 values") do
-      comment_text = "Track 5"
-      comm = ID3V24::Frame.create_frame("COMM", comment_text)
-      comm.description = '::AOAIOXXYSZ:: Info'
-      
-      saved_tag = update_id3_2_tag(@mp3_filename, { "COMM" => comm })
-      
-      test_against_id3v2_prog(saved_tag).should == prettify_tag(saved_tag)
-    end
+    pending("find a replacement for id3v2 because id3lib doesn't like UTF-8 values")
+    comment_text = "Track 5"
+    comm = ID3V24::Frame.create_frame("COMM", comment_text)
+    comm.description = '::AOAIOXXYSZ:: Info'
+
+    saved_tag = update_id3_2_tag(@mp3_filename, { "COMM" => comm })
+
+    expect(test_against_id3v2_prog(saved_tag)).to eq(prettify_tag(saved_tag))
   end
   
   it "should default to having a pretty format identical to id3v2's, if id3v2 actually supported Unicode" do
@@ -73,7 +70,7 @@ describe Mp3Info, "when comparing tagged files using the ID3lib-based command-li
     saved_tag = update_id3_2_tag(@mp3_filename, { "COMM" => comm })
     saved_frame = saved_tag['COMM']
     
-    saved_frame.to_s_pretty.should == "(Mp3Info Comment)[rus]: Здравствуйте dïáçrìtícs!"
+    expect(saved_frame.to_s_pretty).to eq("(Mp3Info Comment)[rus]: Здравствуйте dïáçrìtícs!")
   end
   
   it "should pretty-print TXXX frames in the style of id3v2" do
@@ -82,7 +79,7 @@ describe Mp3Info, "when comparing tagged files using the ID3lib-based command-li
     saved_tag = update_id3_2_tag(@mp3_filename, new_tag)
     saved_frame = saved_tag['TXXX']
     
-    saved_frame.to_s_pretty.should == "(Mp3Info Comment) : Here is some random user-defined text."
+    expect(saved_frame.to_s_pretty).to eq("(Mp3Info Comment) : Here is some random user-defined text.")
   end
   
   it "should pretty-print WXXX frames in the style of id3v2" do
@@ -91,7 +88,7 @@ describe Mp3Info, "when comparing tagged files using the ID3lib-based command-li
     saved_tag = update_id3_2_tag(@mp3_filename, new_tag)
     saved_frame = saved_tag['WXXX']
     
-    saved_frame.to_s_pretty.should == "(Mp3Info User Link) : http://www.yourmom.gov"
+    expect(saved_frame.to_s_pretty).to eq("(Mp3Info User Link) : http://www.yourmom.gov")
   end
   
   it "should pretty-print TCON frames (genre name) id3v2 style, as 'Name (id)'" do
@@ -100,7 +97,7 @@ describe Mp3Info, "when comparing tagged files using the ID3lib-based command-li
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     saved_frame = saved_tag['TCON']
     
-    saved_frame.to_s_pretty.should == "Jungle (63)"
+    expect(saved_frame.to_s_pretty).to eq("Jungle (63)")
   end
   
   it "should pretty-print TCON frames (genre name) id3v2 style, as 'Name (255)'" do
@@ -109,6 +106,6 @@ describe Mp3Info, "when comparing tagged files using the ID3lib-based command-li
     saved_tag = update_id3_2_tag(@mp3_filename, tag)
     saved_frame = saved_tag['TCON']
     
-    saved_frame.to_s_pretty.should == "Experimental (255)"
+    expect(saved_frame.to_s_pretty).to eq("Experimental (255)")
   end
 end

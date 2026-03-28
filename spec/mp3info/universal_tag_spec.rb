@@ -17,7 +17,7 @@ describe Mp3Info, 'when working with its "universal" tag' do
         tag.each { |k,v| mp3.tag[k] = v }
       end
       
-      Mp3Info.open(@mp3_filename) { |m| m.tag }.should == tag
+      expect(Mp3Info.open(@mp3_filename) { |m| m.tag }).to eq(tag)
     end
   end
   
@@ -33,6 +33,6 @@ describe Mp3Info, 'when working with its "universal" tag' do
     w = Mp3Info.open(@mp3_filename) { |m| m.tag }
     w.delete("genre")
     w.delete("genre_s")
-    w.should == tag
+    expect(w).to eq(tag)
   end
 end
