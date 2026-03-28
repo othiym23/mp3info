@@ -355,7 +355,7 @@ class LAMEHeader
   end
   
   def valid_size?
-    @raw_frame.size > LAME_CRC_POSITION
+    @raw_frame.size >= LAME_CRC_POSITION + 2
   end
   
   def valid_header?
@@ -449,7 +449,12 @@ LAME tag:
   end
   
   def header_location
-    @raw_frame.index('LAME') || -1
+    # LAME tag follows the Xing/Info header within the first frame.
+    # Start searching after the MPEG header (4 bytes) + side info to avoid
+    # false matches in audio data.
+    mpeg_header = MPEGHeader.new(@raw_frame.slice(0,4))
+    search_start = 4 + mpeg_header.side_info_size
+    @raw_frame.index('LAME', search_start) || -1
   end
   
   def check_crc(data)
