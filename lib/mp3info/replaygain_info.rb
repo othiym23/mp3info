@@ -395,8 +395,8 @@ class ReplaygainInfo
     out_string = ''
     if xrv_replaygain
       ensure_list(xrv_replaygain).each do |xrva|
-        out_string << "XRV #{xrv.identifier} adjustment:\n"
-        xrv.adjustments.each do |adjustment|
+        out_string << "XRV #{xrva.identifier} adjustment:\n"
+        xrva.adjustments.each do |adjustment|
           out_string << "  #{adjustment.channel_type} gain: % #-4.2g dB" % [adjustment.adjustment]
           if adjustment.peak_gain_bit_width > 0
             out_string << " (peak gain limit: #{adjustment.peak_gain})\n"
