@@ -178,23 +178,42 @@ module ID3V24
     end
     
     def self.split_encoded(encoding, string)
-      # The ID3v2 spec makes life difficult by using nulls as delimiters in a
-      # string itself containing two Unicode strings, so code has to match on
-      # the byte-order marks to find the delimiter.
       case encoding
       when ENCODING[:iso], ENCODING[:utf8]
         prefix, remainder = string.split("\x00", 2)
       when ENCODING[:utf16], ENCODING[:utf16be]
-        prefix, remainder = string.split(/\x00\x00/, 2);
-        if (prefix.size % 2) != 0
-          prefix, remainder = string.split(/\x00\x00\x00/, 2)
-          prefix += "\x00"
+        # UTF-16 null terminator is \x00\x00 but must be found at a 2-byte
+        # aligned position. Scan for it manually to avoid false matches
+        # where \x00 bytes within characters look like delimiters.
+        start = 0
+        # Skip BOM if present (UTF-16 with BOM)
+        if encoding == ENCODING[:utf16] && string.bytesize >= 2
+          bom = string[0, 2]
+          start = 2 if bom == "\xFE\xFF" || bom == "\xFF\xFE"
+        end
+
+        null_pos = nil
+        pos = start
+        while pos + 1 < string.bytesize
+          if string[pos].ord == 0 && string[pos + 1].ord == 0
+            null_pos = pos
+            break
+          end
+          pos += 2
+        end
+
+        if null_pos
+          prefix = string[0, null_pos]
+          remainder = string[null_pos + 2, string.bytesize - null_pos - 2] || ''.b
+        else
+          prefix = string
+          remainder = ''.b
         end
       else
         raise Exception.new("invalid encoding #{encoding} parsed from tag with value #{string}")
       end
-      
-      $stderr.puts("ID3V24::TextFrame.split_encoded(encoding=#{encoding},string=[#{string[0..255].inspect}...]) => [prefix='#{prefix.inspect}',remainder=[#{remainder[0..255].inspect}...]]") if $DEBUG
+
+      $stderr.puts("ID3V24::TextFrame.split_encoded(encoding=#{encoding},string=[#{string[0..255].inspect}...]) => [prefix='#{prefix.inspect}',remainder=[#{remainder ? remainder[0..255].inspect : 'nil'}...]]") if $DEBUG
       [prefix, remainder]
     end
   end

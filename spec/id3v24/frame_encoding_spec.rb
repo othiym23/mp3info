@@ -69,4 +69,24 @@ describe ID3V24::Frame, "when dealing with the various frame encoding types" do
     tag = { "TIT2" => tit2 }
     expect { update_id3_2_tag(@mp3_filename, tag) }.to raise_error(Encoding::UndefinedConversionError)
   end
+
+  it "should correctly split UTF-16 strings containing characters with null bytes" do
+    # UTF-16BE for "A" is \x00\x41, which contains a \x00 byte
+    # Description "A" + null terminator + value "B"
+    # In UTF-16BE: \x00\x41 \x00\x00 \x00\x42
+    raw = "\x00\x41\x00\x00\x00\x42".b
+    prefix, remainder = ID3V24::TextFrame.send(:split_encoded, ID3V24::TextFrame::ENCODING[:utf16be], raw)
+    expect(prefix).to eq("\x00\x41".b)
+    expect(remainder).to eq("\x00\x42".b)
+  end
+
+  it "should correctly split UTF-16LE strings with BOM containing characters with null bytes" do
+    # UTF-16 with LE BOM: \xFF\xFE
+    # Description "A" (\x41\x00) + null terminator (\x00\x00) + value "B" (\x42\x00)
+    raw = "\xFF\xFE\x41\x00\x00\x00\x42\x00".b
+    prefix, remainder = ID3V24::TextFrame.send(:split_encoded, ID3V24::TextFrame::ENCODING[:utf16], raw)
+    # prefix should include the BOM and the character
+    expect(prefix).to eq("\xFF\xFE\x41\x00".b)
+    expect(remainder).to eq("\x42\x00".b)
+  end
 end
