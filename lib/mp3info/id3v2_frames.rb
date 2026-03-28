@@ -643,7 +643,11 @@ module ID3V24
     end
     
     def to_s
-      (@encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d")).to_s_ignore_encoding) if @value
+      if @value
+        @encoding.chr << encode_value(@encoding, @value.strftime("%Y-%m-%d")).to_s_ignore_encoding
+      else
+        ''.b
+      end
     end
     
     def to_s_pretty
