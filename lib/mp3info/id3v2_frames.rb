@@ -1,6 +1,5 @@
 # encoding: utf-8
 require 'yaml'
-require 'iconv'
 require 'time'
 require 'mp3info/compatibility_utils'
 
@@ -149,29 +148,27 @@ module ID3V24
     def self.decode_value(encoding, value)
       case encoding
       when ENCODING[:iso]
-        Iconv.iconv("UTF-8", "ISO-8859-1", value).first.strip
+        value.force_encoding("ISO-8859-1").encode("UTF-8").strip
       when ENCODING[:utf16]
-        Iconv.iconv("UTF-8", "UTF-16", value).first.strip
+        value.force_encoding("UTF-16").encode("UTF-8").strip
       when ENCODING[:utf16be]
-        Iconv.iconv("UTF-8", "UTF-16BE", value).first.strip
+        value.force_encoding("UTF-16BE").encode("UTF-8").strip
       when ENCODING[:utf8]
-        # probably inefficient way to make sure that strings end up in
-        # UTF-8 in Ruby 1.9 in a backwards-compatible way
-        Iconv.iconv("UTF-8", "UTF-8", value).first.strip
+        value.force_encoding("UTF-8").strip
       else
         raise(FrameException, "invalid encoding #{encoding} encountered in tag value #{value.inspect}")
       end
     end
-    
+
     def encode_value(encoding, value)
       if value
         case encoding
         when ENCODING[:iso]
-          Iconv.iconv("ISO-8859-1", "UTF-8", value.to_s + "\000").first
+          (value.to_s + "\000").encode("ISO-8859-1", "UTF-8")
         when ENCODING[:utf16]
-          Iconv.iconv("UTF-16", "UTF-8",     value.to_s + "\000").first
+          (value.to_s + "\000").encode("UTF-16", "UTF-8")
         when ENCODING[:utf16be]
-          Iconv.iconv("UTF-16BE", "UTF-8",   value.to_s + "\000").first
+          (value.to_s + "\000").encode("UTF-16BE", "UTF-8")
         when ENCODING[:utf8]
           value.to_s + "\000"
         else

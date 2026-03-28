@@ -1,7 +1,7 @@
 # encoding: binary
 # $Id: mp3info.rb,v 37eef5deb369 2009/03/17 23:04:39 ogd $
 # License:: Ruby
-# Author:: Forrest L Norvell (mailto:forrest_AT_driftglass_DOT_org)
+# Author:: Rei Moribito (mailto:othiym23_AT_gmail_DOT_com)
 # Author:: Guillaume Pierronnet (mailto:moumar_AT__rubyforge_DOT_org)
 # Website:: http://hg.driftglass.org/
 script_path = __FILE__

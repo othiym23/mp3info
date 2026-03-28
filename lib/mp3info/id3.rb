@@ -138,7 +138,7 @@ class ID3 < DelegateClass(Hash)
   end
   
   def to_file(filename)
-    if File.exists?(filename)
+    if File.exist?(filename)
       # updating an existing tagged file
       File.open(filename, 'rb+') do |file|
         file.seek(-TAGSIZE, IO::SEEK_END)

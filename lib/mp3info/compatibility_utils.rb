@@ -12,7 +12,7 @@ class String
   end
 end
 
-class Fixnum
+class Integer
   def to_ordinal
     self
   end
