@@ -89,11 +89,11 @@ describe Mp3Info, "when working with ID3v2 tags" do
   end
 
   it "should read an ID3v2 tag from a truncated MP3 file" do
-    expect { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3')) }.not_to raise_error
+    expect { mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/zovietfrance/Popular Soviet Songs And Youth Music disc 3/zovietfrance - Popular Soviet Songs And Youth Music - 08 - Shewel.mp3')) }.not_to raise_error
   end
 
   it "should still read the tag from a truncated MP3 file" do
-    expect { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/id3lib/230-unicode.tag')) }.not_to raise_error
+    expect { mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/id3lib/230-unicode.tag')) }.not_to raise_error
   end
 
   it "should default to not exposing the ID3v2 tag for casual use until it's had a frame added" do

@@ -1,5 +1,5 @@
-$:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-$:.unshift(File.join(File.dirname(__FILE__)))
+$LOAD_PATH.unshift(File.join(__dir__, '..', 'lib'))
+$LOAD_PATH.unshift(__dir__)
 
 require 'mp3info/mp3info_helper'
 

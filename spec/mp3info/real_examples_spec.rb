@@ -5,7 +5,7 @@ require 'mp3info'
 
 describe Mp3Info, "when reading the MP3 info from an encoding of Keith Fullerton Whitman's 'Stereo Music for Hi-Hat'" do
   before :all do
-    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
+    @mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
     @mpeg_info = @mp3.mpeg_header
     @xing_info = @mp3.xing_header
     @lame_info = @mp3.lame_header
@@ -262,7 +262,7 @@ end
 
 describe Mp3Info, "when reading the MP3 info from an encoding of RAC's 'Distance [remake]'" do
   before :all do
-    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/RAC/Double Jointed/02 - RAC - Distance _Remake_.mp3'))
+    @mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/RAC/Double Jointed/02 - RAC - Distance _Remake_.mp3'))
     @mpeg_info = @mp3.mpeg_header
     @xing_info = @mp3.xing_header
     @lame_info = @mp3.lame_header
@@ -499,7 +499,7 @@ end
 
 describe Mp3Info, "when reading the MP3 info from an encoding of Wire's 'I Feel Mysterious Today'" do
   before :all do
-    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
+    @mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/Wire/Chairs Missing [Japanese version]/Wire - Chairs Missing [Japanese version] - 12 - I Feel Mysterious Today.mp3'))
     @mpeg_info = @mp3.mpeg_header
     @xing_info = @mp3.xing_header
     @lame_info = @mp3.lame_header
@@ -756,7 +756,7 @@ end
 
 describe Mp3Info, "when reading the MP3 info from an encoding of Jürgen Paape's 'Fruity Loops 1'" do
   before :all do
-    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
+    @mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
     @mpeg_info = @mp3.mpeg_header
   end
   
@@ -839,7 +839,7 @@ end
 
 describe Mp3Info, "when reading the MP3 info from an encoding of MIA's \"Bamba Banga\" with multiple ID3 tags" do
   before :all do
-    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/MIA/Kala/MIA - Kala - 01 - Bamboo Banga.mp3'))
+    @mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/MIA/Kala/MIA - Kala - 01 - Bamboo Banga.mp3'))
     @mpeg_info = @mp3.mpeg_header
   end
   
@@ -874,7 +874,7 @@ end
 
 describe Mp3Info, "when reading the MP3 info from an encoding a short tone (used for replay testing) with unusual headers" do
   before :all do
-    @mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Replay Gain RVA2/06-normal-volume.mp3'))
+    @mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/Replay Gain RVA2/06-normal-volume.mp3'))
     @mpeg_info = @mp3.mpeg_header
   end
   

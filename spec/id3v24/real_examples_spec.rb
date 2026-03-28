@@ -5,7 +5,7 @@ require 'mp3info'
 
 describe ID3V24::Frame, "when reading examples of real MP3 files" do
   it "should read ID3v2.2 tags correctly" do
-    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
+    mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/Keith Fullerton Whitman/Multiples/Stereo Music For Hi-Hat.mp3'))
     id3v2_tag = mp3.id3v2_tag
     
     expect(id3v2_tag['TP1'].value).to eq('Keith Fullerton Whitman')
@@ -19,7 +19,7 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
   end
   
   it "should read image frames from ID3v2.3 tags without mangling them" do
-    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/RAC/Double Jointed/03 - RAC - Nine.mp3'))
+    mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/RAC/Double Jointed/03 - RAC - Nine.mp3'))
     id3v2_tag = mp3.id3v2_tag
     
     expect(mp3.id3v2_tag.tag_length).to eq(7302)
@@ -29,7 +29,7 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
   end
   
   it "should correctly read frame lengths from ID3v2.4 tags even if the lengths aren't encoded syncsafe" do
-    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
+    mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/Jurgen Paape/Speicher 47/01 Fruity Loops 1.mp3'))
     id3v2_tag = mp3.id3v2_tag
     
     # we should be able to retrieve the information, but we should rewrite this tag
@@ -53,14 +53,14 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
   
   it "should not crash and correctly display a summary for a file containing no MPEG audio data" do
     mp3 = nil
-    expect { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/3aeb9bc1396b9b840c677e161e731908a4a66464.mp3')) }.not_to raise_error
+    expect { mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/mp3info-qa/3aeb9bc1396b9b840c677e161e731908a4a66464.mp3')) }.not_to raise_error
     expect(mp3.duration_string).to eq("-")
     expect(mp3.to_s).to eq("NO AUDIO FOUND")
   end
   
   it "should not crash with a dual channel stereo stream with non-synchsafe ID3v2.4 frame sizes" do
     mp3 = nil
-    expect { mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),'../../sample-metadata/mp3info-qa/00f9c130c607ea84c6cd1792a6cf49fdd1e3f4a9.mp3')) }.not_to raise_error
+    expect { mp3 = Mp3Info.new(File.join(__dir__,'../../sample-metadata/mp3info-qa/00f9c130c607ea84c6cd1792a6cf49fdd1e3f4a9.mp3')) }.not_to raise_error
     expect(mp3.to_s).to eq("Time: 0:00        MPEG1, layer III [ 160kbps @ 44.1kHz - Dual channel stereo +E ]")
     expect(mp3.has_id3v2_tag?).to be true
     id3v2_tag = mp3.id3v2_tag
@@ -77,7 +77,7 @@ describe ID3V24::Frame, "when reading examples of real MP3 files" do
   end
   
   it "should correctly find all the repeated frames, no matter how many are in a tag" do
-    mp3 = Mp3Info.new(File.join(File.dirname(__FILE__),"../../sample-metadata/Master Fool/Skilligans Island/Master Fool - Skilligan's Island - 14 - I Still Live With My Moms.mp3"))
+    mp3 = Mp3Info.new(File.join(__dir__,"../../sample-metadata/Master Fool/Skilligans Island/Master Fool - Skilligan's Island - 14 - I Still Live With My Moms.mp3"))
     id3v2_tag = mp3.id3v2_tag
     
     # COMM (Comments): ()[XXX]: RIPT with GRIP
